@@ -33,7 +33,7 @@ class DG_Site_Profile {
             return ['core', 'real-estate'];
         }
         if (self::is_digitalgate()) {
-            return ['core', 'marketing'];
+            return ['core', 'marketing', 'accommodation'];
         }
         return ['core', 'marketing'];
     }

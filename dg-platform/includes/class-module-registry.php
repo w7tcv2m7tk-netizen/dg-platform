@@ -94,7 +94,7 @@ class DG_Module_Registry {
                 'name' => 'Accommodation',
                 'icon' => '🏨',
                 'description' => 'Reservations, Properties, Guests, Housekeeping',
-                'version' => '10.0.0',
+                'version' => '10.4.0',
                 'class' => 'DG_Module_Accommodation',
                 'file' => 'accommodation/accommodation.php',
                 'is_core' => false,
@@ -109,7 +109,6 @@ class DG_Module_Registry {
             ],
             'finance' => [
                 'key' => 'finance',
-                'name' => 'Finance',
                 'icon' => '💰',
                 'description' => 'Loans, Lenders, Borrowers',
                 'version' => '0.0.0',

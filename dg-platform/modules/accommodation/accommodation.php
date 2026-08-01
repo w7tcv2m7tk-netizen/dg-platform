@@ -5,7 +5,7 @@
  * 
  * @package DG_Platform
  * @subpackage Accommodation
- * @version 2.0.0
+ * @version 10.4.0
  */
 
 if (!defined('ABSPATH')) {
@@ -34,18 +34,24 @@ class DG_Module_Accommodation {
         
         if ($platform) {
             $platform->register_module($this->module_key, $this);
-            $platform->register_module_definition($this->module_key, [
-                'name' => 'Accommodation',
-                'icon' => '🏨',
-                'description' => 'Complete accommodation booking system with OTA integration, guest CRM, and payments',
-                'class' => 'DG_Module_Accommodation',
-                'file' => 'accommodation.php',
-                'is_core' => false,
-                'required' => false
-            ]);
         }
         
         $this->init();
+    }
+
+    private function load_includes() {
+        $dir = __DIR__ . '/includes/';
+        foreach ([
+            'class-acc-permissions.php',
+            'class-acc-guests.php',
+            'class-acc-reports.php',
+            'class-acc-admin-views.php',
+        ] as $file) {
+            $path = $dir . $file;
+            if (file_exists($path)) {
+                require_once $path;
+            }
+        }
     }
     
     // ============================================================
@@ -53,6 +59,12 @@ class DG_Module_Accommodation {
     // ============================================================
     
     private function init() {
+        $this->load_includes();
+
+        add_action('dg_platform_register_menus', [$this, 'register_platform_menus'], 15);
+        add_action('dg_platform_quick_actions', [$this, 'quick_actions']);
+        add_filter('dg_platform_dashboard_widgets', [$this, 'dashboard_widgets']);
+
         // Post Types & Taxonomies
         add_action('init', [$this, 'register_post_types']);
         add_action('init', [$this, 'register_taxonomies']);
@@ -98,6 +110,7 @@ class DG_Module_Accommodation {
         add_action('save_post_dg_accommodation', [$this, 'save_accommodation_meta']);
         add_action('save_post_dg_booking', [$this, 'save_booking_meta']);
         add_action('save_post_dg_guest', [$this, 'save_guest_meta']);
+        add_action('save_post_dg_guest', [$this, 'sync_guest_to_core'], 25);
         
         // Admin Notices
         add_action('admin_notices', [$this, 'saturday_restriction_notice']);
@@ -164,6 +177,54 @@ class DG_Module_Accommodation {
         add_action('admin_notices', [$this, 'stripe_status_notice']);
     }
     
+    public function register_platform_menus() {
+        if (!DG_Acc_Permissions::can_view_bookings()) {
+            return;
+        }
+        add_submenu_page(
+            'dg-platform',
+            'Accommodation',
+            '🏨 Accommodation',
+            DG_Acc_Permissions::menu_cap_bookings(),
+            'dg-acc-dashboard',
+            ['DG_Acc_Admin_Views', 'render_dashboard']
+        );
+    }
+
+    public function dashboard_widgets($widgets) {
+        if (!class_exists('DG_Acc_Reports') || !DG_Acc_Permissions::can_view_bookings()) {
+            return $widgets;
+        }
+        $summary = DG_Acc_Reports::summary();
+        $widgets[] = [
+            'id' => 'acc_upcoming',
+            'label' => 'Upcoming stays (30d)',
+            'value' => $summary['upcoming_30d'],
+            'color' => '#34D399',
+        ];
+        $widgets[] = [
+            'id' => 'acc_guests',
+            'label' => 'Guests',
+            'value' => $summary['guests'],
+            'color' => '#8B5CF6',
+        ];
+        return $widgets;
+    }
+
+    public function quick_actions() {
+        if (!DG_Acc_Permissions::can_view_bookings()) {
+            return;
+        }
+        echo '<a href="' . esc_url(admin_url('admin.php?page=dg-acc-dashboard')) . '" class="button">🏨 Accommodation</a>';
+        echo '<a href="' . esc_url(admin_url('admin.php?page=dg-admin-calendar')) . '" class="button">📅 Calendar</a>';
+    }
+
+    public function sync_guest_to_core($post_id) {
+        if (class_exists('DG_Acc_Guests')) {
+            DG_Acc_Guests::sync_to_core($post_id);
+        }
+    }
+
     // ============================================================
     // POST TYPES - Snippet 1
     // ============================================================
@@ -1688,6 +1749,11 @@ class DG_Module_Accommodation {
     // ============================================================
     
     public function upsert_guest_from_booking($booking_id) {
+        if (class_exists('DG_Acc_Guests')) {
+            DG_Acc_Guests::sync_from_booking($booking_id);
+            return;
+        }
+
         $email = get_post_meta($booking_id, 'dg_booking_email', true);
         if (!$email) return;
         
@@ -2853,13 +2919,6 @@ add_action('dg_platform_modules_loaded', function() {
     $platform = DG_Platform::get_instance();
     DG_Module_Accommodation::get_instance($platform);
 });
-
-add_action('plugins_loaded', function() {
-    if (class_exists('DG_Platform')) {
-        $platform = DG_Platform::get_instance();
-        DG_Module_Accommodation::get_instance($platform);
-    }
-}, 20);
 
 // ============================================================
 // END OF MODULE
