@@ -40,6 +40,11 @@ class DG_RE_Email_Templates {
                 'subject' => 'New Buyer Enquiry - {property_address}',
                 'body' => "--- NEW BUYER ENQUIRY ---\n\nName: {full_name}\nEmail: {email}\nPhone: {phone}\nProperty: {property_address}\nURL: {property_url}\n\nMessage:\n{notes}\n\nSubmitted: {submitted_at}\n\nView pipeline: https://roerealty.com.au/wp-admin/admin.php?page=dg-re-buyer-leads",
             ],
+            'buyer_enquiry_confirmation' => [
+                'label' => 'Buyer Enquiry — Lead Confirmation',
+                'subject' => 'Thanks for your enquiry - Roe Realty',
+                'body' => "Hi {first_name},\n\nThanks for your enquiry about:\n{property_address}\n\nWe've received your message and will be in touch shortly.\n\nBest regards,\nBen Roe | Roe Realty\n0420 227 227\nhttps://roerealty.com.au",
+            ],
             'vendor_lead_admin' => [
                 'label' => 'Vendor Lead — Admin Notification',
                 'subject' => 'New Vendor Lead - {property_address}',
@@ -135,12 +140,12 @@ class DG_RE_Email_Templates {
 
     public static function maybe_upgrade() {
         $version = get_option('dg_re_email_templates_version', '0');
-        if (version_compare($version, '10.0.10', '>=')) {
+        if (version_compare($version, '10.0.11', '>=')) {
             return;
         }
         $saved = get_option(self::OPTION, []);
         $upgrade_keys = ['property_report_lead', 'followup_2', 'followup_3', 'followup_4', 'followup_5'];
-        $add_if_missing = ['buyer_enquiry_admin', 'vendor_lead_admin', 'vendor_lead_booked_admin', 'weekly_pipeline_report'];
+        $add_if_missing = ['buyer_enquiry_admin', 'buyer_enquiry_confirmation', 'vendor_lead_admin', 'vendor_lead_booked_admin', 'weekly_pipeline_report'];
         foreach (self::defaults() as $key => $default) {
             if (in_array($key, $upgrade_keys, true)) {
                 $saved[$key] = [
@@ -155,11 +160,11 @@ class DG_RE_Email_Templates {
             }
         }
         update_option(self::OPTION, $saved);
-        update_option('dg_re_email_templates_version', '10.0.10');
+        update_option('dg_re_email_templates_version', '10.0.11');
     }
 
     public static function reset_to_defaults() {
         delete_option(self::OPTION);
-        update_option('dg_re_email_templates_version', '10.0.10');
+        update_option('dg_re_email_templates_version', '10.0.11');
     }
 }

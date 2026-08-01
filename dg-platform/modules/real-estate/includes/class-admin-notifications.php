@@ -72,6 +72,17 @@ class DG_RE_Admin_Notifications {
             'notes' => $data['message'] ?? '',
             'submitted_at' => current_time('Y-m-d H:i:s'),
         ], $email ? $full_name . ' <' . $email . '>' : null);
+
+        if ($email) {
+            $headers = DG_RE_Email_Templates::mail_headers();
+            $confirm = DG_RE_Email_Templates::render('buyer_enquiry_confirmation', [
+                'first_name' => $name_parts['first_name'] ?? $full_name,
+                'full_name' => $full_name,
+                'property_address' => $data['property_address'] ?? 'your enquiry',
+                'email' => $email,
+            ]);
+            wp_mail($email, $confirm['subject'], $confirm['body'], $headers);
+        }
     }
 
     public static function on_booking_created($booking_id, $contact_id, $data) {

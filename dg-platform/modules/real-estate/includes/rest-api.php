@@ -111,9 +111,12 @@ function roe_realty_api_format_property($post_id) {
 }
 
 function roe_realty_api_verify_key($request) {
-    $api_key = $request->get_header('X-API-Key');
     $stored_key = get_option('roe_realty_api_key', '');
-    return $api_key === $stored_key;
+    if ($stored_key === '') {
+        return false;
+    }
+    $api_key = $request->get_header('X-API-Key');
+    return is_string($api_key) && hash_equals($stored_key, trim($api_key));
 }
 
 function roe_realty_api_import($request) {
@@ -126,6 +129,16 @@ function roe_realty_api_import($request) {
     $result = $importer->import($data, $format);
     
     return rest_ensure_response($result);
+}
+
+function dg_re_get_import_api_key() {
+    $key = get_option('roe_realty_api_key', '');
+    if ($key !== '') {
+        return $key;
+    }
+    $key = 'reimp_' . wp_generate_password(40, false, false);
+    update_option('roe_realty_api_key', $key);
+    return $key;
 }
 
 function dg_re_register_rest_routes() {
@@ -152,6 +165,13 @@ function dg_re_register_rest_routes() {
 }
 
 function dg_re_api_property_report($request) {
+    if (class_exists('DG_RE_Form_Security')) {
+        $limited = DG_RE_Form_Security::guard_rest('property_report');
+        if (is_wp_error($limited)) {
+            return $limited;
+        }
+    }
+
     if (!function_exists('dg_re_process_property_report_lead')) {
         return new WP_Error('unavailable', 'Property report handler is unavailable.', ['status' => 503]);
     }

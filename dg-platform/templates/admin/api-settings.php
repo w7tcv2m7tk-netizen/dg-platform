@@ -27,6 +27,24 @@
             </tr>
         </table>
     </div>
+    <div class="dg-panel" style="margin-bottom:20px;">
+        <h2>Property Import API</h2>
+        <?php
+        $import_key = get_option('roe_realty_api_key', '');
+        if ($import_key === '' && function_exists('dg_re_get_import_api_key')) {
+            $import_key = dg_re_get_import_api_key();
+        }
+        ?>
+        <table class="form-table">
+            <tr>
+                <th>Import API Key</th>
+                <td>
+                    <input type="text" readonly value="<?php echo esc_attr($import_key); ?>" class="large-text code" onclick="this.select();">
+                    <p class="description">Required for <code>POST <?php echo esc_html(rest_url('roerealty/v1/import')); ?></code>. Send as <code>X-API-Key</code> header. Import is blocked if this key is not set.</p>
+                </td>
+            </tr>
+        </table>
+    </div>
     <div class="dg-panel">
         <form method="post">
             <?php wp_nonce_field('dg_api_settings'); ?>

@@ -46,6 +46,7 @@ class DG_Module_RealEstate {
         add_action('save_post_agent', [$this, 'save_agent_meta']);
         
         add_action('admin_post_dg_re_save_email_templates', [$this, 'handle_save_email_templates']);
+        add_action('wp_enqueue_scripts', [$this, 'enqueue_frontend_assets']);
         
         // AJAX handlers
         add_action('wp_ajax_roe_realty_save_lead', [$this, 'save_lead_callback']);
@@ -87,6 +88,8 @@ class DG_Module_RealEstate {
             'class-property-report-followups.php',
             'class-pipeline-reports.php',
             'class-crm-dev-api.php',
+            'class-form-security.php',
+            'class-booking-admin.php',
             'class-admin-notifications.php',
             'class-pipeline-report-email.php',
             'booking-handler.php',
@@ -224,6 +227,7 @@ class DG_Module_RealEstate {
         add_submenu_page('dg-platform', 'Buyer Pipeline', '📋 Buyer Pipeline', $view_buyers, 'dg-re-buyer-pipeline', [$this, 'render_buyer_pipeline']);
         add_submenu_page('dg-platform', 'Pipeline Reports', '📊 Pipeline Reports', $view_leads, 'dg-re-pipeline-reports', [$this, 'render_pipeline_reports']);
         add_submenu_page('dg-platform', 'Bookings', '📅 Bookings', $view_appraisals, 'dg-re-bookings', [$this, 'render_bookings']);
+        add_submenu_page('dg-platform', 'Booking Hours', '🕐 Booking Hours', $manage_leads, 'dg-re-booking-settings', [$this, 'render_booking_settings']);
         add_submenu_page('dg-platform', 'Email Templates', '✉️ Email Templates', $manage_leads, 'dg-re-email-templates', [$this, 'render_email_templates']);
         add_submenu_page('dg-platform', 'Import', '📥 Import', $import_cap, 'dg-re-import', [$this, 'render_import']);
     }
@@ -444,9 +448,17 @@ class DG_Module_RealEstate {
     // ============================================================
     
     public function schedule_cron() {
-        if (!wp_next_scheduled('roe_crm_process_automations')) {
-            wp_schedule_event(time(), 'every_minute', 'roe_crm_process_automations');
-        }
+        wp_clear_scheduled_hook('roe_crm_process_automations');
+    }
+
+    public function enqueue_frontend_assets() {
+        wp_register_style(
+            'roe-frontend',
+            DG_PLATFORM_URL . 'assets/css/roe-frontend.css',
+            [],
+            DG_PLATFORM_VERSION
+        );
+        wp_enqueue_style('roe-frontend');
     }
     
     // ... (rest of the module code remains the same - all the methods below here are unchanged)
@@ -650,7 +662,7 @@ class DG_Module_RealEstate {
                    'roe_property_agent_photo'];
         foreach ($fields as $field) {
             if (isset($_POST[$field])) {
-                update_post_meta($post_id, $field, in_array($field, ['roe_property_description', 'roe_property_features']) ? $_POST[$field] : sanitize_text_field($_POST[$field]));
+                update_post_meta($post_id, $field, in_array($field, ['roe_property_description', 'roe_property_features']) ? wp_kses_post(wp_unslash($_POST[$field])) : sanitize_text_field(wp_unslash($_POST[$field])));
             }
         }
     }
@@ -744,7 +756,18 @@ class DG_Module_RealEstate {
             wp_send_json_error(['message' => 'Property report handler is unavailable.'], 500);
         }
 
-        $result = dg_re_process_property_report_lead(wp_unslash($_POST));
+        $data = wp_unslash($_POST);
+        if (class_exists('DG_RE_Form_Security')) {
+            $guard = DG_RE_Form_Security::guard('property_report', $data);
+            if (!empty($guard['silent'])) {
+                wp_send_json_success(['message' => 'Report request received.']);
+            }
+            if (empty($guard['ok'])) {
+                wp_send_json_error(['message' => $guard['message'] ?? 'Request blocked.']);
+            }
+        }
+
+        $result = dg_re_process_property_report_lead($data);
 
         if (!empty($result['success'])) {
             wp_send_json_success(['message' => $result['message']]);
@@ -754,8 +777,19 @@ class DG_Module_RealEstate {
     }
 
     public function get_available_slots_callback() {
-        $date = sanitize_text_field(wp_unslash($_POST['date'] ?? ''));
-        $service_id = (int) ($_POST['service_id'] ?? 0);
+        $data = wp_unslash($_POST);
+        if (class_exists('DG_RE_Form_Security')) {
+            $guard = DG_RE_Form_Security::guard('booking_slots', $data);
+            if (!empty($guard['silent'])) {
+                wp_send_json_success(['slots' => []]);
+            }
+            if (empty($guard['ok'])) {
+                wp_send_json_error(['message' => $guard['message'] ?? 'Request blocked.']);
+            }
+        }
+
+        $date = sanitize_text_field($data['date'] ?? '');
+        $service_id = (int) ($data['service_id'] ?? 0);
         if (!$date || !$service_id) {
             wp_send_json_error(['message' => 'Missing booking details.']);
         }
@@ -768,7 +802,18 @@ class DG_Module_RealEstate {
             wp_send_json_error(['message' => 'Booking handler is unavailable.'], 500);
         }
 
-        $result = dg_re_process_booking_creation(wp_unslash($_POST));
+        $data = wp_unslash($_POST);
+        if (class_exists('DG_RE_Form_Security')) {
+            $guard = DG_RE_Form_Security::guard('create_booking', $data);
+            if (!empty($guard['silent'])) {
+                wp_send_json_success(['message' => 'Booking received.']);
+            }
+            if (empty($guard['ok'])) {
+                wp_send_json_error(['message' => $guard['message'] ?? 'Request blocked.']);
+            }
+        }
+
+        $result = dg_re_process_booking_creation($data);
 
         if (!empty($result['success'])) {
             wp_send_json_success([
@@ -795,28 +840,29 @@ class DG_Module_RealEstate {
             'bookings' => $wpdb->get_var("SELECT COUNT(*) FROM {$wpdb->prefix}roe_crm_bookings"),
         ];
         ?>
-        <div class="wrap">
-            <h1>🏠 Real Estate Dashboard</h1>
-            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:16px;margin:20px 0;">
-                <div style="background:#fff;padding:20px;border-radius:12px;border-left:4px solid #C9A46C;"><div style="font-size:28px;font-weight:700;"><?php echo $counts['properties']; ?></div><div style="color:#666;">Properties</div></div>
-                <div style="background:#fff;padding:20px;border-radius:12px;border-left:4px solid #1565C0;"><div style="font-size:28px;font-weight:700;"><?php echo $counts['agents']; ?></div><div style="color:#666;">Agents</div></div>
-                <div style="background:#fff;padding:20px;border-radius:12px;border-left:4px solid #7B1FA2;"><div style="font-size:28px;font-weight:700;"><?php echo $counts['contacts']; ?></div><div style="color:#666;">Contacts</div></div>
-                <div style="background:#fff;padding:20px;border-radius:12px;border-left:4px solid #00897B;"><div style="font-size:28px;font-weight:700;"><?php echo $counts['vendor_leads']; ?></div><div style="color:#666;">New Vendor Leads</div></div>
-                <div style="background:#fff;padding:20px;border-radius:12px;border-left:4px solid #5E35B1;"><div style="font-size:28px;font-weight:700;"><?php echo $counts['buyer_leads']; ?></div><div style="color:#666;">New Buyer Enquiries</div></div>
-                <div style="background:#fff;padding:20px;border-radius:12px;border-left:4px solid #F57C00;"><div style="font-size:28px;font-weight:700;"><?php echo $counts['bookings']; ?></div><div style="color:#666;">Bookings</div></div>
+        <div class="wrap dg-platform-wrap dg-re-wrap">
+            <h1>Real Estate Dashboard</h1>
+            <div class="dg-stats-grid">
+                <div class="dg-stat-card"><div class="dg-stat-value"><?php echo (int) $counts['properties']; ?></div><div class="dg-stat-label">Properties</div></div>
+                <div class="dg-stat-card"><div class="dg-stat-value"><?php echo (int) $counts['agents']; ?></div><div class="dg-stat-label">Agents</div></div>
+                <div class="dg-stat-card"><div class="dg-stat-value"><?php echo (int) $counts['contacts']; ?></div><div class="dg-stat-label">Legacy Contacts</div></div>
+                <div class="dg-stat-card"><div class="dg-stat-value"><?php echo (int) $counts['vendor_leads']; ?></div><div class="dg-stat-label">New Vendor Leads</div></div>
+                <div class="dg-stat-card"><div class="dg-stat-value"><?php echo (int) $counts['buyer_leads']; ?></div><div class="dg-stat-label">New Buyer Enquiries</div></div>
+                <div class="dg-stat-card"><div class="dg-stat-value"><?php echo (int) $counts['bookings']; ?></div><div class="dg-stat-label">Bookings</div></div>
             </div>
-            <div style="background:#fff;padding:20px;border-radius:12px;border:1px solid #ddd;">
-                <h3>🚀 Quick Actions</h3>
-                <div style="display:flex;gap:12px;flex-wrap:wrap;">
-                    <a href="<?php echo admin_url('post-new.php?post_type=property'); ?>" class="button button-primary">➕ Add Property</a>
-                    <a href="<?php echo admin_url('post-new.php?post_type=agent'); ?>" class="button">👤 Add Agent</a>
-                    <a href="<?php echo admin_url('admin.php?page=dg-re-vendor-pipeline'); ?>" class="button">📋 Vendor Pipeline</a>
-                    <a href="<?php echo admin_url('admin.php?page=dg-re-pipeline-reports'); ?>" class="button">📊 Pipeline Reports</a>
-                    <a href="<?php echo admin_url('admin.php?page=dg-re-buyer-leads'); ?>" class="button">🛒 Buyer Leads</a>
-                    <a href="<?php echo admin_url('admin.php?page=dg-re-import'); ?>" class="button">📥 Import Properties</a>
+            <div class="dg-panel">
+                <h3>Quick Actions</h3>
+                <div class="dg-actions">
+                    <a href="<?php echo admin_url('post-new.php?post_type=property'); ?>" class="button button-primary">Add Property</a>
+                    <a href="<?php echo admin_url('post-new.php?post_type=agent'); ?>" class="button">Add Agent</a>
+                    <a href="<?php echo admin_url('admin.php?page=dg-re-vendor-pipeline'); ?>" class="button">Vendor Pipeline</a>
+                    <a href="<?php echo admin_url('admin.php?page=dg-re-pipeline-reports'); ?>" class="button">Pipeline Reports</a>
+                    <a href="<?php echo admin_url('admin.php?page=dg-re-buyer-leads'); ?>" class="button">Buyer Leads</a>
+                    <a href="<?php echo admin_url('admin.php?page=dg-re-booking-settings'); ?>" class="button">Booking Hours</a>
+                    <a href="<?php echo admin_url('admin.php?page=dg-platform-contacts'); ?>" class="button">CRM Contacts</a>
                 </div>
             </div>
-            <div style="background:#F5F2EF;padding:16px;border-radius:8px;margin-top:16px;font-size:13px;color:#555;">
+            <div class="dg-re-notice">
                 <strong>Staff access:</strong> Assign the <em>DG Sales Agent</em> role under Users for CRM access without full admin.
                 Weekly pipeline reports email to <?php echo esc_html(apply_filters('dg_re_admin_notification_email', 'enquiries@roerealty.com.au')); ?> every Monday 8am.
             </div>
@@ -1199,15 +1245,15 @@ class DG_Module_RealEstate {
 
     private function render_pipeline_board($title, $kanban, $stages, $page, $submit_name, $nonce_action, $id_field = 'lead_id') {
         ?>
-        <div class="wrap">
-            <h1>📋 <?php echo esc_html($title); ?></h1>
-            <p style="color:#666;margin-bottom:16px;">Drag-free kanban — use the dropdown on each card to advance a lead.</p>
-            <div style="display:grid;grid-template-columns:repeat(<?php echo count($stages); ?>, minmax(180px, 1fr));gap:12px;overflow-x:auto;padding-bottom:20px;">
+        <div class="wrap dg-platform-wrap dg-re-wrap">
+            <h1>Pipeline: <?php echo esc_html($title); ?></h1>
+            <p class="description">Use the dropdown on each card to advance a lead.</p>
+            <div class="dg-pipeline-board">
                 <?php foreach ($stages as $stage_key => $stage_label) : ?>
-                    <div style="background:#f6f7f7;border-radius:8px;padding:10px;min-width:180px;">
-                        <div style="font-weight:600;margin-bottom:10px;padding-bottom:8px;border-bottom:2px solid #C9A46C;">
+                    <div class="dg-pipeline-column">
+                        <div class="dg-pipeline-column-header">
                             <?php echo esc_html($stage_label); ?>
-                            <span style="background:#ddd;border-radius:10px;padding:2px 8px;font-size:11px;margin-left:4px;"><?php echo count($kanban[$stage_key] ?? []); ?></span>
+                            <span class="dg-tag dg-tag-module"><?php echo count($kanban[$stage_key] ?? []); ?></span>
                         </div>
                         <?php if (!empty($kanban[$stage_key])) : foreach ($kanban[$stage_key] as $card) :
                             $name = trim(($card->first_name ?? '') . ' ' . ($card->last_name ?? ''));
@@ -1222,7 +1268,7 @@ class DG_Module_RealEstate {
                             }
                             $record_id = $card->id;
                             ?>
-                            <div style="background:#fff;border:1px solid #ddd;border-radius:6px;padding:10px;margin-bottom:8px;font-size:13px;">
+                            <div class="dg-pipeline-card">
                                 <strong><?php echo esc_html($name ?: 'Unknown'); ?></strong>
                                 <?php if ($address) : ?><div style="color:#666;margin:4px 0;"><?php echo esc_html($address); ?></div><?php endif; ?>
                                 <?php if ($email) : ?><div style="color:#888;font-size:11px;"><?php echo esc_html($email); ?></div><?php endif; ?>
@@ -1238,7 +1284,7 @@ class DG_Module_RealEstate {
                                 </form>
                             </div>
                         <?php endforeach; else : ?>
-                            <div style="color:#aaa;font-size:12px;text-align:center;padding:16px 0;">Empty</div>
+                            <div class="dg-pipeline-empty">Empty</div>
                         <?php endif; ?>
                     </div>
                 <?php endforeach; ?>
@@ -1248,23 +1294,11 @@ class DG_Module_RealEstate {
     }
 
     public function render_contacts() {
-        global $wpdb;
-        $contacts = $wpdb->get_results("SELECT * FROM {$wpdb->prefix}roe_crm_contacts ORDER BY created_at DESC LIMIT 100");
-        ?>
-        <div class="wrap">
-            <h1>📇 Contacts</h1>
-            <table class="wp-list-table widefat fixed striped">
-                <thead><tr><th>ID</th><th>Name</th><th>Email</th><th>Phone</th><th>Source</th><th>Status</th><th>Created</th></tr></thead>
-                <tbody>
-                    <?php if ($contacts) : foreach ($contacts as $contact) : ?>
-                        <tr><td><?php echo $contact->id; ?></td><td><?php echo esc_html($contact->first_name . ' ' . $contact->last_name); ?></td><td><?php echo esc_html($contact->email); ?></td><td><?php echo esc_html($contact->phone); ?></td><td><?php echo esc_html($contact->source); ?></td><td><span style="background:<?php echo $contact->status === 'active' ? '#2E7D32' : '#C62828'; ?>;color:#fff;padding:2px 10px;border-radius:12px;font-size:11px;"><?php echo esc_html($contact->status); ?></span></td><td><?php echo $contact->created_at; ?></td></tr>
-                    <?php endforeach; else : ?>
-                        <tr><td colspan="7" style="text-align:center;padding:30px 0;color:#999;">No contacts found.</td></tr>
-                    <?php endif; ?>
-                </tbody>
-            </table>
-        </div>
-        <?php
+        if (DG_Permissions::current_user_can('dg_view_contacts')) {
+            wp_safe_redirect(admin_url('admin.php?page=dg-platform-contacts'));
+            exit;
+        }
+        echo '<div class="wrap"><p>Contacts are managed under DG Platform → Contacts.</p></div>';
     }
     
     public function render_pipeline_reports() {
@@ -1375,20 +1409,114 @@ class DG_Module_RealEstate {
 
     public function render_bookings() {
         global $wpdb;
+        if (isset($_GET['updated'])) {
+            echo '<div class="notice notice-success is-dismissible"><p>Booking updated.</p></div>';
+        }
         $bookings = $wpdb->get_results("SELECT b.*, c.email, c.first_name, c.last_name FROM {$wpdb->prefix}roe_crm_bookings b LEFT JOIN {$wpdb->prefix}roe_crm_contacts c ON b.contact_id = c.id ORDER BY b.booking_date DESC LIMIT 50");
+        $status_class = ['pending' => 'dg-status-pending', 'confirmed' => 'dg-status-active', 'cancelled' => 'dg-status-lost', 'completed' => 'dg-status-completed'];
         ?>
-        <div class="wrap">
-            <h1>📅 Bookings</h1>
+        <div class="wrap dg-platform-wrap dg-re-wrap">
+            <h1>Bookings</h1>
+            <div class="dg-panel">
             <table class="wp-list-table widefat fixed striped">
-                <thead><tr><th>ID</th><th>Contact</th><th>Service</th><th>Date</th><th>Time</th><th>Status</th></tr></thead>
+                <thead><tr><th>ID</th><th>Contact</th><th>Service</th><th>Date</th><th>Time</th><th>Status</th><th>Action</th></tr></thead>
                 <tbody>
-                    <?php if ($bookings) : foreach ($bookings as $booking) : ?>
-                        <tr><td><?php echo $booking->id; ?></td><td><?php echo esc_html($booking->first_name . ' ' . $booking->last_name); ?></td><td><?php echo esc_html($booking->service_name); ?></td><td><?php echo date('M j, Y', strtotime($booking->booking_date)); ?></td><td><?php echo date('g:i A', strtotime($booking->booking_time)); ?></td><td><span style="background:<?php echo $booking->status === 'confirmed' ? '#2E7D32' : ($booking->status === 'pending' ? '#F57C00' : '#C62828'); ?>;color:#fff;padding:2px 10px;border-radius:12px;font-size:11px;"><?php echo ucfirst($booking->status); ?></span></td></tr>
+                    <?php if ($bookings) : foreach ($bookings as $booking) :
+                        $sc = $status_class[$booking->status] ?? 'dg-status-pending';
+                        ?>
+                        <tr>
+                            <td><?php echo (int) $booking->id; ?></td>
+                            <td><?php echo esc_html(trim($booking->first_name . ' ' . $booking->last_name)); ?><br><small><?php echo esc_html($booking->email); ?></small></td>
+                            <td><?php echo esc_html($booking->service_name); ?></td>
+                            <td><?php echo esc_html(date('M j, Y', strtotime($booking->booking_date))); ?></td>
+                            <td><?php echo esc_html(date('g:i A', strtotime($booking->booking_time))); ?></td>
+                            <td><span class="dg-status <?php echo esc_attr($sc); ?>"><?php echo esc_html(ucfirst($booking->status)); ?></span></td>
+                            <td>
+                                <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>" style="display:flex;gap:6px;align-items:center;">
+                                    <?php wp_nonce_field('dg_re_booking_status'); ?>
+                                    <input type="hidden" name="action" value="dg_re_update_booking_status">
+                                    <input type="hidden" name="booking_id" value="<?php echo (int) $booking->id; ?>">
+                                    <select name="status">
+                                        <?php foreach (['pending', 'confirmed', 'cancelled', 'completed'] as $st) : ?>
+                                            <option value="<?php echo esc_attr($st); ?>" <?php selected($booking->status, $st); ?>><?php echo esc_html(ucfirst($st)); ?></option>
+                                        <?php endforeach; ?>
+                                    </select>
+                                    <button type="submit" class="button button-small">Save</button>
+                                </form>
+                            </td>
+                        </tr>
                     <?php endforeach; else : ?>
-                        <tr><td colspan="6" style="text-align:center;padding:30px 0;color:#999;">No bookings found.</td></tr>
+                        <tr><td colspan="7" style="text-align:center;padding:30px 0;color:#999;">No bookings found.</td></tr>
                     <?php endif; ?>
                 </tbody>
             </table>
+            </div>
+        </div>
+        <?php
+    }
+
+    public function render_booking_settings() {
+        if (!class_exists('DG_RE_Booking_Admin')) {
+            echo '<div class="wrap"><p>Booking settings unavailable.</p></div>';
+            return;
+        }
+        if (isset($_GET['saved'])) {
+            echo '<div class="notice notice-success is-dismissible"><p>Booking hours saved.</p></div>';
+        }
+        $rows = DG_RE_Booking_Admin::get_availability_rows();
+        $by_day = [];
+        foreach ($rows as $row) {
+            $by_day[(int) $row->day_of_week] = $row;
+        }
+        $days = DG_RE_Booking_Admin::day_labels();
+        $services = DG_RE_Booking_Admin::get_services();
+        ?>
+        <div class="wrap dg-platform-wrap dg-re-wrap">
+            <h1>Booking Hours &amp; Services</h1>
+            <div class="dg-panel">
+                <h2>Weekly availability</h2>
+                <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>">
+                    <?php wp_nonce_field('dg_re_save_availability'); ?>
+                    <input type="hidden" name="action" value="dg_re_save_availability">
+                    <table class="widefat striped">
+                        <thead><tr><th>Day</th><th>Active</th><th>Start</th><th>End</th></tr></thead>
+                        <tbody>
+                            <?php foreach ($days as $dow => $label) :
+                                $row = $by_day[$dow] ?? null;
+                                $start = $row ? substr($row->start_time, 0, 5) : '09:00';
+                                $end = $row ? substr($row->end_time, 0, 5) : '17:00';
+                                $active = $row ? (int) $row->is_active : ($dow >= 1 && $dow <= 5 ? 1 : 0);
+                                ?>
+                                <tr>
+                                    <td><?php echo esc_html($label); ?></td>
+                                    <td><input type="checkbox" name="active[<?php echo (int) $dow; ?>]" value="1" <?php checked($active, 1); ?>></td>
+                                    <td><input type="time" name="start[<?php echo (int) $dow; ?>]" value="<?php echo esc_attr($start); ?>"></td>
+                                    <td><input type="time" name="end[<?php echo (int) $dow; ?>]" value="<?php echo esc_attr($end); ?>"></td>
+                                </tr>
+                            <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                    <p class="submit"><button type="submit" class="button button-primary">Save hours</button></p>
+                </form>
+            </div>
+            <?php if ($services) : ?>
+            <div class="dg-panel">
+                <h2>Services</h2>
+                <table class="widefat striped">
+                    <thead><tr><th>Name</th><th>Slug</th><th>Duration</th><th>Active</th></tr></thead>
+                    <tbody>
+                        <?php foreach ($services as $svc) : ?>
+                            <tr>
+                                <td><?php echo esc_html($svc->name); ?></td>
+                                <td><code><?php echo esc_html($svc->slug); ?></code></td>
+                                <td><?php echo (int) $svc->duration; ?> min</td>
+                                <td><?php echo (int) $svc->is_active ? 'Yes' : 'No'; ?></td>
+                            </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+            </div>
+            <?php endif; ?>
         </div>
         <?php
     }

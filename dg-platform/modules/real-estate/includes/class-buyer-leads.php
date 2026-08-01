@@ -293,8 +293,14 @@ function dg_re_process_property_enquiry($data) {
         ];
     }
 
-    if (class_exists('DG_RE_Buyer_Leads')) {
-        $buyer_id = DG_RE_Buyer_Leads::create([
+    if (!class_exists('DG_RE_Buyer_Leads')) {
+        return [
+            'success' => false,
+            'message' => 'Enquiry service is temporarily unavailable.',
+        ];
+    }
+
+    $buyer_id = DG_RE_Buyer_Leads::create([
             'full_name' => $name,
             'email' => $email,
             'phone' => $phone,
@@ -311,7 +317,6 @@ function dg_re_process_property_enquiry($data) {
                 'message' => $buyer_id->get_error_message(),
             ];
         }
-    }
 
     return [
         'success' => true,

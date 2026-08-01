@@ -41,6 +41,12 @@ function dg_re_process_booking_creation($data) {
         return ['success' => false, 'message' => 'That time slot is no longer available. Please choose another.'];
     }
 
+    // Re-check immediately before insert to reduce double-booking race.
+    $available_recheck = $booking_service->get_available_slots($date, $service_id);
+    if (!in_array($time_normalized, $available_recheck, true)) {
+        return ['success' => false, 'message' => 'That time slot was just taken. Please choose another.'];
+    }
+
     $contact_id = DG_RE_Contacts::resolve_contact_id([
         'full_name' => $name,
         'email' => $email,
@@ -132,12 +138,16 @@ function dg_re_resolve_legacy_contact_id($name, $email, $phone) {
     if ($wpdb->get_var("SHOW TABLES LIKE '$table'") !== $table) {
         return 0;
     }
+    $email = sanitize_email($email);
+    if ($email === '') {
+        return 0;
+    }
     $legacy = $wpdb->get_var($wpdb->prepare("SELECT id FROM $table WHERE email = %s", $email));
     if ($legacy) {
         return (int) $legacy;
     }
     $parts = DG_RE_Contacts::split_name($name);
-    $wpdb->insert($table, [
+    $inserted = $wpdb->insert($table, [
         'email' => $email,
         'first_name' => $parts['first_name'],
         'last_name' => $parts['last_name'],
@@ -146,6 +156,10 @@ function dg_re_resolve_legacy_contact_id($name, $email, $phone) {
         'status' => 'active',
         'last_activity' => current_time('mysql'),
     ]);
+    if (!$inserted) {
+        $legacy = $wpdb->get_var($wpdb->prepare("SELECT id FROM $table WHERE email = %s", $email));
+        return $legacy ? (int) $legacy : 0;
+    }
     return (int) $wpdb->insert_id;
 }
 

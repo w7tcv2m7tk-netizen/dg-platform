@@ -73,6 +73,7 @@ class DG_Platform {
             return;
         }
         wp_enqueue_style('dg-platform-admin', DG_PLATFORM_URL . 'assets/css/admin.css', [], DG_PLATFORM_VERSION);
+        wp_enqueue_style('dg-re-admin', DG_PLATFORM_URL . 'assets/css/re-admin.css', ['dg-platform-admin'], DG_PLATFORM_VERSION);
     }
 
     public function admin_menu() {

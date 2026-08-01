@@ -1,0 +1,154 @@
+/* Roe Realty — shared frontend form styles */
+.roe-form-wrap,
+.roe-property-report,
+.roe-booking-form-wrap {
+    max-width: 640px;
+    margin: 0 auto;
+    font-family: inherit;
+}
+
+.roe-form-card,
+.roe-report-card {
+    background: #fff;
+    border: 1px solid #E0D6CC;
+    border-radius: 16px;
+    padding: 24px;
+}
+
+.roe-form-card + .roe-form-card,
+.roe-report-card + .roe-report-card {
+    margin-top: 16px;
+}
+
+.roe-form-wrap h3,
+.roe-property-report h3,
+.roe-booking-form-wrap h3 {
+    margin-top: 0;
+    color: #1C2B2A;
+}
+
+.roe-form-muted {
+    color: #6B7A78;
+}
+
+.roe-form-field {
+    margin-bottom: 1rem;
+}
+
+.roe-form-field label {
+    display: block;
+    font-weight: 600;
+    margin-bottom: 0.4rem;
+    color: #1C2B2A;
+}
+
+.roe-form-field input,
+.roe-form-field select,
+.roe-form-field textarea {
+    width: 100%;
+    padding: 0.7rem;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    font-size: 1rem;
+    box-sizing: border-box;
+}
+
+.roe-form-field input:focus,
+.roe-form-field select:focus,
+.roe-form-field textarea:focus {
+    outline: none;
+    border-color: #C9A46C;
+    box-shadow: 0 0 0 2px rgba(201, 164, 108, 0.25);
+}
+
+.roe-btn-primary {
+    background: #C9A46C;
+    color: #fff;
+    border: none;
+    padding: 12px 20px;
+    border-radius: 999px;
+    font-weight: 600;
+    cursor: pointer;
+    width: 100%;
+}
+
+.roe-btn-primary:hover {
+    background: #b8935a;
+}
+
+.roe-btn-primary:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.roe-form-status {
+    margin-top: 12px;
+    padding: 0.7rem;
+    border-radius: 8px;
+    display: none;
+}
+
+.roe-form-status.is-visible {
+    display: block;
+}
+
+.roe-form-status.is-success {
+    background: #E8F5E9;
+    color: #2E7D32;
+    border: 1px solid #A5D6A7;
+}
+
+.roe-form-status.is-error {
+    background: #FFEBEE;
+    color: #C62828;
+    border: 1px solid #EF9A9A;
+}
+
+.roe-form-status.is-loading {
+    background: #F5F2EF;
+    color: #555;
+    border: 1px solid #E0D6CC;
+}
+
+.roe-time-slots {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(85px, 1fr));
+    gap: 8px;
+    min-height: 48px;
+}
+
+.roe-time-slots .roe-slot-btn {
+    padding: 8px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    background: #fff;
+    cursor: pointer;
+    font-size: 13px;
+}
+
+.roe-time-slots .roe-slot-btn.is-selected {
+    background: #C9A46C;
+    border-color: #C9A46C;
+    color: #fff;
+}
+
+.roe-time-slots .roe-slot-empty {
+    grid-column: 1 / -1;
+    color: #999;
+    text-align: center;
+    padding: 12px 0;
+}
+
+.roe-honeypot {
+    position: absolute;
+    left: -9999px;
+    opacity: 0;
+    pointer-events: none;
+}
+
+@media (max-width: 600px) {
+    .roe-form-card,
+    .roe-report-card {
+        padding: 16px;
+    }
+}

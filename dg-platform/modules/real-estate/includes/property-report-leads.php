@@ -104,16 +104,21 @@ function dg_re_process_property_report_lead($data) {
         ]);
     }
 
-    if (!$admin_sent) {
+    if (!$admin_sent && !$vendor_lead_id) {
         return [
             'success' => false,
             'message' => 'Failed to send email. Please try again or call us directly.',
         ];
     }
 
+    $message = "Report request sent successfully! We'll be in touch within 2 hours.";
+    if (!$admin_sent && $vendor_lead_id) {
+        $message = "Report request received! We'll be in touch within 2 hours.";
+    }
+
     return [
         'success' => true,
-        'message' => "Report request sent successfully! We'll be in touch within 2 hours.",
+        'message' => $message,
         'vendor_lead_id' => $vendor_lead_id,
     ];
 }
@@ -134,32 +139,43 @@ function dg_re_store_property_report_lead($lead) {
 
 function roe_crm_property_report_form_shortcode() {
     $ajax_url = admin_url('admin-ajax.php');
+    $nonce = class_exists('DG_RE_Form_Security') ? DG_RE_Form_Security::nonce_field('property_report') : '';
     ob_start();
     ?>
-    <div class="roe-property-report" style="max-width:640px;margin:0 auto;">
-        <div id="roe-report-step-address" class="roe-report-card" style="background:#fff;border:1px solid #E0D6CC;border-radius:16px;padding:24px;">
-            <h3 style="margin-top:0;color:#1C2B2A;">Get Your Free Property Report</h3>
-            <p style="color:#6B7A78;">Value range, buyer demand, and comparable sales.</p>
+    <div class="roe-property-report roe-form-wrap">
+        <div id="roe-report-step-address" class="roe-report-card roe-form-card">
+            <h3>Get Your Free Property Report</h3>
+            <p class="roe-form-muted">Value range, buyer demand, and comparable sales.</p>
             <form id="roePropertyReportAddressForm">
-                <label for="roePropertyAddress" style="display:block;font-weight:600;margin-bottom:6px;">Property address</label>
-                <input type="text" id="roePropertyAddress" name="propertyAddress" required placeholder="e.g. 123 Main Street, Currumbin QLD" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:8px;margin-bottom:16px;">
-                <button type="submit" style="background:#C9A46C;color:#fff;border:none;padding:12px 20px;border-radius:999px;font-weight:600;cursor:pointer;">Get My Free Report</button>
+                <div class="roe-form-field">
+                    <label for="roePropertyAddress">Property address</label>
+                    <input type="text" id="roePropertyAddress" name="propertyAddress" required placeholder="e.g. 123 Main Street, Currumbin QLD">
+                </div>
+                <button type="submit" class="roe-btn-primary">Get My Free Report</button>
             </form>
         </div>
 
-        <div id="roe-report-step-contact" class="roe-report-card" style="display:none;background:#fff;border:1px solid #E0D6CC;border-radius:16px;padding:24px;margin-top:16px;">
-            <h3 style="margin-top:0;color:#1C2B2A;">Almost there</h3>
-            <p style="color:#6B7A78;">Where should we send your Property Value &amp; Buyer Demand Report?</p>
+        <div id="roe-report-step-contact" class="roe-report-card roe-form-card" style="display:none;">
+            <h3>Almost there</h3>
+            <p class="roe-form-muted">Where should we send your Property Value &amp; Buyer Demand Report?</p>
             <form id="roePropertyReportContactForm">
-                <input type="text" name="website" tabindex="-1" autocomplete="off" style="display:none !important;" aria-hidden="true">
-                <label for="roeReportFullName" style="display:block;font-weight:600;margin-bottom:6px;">Full name</label>
-                <input type="text" id="roeReportFullName" name="fullName" required style="width:100%;padding:10px;border:1px solid #ddd;border-radius:8px;margin-bottom:12px;">
-                <label for="roeReportEmail" style="display:block;font-weight:600;margin-bottom:6px;">Email</label>
-                <input type="email" id="roeReportEmail" name="email" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:8px;margin-bottom:12px;">
-                <label for="roeReportPhone" style="display:block;font-weight:600;margin-bottom:6px;">Mobile</label>
-                <input type="tel" id="roeReportPhone" name="phone" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:8px;margin-bottom:16px;">
-                <button type="submit" id="roeReportSubmitBtn" style="background:#C9A46C;color:#fff;border:none;padding:12px 20px;border-radius:999px;font-weight:600;cursor:pointer;">Send My Report</button>
-                <div id="roeReportStatus" style="margin-top:12px;"></div>
+                <div class="roe-honeypot" aria-hidden="true">
+                    <input type="text" name="website" tabindex="-1" autocomplete="off">
+                </div>
+                <div class="roe-form-field">
+                    <label for="roeReportFullName">Full name</label>
+                    <input type="text" id="roeReportFullName" name="fullName" required>
+                </div>
+                <div class="roe-form-field">
+                    <label for="roeReportEmail">Email</label>
+                    <input type="email" id="roeReportEmail" name="email">
+                </div>
+                <div class="roe-form-field">
+                    <label for="roeReportPhone">Mobile</label>
+                    <input type="tel" id="roeReportPhone" name="phone">
+                </div>
+                <button type="submit" id="roeReportSubmitBtn" class="roe-btn-primary">Send My Report</button>
+                <div id="roeReportStatus" class="roe-form-status" role="status" aria-live="polite"></div>
             </form>
         </div>
     </div>
@@ -171,9 +187,15 @@ function roe_crm_property_report_form_shortcode() {
         const stepContact = document.getElementById('roe-report-step-contact');
         const statusEl = document.getElementById('roeReportStatus');
         const submitBtn = document.getElementById('roeReportSubmitBtn');
+        const ajaxNonce = <?php echo wp_json_encode($nonce); ?>;
         let propertyAddress = '';
 
         if (!addressForm || !contactForm) return;
+
+        function showStatus(msg, type) {
+            statusEl.textContent = msg;
+            statusEl.className = 'roe-form-status is-visible is-' + type;
+        }
 
         addressForm.addEventListener('submit', function(e) {
             e.preventDefault();
@@ -188,25 +210,28 @@ function roe_crm_property_report_form_shortcode() {
             const fullName = document.getElementById('roeReportFullName').value.trim();
             const email = document.getElementById('roeReportEmail').value.trim();
             const phone = document.getElementById('roeReportPhone').value.trim();
+            const honeypot = contactForm.querySelector('[name="website"]');
 
             if (!fullName) {
-                statusEl.innerHTML = '<span style="color:#c62828;">Please enter your full name.</span>';
+                showStatus('Please enter your full name.', 'error');
                 return;
             }
             if (!email && !phone) {
-                statusEl.innerHTML = '<span style="color:#c62828;">Please provide either an email or mobile number.</span>';
+                showStatus('Please provide either an email or mobile number.', 'error');
                 return;
             }
 
             submitBtn.disabled = true;
-            statusEl.innerHTML = 'Sending...';
+            showStatus('Sending...', 'loading');
 
             const payload = new URLSearchParams();
             payload.append('action', 'roe_realty_save_lead');
+            payload.append('dg_re_nonce', ajaxNonce);
             payload.append('fullName', fullName);
             payload.append('email', email);
             payload.append('phone', phone);
             payload.append('propertyAddress', propertyAddress);
+            if (honeypot) payload.append('website', honeypot.value);
 
             try {
                 const response = await fetch(<?php echo wp_json_encode($ajax_url); ?>, {
@@ -218,21 +243,22 @@ function roe_crm_property_report_form_shortcode() {
                 const message = result.data && result.data.message ? result.data.message : (result.message || 'Something went wrong.');
 
                 if (result.success) {
-                    statusEl.innerHTML = '<span style="color:#2E7D32;">' + message + '</span>';
+                    showStatus(message, 'success');
                     contactForm.reset();
                     setTimeout(function() {
                         stepContact.style.display = 'none';
                         stepAddress.style.display = 'block';
-                        statusEl.innerHTML = '';
+                        statusEl.className = 'roe-form-status';
+                        statusEl.textContent = '';
                         document.getElementById('roePropertyAddress').value = '';
                         submitBtn.disabled = false;
                     }, 3000);
                 } else {
-                    statusEl.innerHTML = '<span style="color:#c62828;">Error: ' + message + '</span>';
+                    showStatus(message, 'error');
                     submitBtn.disabled = false;
                 }
             } catch (error) {
-                statusEl.innerHTML = '<span style="color:#c62828;">Network error. Please try again.</span>';
+                showStatus('Network error. Please try again.', 'error');
                 submitBtn.disabled = false;
             }
         });

@@ -36,15 +36,17 @@ function roe_crm_booking_form_shortcode($atts = []) {
     }
 
     $ajax_url = admin_url('admin-ajax.php');
+    $nonce = class_exists('DG_RE_Form_Security') ? DG_RE_Form_Security::nonce_field('create_booking') : '';
+    $slots_nonce = class_exists('DG_RE_Form_Security') ? DG_RE_Form_Security::nonce_field('booking_slots') : '';
     $title = $atts['title'] !== '' ? $atts['title'] : ($selected ? $selected->name : 'Book an Appointment');
     $show_picker = !$selected && count($services) > 1;
 
     ob_start();
     ?>
-    <div class="roe-booking-form-wrap" style="max-width:520px;margin:0 auto;">
-        <h3 style="margin-top:0;color:#1C2B2A;"><?php echo esc_html($title); ?></h3>
+    <div class="roe-booking-form-wrap roe-form-wrap">
+        <h3><?php echo esc_html($title); ?></h3>
         <form id="roeCrmBookingForm" class="roe-booking-form">
-            <div style="position:absolute;left:-9999px;opacity:0;pointer-events:none;" aria-hidden="true">
+            <div class="roe-honeypot" aria-hidden="true">
                 <input type="text" name="website" tabindex="-1" autocomplete="off">
             </div>
 
@@ -97,8 +99,8 @@ function roe_crm_booking_form_shortcode($atts = []) {
                 <label style="display:block;font-weight:600;margin-bottom:0.4rem;">Notes</label>
                 <textarea id="roeBookingNotes" rows="2" style="width:100%;padding:0.7rem;border:1px solid #ddd;border-radius:8px;"></textarea>
             </div>
-            <div id="roeBookingStatus" style="display:none;margin-bottom:1rem;padding:0.7rem;border-radius:8px;"></div>
-            <button type="submit" id="roeBookingSubmit" style="width:100%;padding:0.9rem;background:#C9A46C;color:#fff;border:none;border-radius:40px;font-weight:700;cursor:pointer;">
+            <div id="roeBookingStatus" class="roe-form-status" role="status" aria-live="polite"></div>
+            <button type="submit" id="roeBookingSubmit" class="roe-btn-primary">
                 <?php echo esc_html($atts['submit']); ?>
             </button>
         </form>
@@ -108,6 +110,8 @@ function roe_crm_booking_form_shortcode($atts = []) {
         const form = document.getElementById('roeCrmBookingForm');
         if (!form) return;
         const ajaxUrl = <?php echo wp_json_encode($ajax_url); ?>;
+        const ajaxNonce = <?php echo wp_json_encode($nonce); ?>;
+        const slotsNonce = <?php echo wp_json_encode($slots_nonce); ?>;
         const serviceEl = document.getElementById('roeBookingService');
         const dateEl = document.getElementById('roeBookingDate');
         const slotsEl = document.getElementById('roeTimeSlots');
@@ -138,11 +142,8 @@ function roe_crm_booking_form_shortcode($atts = []) {
         }
 
         function showStatus(msg, ok) {
-            statusEl.style.display = 'block';
-            statusEl.style.background = ok ? '#E8F5E9' : '#FFEBEE';
-            statusEl.style.color = ok ? '#2E7D32' : '#C62828';
-            statusEl.style.border = ok ? '1px solid #A5D6A7' : '1px solid #EF9A9A';
             statusEl.textContent = msg;
+            statusEl.className = 'roe-form-status is-visible is-' + (ok ? 'success' : 'error');
         }
 
         async function loadSlots() {
@@ -150,33 +151,38 @@ function roe_crm_booking_form_shortcode($atts = []) {
             const date = dateEl.value;
             timeEl.value = '';
             if (!meta.id || !date) {
-                slotsEl.innerHTML = '<div style="grid-column:1/-1;color:#999;text-align:center;padding:12px 0;">Select a service and date</div>';
+                slotsEl.innerHTML = '<div class="roe-slot-empty">Select a service and date</div>';
                 return;
             }
-            slotsEl.innerHTML = '<div style="grid-column:1/-1;color:#999;text-align:center;padding:12px 0;">Loading...</div>';
+            slotsEl.innerHTML = '<div class="roe-slot-empty">Loading...</div>';
             const body = new URLSearchParams();
             body.append('action', 'roe_crm_get_available_slots');
+            body.append('dg_re_nonce', slotsNonce);
             body.append('service_id', meta.id);
             body.append('date', date);
             const res = await fetch(ajaxUrl, { method: 'POST', body: body.toString() });
             const json = await res.json();
             const slots = (json.data && json.data.slots) ? json.data.slots : [];
             if (!slots.length) {
-                slotsEl.innerHTML = '<div style="grid-column:1/-1;color:#999;text-align:center;padding:12px 0;">No slots available</div>';
+                slotsEl.innerHTML = '<div class="roe-slot-empty">No slots available</div>';
                 return;
             }
             slotsEl.innerHTML = '';
+            slotsEl.className = 'roe-time-slots';
             slots.forEach(function(slot) {
                 const btn = document.createElement('button');
                 btn.type = 'button';
+                btn.className = 'roe-slot-btn';
+                btn.setAttribute('aria-pressed', 'false');
                 btn.textContent = new Date('1970-01-01T' + slot).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
-                btn.style.cssText = 'padding:8px;border:1px solid #ddd;border-radius:6px;background:#fff;cursor:pointer;font-size:13px;';
                 btn.dataset.time = slot;
                 btn.addEventListener('click', function() {
-                    slotsEl.querySelectorAll('button').forEach(b => { b.style.background = '#fff'; b.style.borderColor = '#ddd'; });
-                    btn.style.background = '#C9A46C';
-                    btn.style.borderColor = '#C9A46C';
-                    btn.style.color = '#fff';
+                    slotsEl.querySelectorAll('.roe-slot-btn').forEach(b => {
+                        b.classList.remove('is-selected');
+                        b.setAttribute('aria-pressed', 'false');
+                    });
+                    btn.classList.add('is-selected');
+                    btn.setAttribute('aria-pressed', 'true');
                     timeEl.value = slot;
                 });
                 slotsEl.appendChild(btn);
@@ -195,8 +201,10 @@ function roe_crm_booking_form_shortcode($atts = []) {
             }
             submitBtn.disabled = true;
             showStatus('Booking...', true);
+            const honeypot = form.querySelector('[name="website"]');
             const body = new URLSearchParams();
             body.append('action', 'roe_crm_create_booking');
+            body.append('dg_re_nonce', ajaxNonce);
             body.append('name', document.getElementById('roeBookingName').value.trim());
             body.append('email', document.getElementById('roeBookingEmail').value.trim());
             body.append('phone', document.getElementById('roeBookingPhone').value.trim());
@@ -207,6 +215,7 @@ function roe_crm_booking_form_shortcode($atts = []) {
             body.append('time', timeEl.value);
             body.append('duration', meta.duration);
             body.append('notes', document.getElementById('roeBookingNotes').value.trim());
+            if (honeypot) body.append('website', honeypot.value);
             const res = await fetch(ajaxUrl, { method: 'POST', body: body.toString() });
             const json = await res.json();
             submitBtn.disabled = false;
@@ -214,7 +223,7 @@ function roe_crm_booking_form_shortcode($atts = []) {
                 showStatus(json.data.message || 'Booked!', true);
                 form.reset();
                 timeEl.value = '';
-                slotsEl.innerHTML = '<div style="grid-column:1/-1;color:#999;text-align:center;padding:12px 0;">Select a date first</div>';
+                slotsEl.innerHTML = '<div class="roe-slot-empty">Select a date first</div>';
             } else {
                 showStatus(json.data && json.data.message ? json.data.message : 'Booking failed.', false);
             }

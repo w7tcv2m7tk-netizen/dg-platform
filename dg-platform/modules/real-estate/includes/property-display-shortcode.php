@@ -758,7 +758,7 @@ function roe_property_display_shortcode() {
                             <h2>Property Description</h2>
                         <?php endif; ?>
                         <?php if (!empty($description_raw)) : ?>
-                            <?php echo nl2br( $description_raw ); ?>
+                            <?php echo nl2br(esc_html($description_raw)); ?>
                         <?php endif; ?>
                     </div>
                 <?php endif; ?>
