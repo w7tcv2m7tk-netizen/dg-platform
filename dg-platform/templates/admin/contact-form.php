@@ -42,6 +42,22 @@
                     <label>Notes</label>
                     <textarea name="notes" rows="4" class="large-text"><?php echo esc_textarea($contact->notes ?? ''); ?></textarea>
                 </div>
+                <?php if (!empty($custom_fields)) : ?>
+                    <?php foreach ($custom_fields as $field) :
+                        $key = $field['key'] ?? '';
+                        if ($key === '') continue;
+                        $val = $custom_values[$key] ?? '';
+                        ?>
+                        <div class="<?php echo ($field['type'] ?? 'text') === 'textarea' ? 'full-width' : ''; ?>">
+                            <label><?php echo esc_html($field['label'] ?? $key); ?></label>
+                            <?php if (($field['type'] ?? 'text') === 'textarea') : ?>
+                                <textarea name="custom_fields[<?php echo esc_attr($key); ?>]" rows="3" class="large-text"><?php echo esc_textarea($val); ?></textarea>
+                            <?php else : ?>
+                                <input type="<?php echo esc_attr($field['type'] ?? 'text'); ?>" name="custom_fields[<?php echo esc_attr($key); ?>]" class="regular-text" value="<?php echo esc_attr($val); ?>">
+                            <?php endif; ?>
+                        </div>
+                    <?php endforeach; ?>
+                <?php endif; ?>
             </div>
             <p class="submit"><button type="submit" class="button button-primary">Save Contact</button></p>
         </form>

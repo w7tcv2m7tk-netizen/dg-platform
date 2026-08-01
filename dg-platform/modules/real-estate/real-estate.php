@@ -12,6 +12,7 @@ class DG_Module_RealEstate {
     private static $instance = null;
     private $core;
     private $wpdb;
+    private $includes_loaded = false;
     
     public static function get_instance($core = null) {
         if (null === self::$instance) {
@@ -24,6 +25,7 @@ class DG_Module_RealEstate {
         global $wpdb;
         $this->core = $core;
         $this->wpdb = $wpdb;
+        $this->load_includes();
         
         // Register hooks
         add_action('init', [$this, 'register_post_types']);
@@ -42,6 +44,8 @@ class DG_Module_RealEstate {
         add_action('save_post_property', [$this, 'save_property_meta']);
         add_action('save_post_agent', [$this, 'save_agent_meta']);
         
+        add_action('admin_post_dg_re_save_email_templates', [$this, 'handle_save_email_templates']);
+        
         // AJAX handlers
         add_action('wp_ajax_roe_realty_save_lead', [$this, 'save_lead_callback']);
         add_action('wp_ajax_nopriv_roe_realty_save_lead', [$this, 'save_lead_callback']);
@@ -56,6 +60,7 @@ class DG_Module_RealEstate {
         add_shortcode('roe_agents', [$this, 'agents_shortcode']);
         add_shortcode('roe_agent_profile', [$this, 'agent_profile_shortcode']);
         add_shortcode('roe_crm_property_report_form', [$this, 'property_report_form_shortcode']);
+        add_shortcode('roe_crm_booking_form', [$this, 'booking_form_shortcode']);
         
         // REST API
         add_action('rest_api_init', [$this, 'register_rest_routes']);
@@ -63,6 +68,44 @@ class DG_Module_RealEstate {
         // Admin columns
         add_filter('manage_property_posts_columns', [$this, 'property_admin_columns']);
         add_action('manage_property_posts_custom_column', [$this, 'property_admin_column_content'], 10, 2);
+    }
+
+    private function load_includes() {
+        if ($this->includes_loaded) {
+            return true;
+        }
+
+        $includes = __DIR__ . '/includes/';
+        $files = [
+            'class-re-contacts.php',
+            'class-lead-assignment.php',
+            'class-email-templates.php',
+            'class-vendor-leads.php',
+            'class-buyer-leads.php',
+            'class-property-report-followups.php',
+            'booking-handler.php',
+            'booking-shortcode.php',
+            'properties-shortcodes.php',
+            'property-display-shortcode.php',
+            'agent-shortcodes.php',
+            'property-report-leads.php',
+            'rest-api.php',
+        ];
+
+        foreach ($files as $file) {
+            $path = $includes . $file;
+            if (!file_exists($path)) {
+                continue;
+            }
+            require_once $path;
+        }
+
+        $this->includes_loaded = true;
+        return true;
+    }
+
+    private function ensure_frontend_loaded() {
+        return $this->load_includes();
     }
     
     // ============================================================
@@ -160,7 +203,14 @@ class DG_Module_RealEstate {
         
         // Additional submenus
         add_submenu_page('dg-platform', 'Contacts', '📇 Contacts', 'manage_options', 'dg-re-contacts', [$this, 'render_contacts']);
+        add_submenu_page('dg-platform', 'Vendor Leads', '🎯 Vendor Leads', 'manage_options', 'dg-re-vendor-leads', [$this, 'render_vendor_leads']);
+        add_submenu_page(null, 'Vendor Lead', 'Vendor Lead', 'manage_options', 'dg-re-vendor-lead', [$this, 'render_vendor_lead_detail']);
+        add_submenu_page('dg-platform', 'Vendor Pipeline', '📋 Vendor Pipeline', 'manage_options', 'dg-re-vendor-pipeline', [$this, 'render_vendor_pipeline']);
+        add_submenu_page('dg-platform', 'Buyer Leads', '🛒 Buyer Leads', 'manage_options', 'dg-re-buyer-leads', [$this, 'render_buyer_leads']);
+        add_submenu_page(null, 'Buyer Lead', 'Buyer Lead', 'manage_options', 'dg-re-buyer-lead', [$this, 'render_buyer_lead_detail']);
+        add_submenu_page('dg-platform', 'Buyer Pipeline', '📋 Buyer Pipeline', 'manage_options', 'dg-re-buyer-pipeline', [$this, 'render_buyer_pipeline']);
         add_submenu_page('dg-platform', 'Bookings', '📅 Bookings', 'manage_options', 'dg-re-bookings', [$this, 'render_bookings']);
+        add_submenu_page('dg-platform', 'Email Templates', '✉️ Email Templates', 'manage_options', 'dg-re-email-templates', [$this, 'render_email_templates']);
         add_submenu_page('dg-platform', 'Import', '📥 Import', 'manage_options', 'dg-re-import', [$this, 'render_import']);
     }
     
@@ -310,6 +360,22 @@ class DG_Module_RealEstate {
                 started_at datetime DEFAULT NULL,
                 completed_at datetime DEFAULT NULL,
                 PRIMARY KEY (id)
+            ",
+            $wpdb->prefix . 'roe_realty_leads' => "
+                id bigint(20) NOT NULL AUTO_INCREMENT,
+                full_name varchar(100) NOT NULL,
+                first_name varchar(50) NOT NULL,
+                email varchar(100) DEFAULT NULL,
+                phone varchar(20) DEFAULT NULL,
+                property_address text NOT NULL,
+                submitted_at datetime DEFAULT CURRENT_TIMESTAMP,
+                email_2_sent tinyint(1) DEFAULT 0,
+                email_3_sent tinyint(1) DEFAULT 0,
+                email_4_sent tinyint(1) DEFAULT 0,
+                email_5_sent tinyint(1) DEFAULT 0,
+                PRIMARY KEY (id),
+                KEY email (email),
+                KEY submitted_at (submitted_at)
             "
         ];
         
@@ -600,8 +666,9 @@ class DG_Module_RealEstate {
     public function property_admin_column_content($column, $post_id) {
         switch ($column) {
             case 'price':
+                $this->ensure_frontend_loaded();
                 $price = get_post_meta($post_id, 'roe_property_price', true);
-                echo $price ? '$' . number_format($price) : '—';
+                echo function_exists('roe_format_price') ? roe_format_price($price) : ($price ? esc_html($price) : '—');
                 break;
             case 'status':
                 $status = get_post_meta($post_id, 'roe_property_status', true);
@@ -616,8 +683,88 @@ class DG_Module_RealEstate {
         }
     }
     
-    // ... (the rest of the shortcodes, AJAX handlers, render methods, etc. remain exactly the same as in the previous version)
-    // I'm truncating here for brevity but the full code continues with all the same methods
+    public function register_rest_routes() {
+        $this->ensure_frontend_loaded();
+        if (function_exists('dg_re_register_rest_routes')) {
+            dg_re_register_rest_routes();
+        }
+    }
+
+    public function properties_shortcode($atts) {
+        $this->ensure_frontend_loaded();
+        return function_exists('roe_properties_shortcode') ? roe_properties_shortcode($atts) : '';
+    }
+
+    public function property_display_shortcode($atts = []) {
+        $this->ensure_frontend_loaded();
+        return function_exists('roe_property_display_shortcode') ? roe_property_display_shortcode() : '';
+    }
+
+    public function agents_shortcode($atts) {
+        $this->ensure_frontend_loaded();
+        return function_exists('roe_agents_shortcode') ? roe_agents_shortcode($atts) : '';
+    }
+
+    public function agent_profile_shortcode($atts = []) {
+        $this->ensure_frontend_loaded();
+        return function_exists('roe_agent_profile_shortcode') ? roe_agent_profile_shortcode() : '';
+    }
+
+    public function booking_form_shortcode($atts = []) {
+        return function_exists('roe_crm_booking_form_shortcode')
+            ? roe_crm_booking_form_shortcode($atts)
+            : '';
+    }
+
+    public function property_report_form_shortcode($atts = []) {
+        $this->ensure_frontend_loaded();
+        return function_exists('roe_crm_property_report_form_shortcode')
+            ? roe_crm_property_report_form_shortcode()
+            : '';
+    }
+
+    public function save_lead_callback() {
+        $this->ensure_frontend_loaded();
+
+        if (!function_exists('dg_re_process_property_report_lead')) {
+            wp_send_json_error(['message' => 'Property report handler is unavailable.'], 500);
+        }
+
+        $result = dg_re_process_property_report_lead(wp_unslash($_POST));
+
+        if (!empty($result['success'])) {
+            wp_send_json_success(['message' => $result['message']]);
+        }
+
+        wp_send_json_error(['message' => $result['message'] ?? 'Unable to process report request.']);
+    }
+
+    public function get_available_slots_callback() {
+        $date = sanitize_text_field(wp_unslash($_POST['date'] ?? ''));
+        $service_id = (int) ($_POST['service_id'] ?? 0);
+        if (!$date || !$service_id) {
+            wp_send_json_error(['message' => 'Missing booking details.']);
+        }
+        $booking = new Roe_CRM_Booking();
+        wp_send_json_success(['slots' => $booking->get_available_slots($date, $service_id)]);
+    }
+
+    public function create_booking_callback() {
+        if (!function_exists('dg_re_process_booking_creation')) {
+            wp_send_json_error(['message' => 'Booking handler is unavailable.'], 500);
+        }
+
+        $result = dg_re_process_booking_creation(wp_unslash($_POST));
+
+        if (!empty($result['success'])) {
+            wp_send_json_success([
+                'message' => $result['message'],
+                'booking_id' => $result['booking_id'] ?? null,
+            ]);
+        }
+
+        wp_send_json_error(['message' => $result['message'] ?? 'Unable to create booking.']);
+    }
     
     // ============================================================
     // RENDER PAGES
@@ -629,6 +776,8 @@ class DG_Module_RealEstate {
             'properties' => wp_count_posts('property')->publish,
             'agents' => wp_count_posts('agent')->publish,
             'contacts' => $wpdb->get_var("SELECT COUNT(*) FROM {$wpdb->prefix}roe_crm_contacts"),
+            'vendor_leads' => class_exists('DG_RE_Vendor_Leads') ? DG_RE_Vendor_Leads::count('new') : 0,
+            'buyer_leads' => class_exists('DG_RE_Buyer_Leads') ? DG_RE_Buyer_Leads::count('new') : 0,
             'bookings' => $wpdb->get_var("SELECT COUNT(*) FROM {$wpdb->prefix}roe_crm_bookings"),
         ];
         ?>
@@ -638,6 +787,8 @@ class DG_Module_RealEstate {
                 <div style="background:#fff;padding:20px;border-radius:12px;border-left:4px solid #C9A46C;"><div style="font-size:28px;font-weight:700;"><?php echo $counts['properties']; ?></div><div style="color:#666;">Properties</div></div>
                 <div style="background:#fff;padding:20px;border-radius:12px;border-left:4px solid #1565C0;"><div style="font-size:28px;font-weight:700;"><?php echo $counts['agents']; ?></div><div style="color:#666;">Agents</div></div>
                 <div style="background:#fff;padding:20px;border-radius:12px;border-left:4px solid #7B1FA2;"><div style="font-size:28px;font-weight:700;"><?php echo $counts['contacts']; ?></div><div style="color:#666;">Contacts</div></div>
+                <div style="background:#fff;padding:20px;border-radius:12px;border-left:4px solid #00897B;"><div style="font-size:28px;font-weight:700;"><?php echo $counts['vendor_leads']; ?></div><div style="color:#666;">New Vendor Leads</div></div>
+                <div style="background:#fff;padding:20px;border-radius:12px;border-left:4px solid #5E35B1;"><div style="font-size:28px;font-weight:700;"><?php echo $counts['buyer_leads']; ?></div><div style="color:#666;">New Buyer Enquiries</div></div>
                 <div style="background:#fff;padding:20px;border-radius:12px;border-left:4px solid #F57C00;"><div style="font-size:28px;font-weight:700;"><?php echo $counts['bookings']; ?></div><div style="color:#666;">Bookings</div></div>
             </div>
             <div style="background:#fff;padding:20px;border-radius:12px;border:1px solid #ddd;">
@@ -645,6 +796,8 @@ class DG_Module_RealEstate {
                 <div style="display:flex;gap:12px;flex-wrap:wrap;">
                     <a href="<?php echo admin_url('post-new.php?post_type=property'); ?>" class="button button-primary">➕ Add Property</a>
                     <a href="<?php echo admin_url('post-new.php?post_type=agent'); ?>" class="button">👤 Add Agent</a>
+                    <a href="<?php echo admin_url('admin.php?page=dg-re-vendor-pipeline'); ?>" class="button">📋 Vendor Pipeline</a>
+                    <a href="<?php echo admin_url('admin.php?page=dg-re-buyer-leads'); ?>" class="button">🛒 Buyer Leads</a>
                     <a href="<?php echo admin_url('admin.php?page=dg-re-import'); ?>" class="button">📥 Import Properties</a>
                 </div>
             </div>
@@ -652,6 +805,429 @@ class DG_Module_RealEstate {
         <?php
     }
     
+    public function render_vendor_leads() {
+        if (!class_exists('DG_RE_Vendor_Leads')) {
+            echo '<div class="wrap"><h1>Vendor Leads</h1><p>Vendor leads service is unavailable.</p></div>';
+            return;
+        }
+
+        if (isset($_POST['dg_re_update_lead_status']) && check_admin_referer('dg_re_vendor_lead_status')) {
+            $lead_id = (int) ($_POST['lead_id'] ?? 0);
+            $status = sanitize_text_field(wp_unslash($_POST['status'] ?? ''));
+            if ($lead_id && DG_RE_Vendor_Leads::update_status($lead_id, $status)) {
+                echo '<div class="notice notice-success is-dismissible"><p>Lead status updated.</p></div>';
+            }
+        }
+
+        $status_filter = sanitize_text_field(wp_unslash($_GET['status'] ?? ''));
+        $assigned_filter = (int) ($_GET['assigned_to'] ?? 0);
+        $leads = DG_RE_Vendor_Leads::list([
+            'status' => $status_filter !== '' ? $status_filter : null,
+            'assigned_to' => $assigned_filter > 0 ? $assigned_filter : null,
+            'limit' => 100,
+        ]);
+        $statuses = DG_RE_Vendor_Leads::statuses();
+        $assignable_users = class_exists('DG_RE_Lead_Assignment') ? DG_RE_Lead_Assignment::users() : [];
+        ?>
+        <div class="wrap">
+            <h1>🎯 Vendor Leads</h1>
+            <p style="color:#666;">Property report submissions and other vendor acquisition sources. <a href="<?php echo esc_url(admin_url('admin.php?page=dg-re-vendor-pipeline')); ?>">View pipeline board →</a></p>
+            <form method="get" style="margin:12px 0;display:flex;gap:8px;align-items:center;">
+                <input type="hidden" name="page" value="dg-re-vendor-leads">
+                <?php if ($status_filter !== '') : ?><input type="hidden" name="status" value="<?php echo esc_attr($status_filter); ?>"><?php endif; ?>
+                <label>Assigned:</label>
+                <select name="assigned_to" onchange="this.form.submit()">
+                    <option value="0">All</option>
+                    <?php foreach ($assignable_users as $user) : ?>
+                        <option value="<?php echo (int) $user->ID; ?>" <?php selected($assigned_filter, (int) $user->ID); ?>><?php echo esc_html($user->display_name); ?></option>
+                    <?php endforeach; ?>
+                </select>
+            </form>
+            <ul class="subsubsub">
+                <li><a href="<?php echo esc_url(admin_url('admin.php?page=dg-re-vendor-leads')); ?>" <?php echo $status_filter === '' ? 'class="current"' : ''; ?>>All</a> |</li>
+                <?php foreach ($statuses as $key => $label) : ?>
+                    <li><a href="<?php echo esc_url(admin_url('admin.php?page=dg-re-vendor-leads&status=' . $key)); ?>" <?php echo $status_filter === $key ? 'class="current"' : ''; ?>><?php echo esc_html($label); ?></a><?php echo $key !== 'lost' ? ' |' : ''; ?></li>
+                <?php endforeach; ?>
+            </ul>
+            <table class="wp-list-table widefat fixed striped" style="margin-top:12px;">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Contact</th>
+                        <th>Property</th>
+                        <th>Source</th>
+                        <th>Stage</th>
+                        <th>Status</th>
+                        <th>Assigned</th>
+                        <th>Created</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php if ($leads) : foreach ($leads as $lead) :
+                        $name = trim(($lead->first_name ?? '') . ' ' . ($lead->last_name ?? ''));
+                        $email = $lead->email ?? '';
+                        if (strpos($email, '@leads.roerealty.local') !== false) {
+                            $email = '';
+                        }
+                        ?>
+                        <tr>
+                            <td><?php echo (int) $lead->id; ?></td>
+                            <td>
+                                <strong><a href="<?php echo esc_url(admin_url('admin.php?page=dg-re-vendor-lead&id=' . (int) $lead->id)); ?>"><?php echo esc_html($name !== '' ? $name : 'Unknown'); ?></a></strong><br>
+                                <?php if ($email) : ?><small><?php echo esc_html($email); ?></small><br><?php endif; ?>
+                                <?php if (!empty($lead->phone)) : ?><small><?php echo esc_html($lead->phone); ?></small><?php endif; ?>
+                            </td>
+                            <td><?php echo esc_html($lead->property_address); ?></td>
+                            <td><?php echo esc_html(str_replace('_', ' ', $lead->source)); ?></td>
+                            <td><?php echo esc_html(str_replace('_', ' ', $lead->stage ?? 'vendor_lead')); ?></td>
+                            <td>
+                                <form method="post" style="display:flex;gap:6px;align-items:center;">
+                                    <?php wp_nonce_field('dg_re_vendor_lead_status'); ?>
+                                    <input type="hidden" name="lead_id" value="<?php echo (int) $lead->id; ?>">
+                                    <select name="status">
+                                        <?php foreach ($statuses as $key => $label) : ?>
+                                            <option value="<?php echo esc_attr($key); ?>" <?php selected($lead->status, $key); ?>><?php echo esc_html($label); ?></option>
+                                        <?php endforeach; ?>
+                                    </select>
+                                    <button type="submit" name="dg_re_update_lead_status" class="button button-small">Save</button>
+                                </form>
+                            </td>
+                            <td><?php echo esc_html(DG_RE_Lead_Assignment::user_label($lead->assigned_to ?? 0)); ?></td>
+                            <td><?php echo esc_html($lead->created_at); ?></td>
+                        </tr>
+                    <?php endforeach; else : ?>
+                        <tr><td colspan="8" style="text-align:center;padding:30px 0;color:#999;">No vendor leads yet. Submissions from the property report form will appear here.</td></tr>
+                    <?php endif; ?>
+                </tbody>
+            </table>
+        </div>
+        <?php
+    }
+
+    public function render_vendor_lead_detail() {
+        $this->render_lead_detail_page('vendor');
+    }
+
+    public function render_buyer_lead_detail() {
+        $this->render_lead_detail_page('buyer');
+    }
+
+    private function render_lead_detail_page($type) {
+        $id = (int) ($_GET['id'] ?? 0);
+        if (!$id) {
+            echo '<div class="wrap"><p>Invalid lead.</p></div>';
+            return;
+        }
+
+        if ($type === 'vendor' && class_exists('DG_RE_Vendor_Leads')) {
+            if (isset($_POST['dg_re_save_lead_notes']) && check_admin_referer('dg_re_lead_detail')) {
+                DG_RE_Vendor_Leads::update_notes($id, wp_unslash($_POST['notes'] ?? ''));
+                if (!empty($_POST['status'])) {
+                    DG_RE_Vendor_Leads::update_status($id, sanitize_text_field(wp_unslash($_POST['status'])));
+                }
+                if (!empty($_POST['stage'])) {
+                    DG_RE_Vendor_Leads::advance_stage($id, sanitize_text_field(wp_unslash($_POST['stage'])));
+                }
+                DG_RE_Vendor_Leads::assign($id, (int) ($_POST['assigned_to'] ?? 0));
+                echo '<div class="notice notice-success"><p>Lead updated.</p></div>';
+            }
+            $lead = DG_RE_Vendor_Leads::get($id);
+            $statuses = DG_RE_Vendor_Leads::statuses();
+            $stages = DG_RE_Vendor_Leads::stages();
+            $entity_type = 're_lead';
+            $back_url = admin_url('admin.php?page=dg-re-vendor-leads');
+            $title = 'Vendor Lead';
+        } elseif ($type === 'buyer' && class_exists('DG_RE_Buyer_Leads')) {
+            if (isset($_POST['dg_re_save_lead_notes']) && check_admin_referer('dg_re_lead_detail')) {
+                if (!empty($_POST['status'])) {
+                    DG_RE_Buyer_Leads::update_status($id, sanitize_text_field(wp_unslash($_POST['status'])));
+                }
+                if (!empty($_POST['stage'])) {
+                    DG_RE_Buyer_Leads::advance_stage($id, sanitize_text_field(wp_unslash($_POST['stage'])));
+                }
+                DG_RE_Buyer_Leads::assign($id, (int) ($_POST['assigned_to'] ?? 0));
+                echo '<div class="notice notice-success"><p>Lead updated.</p></div>';
+            }
+            $lead = DG_RE_Buyer_Leads::get($id);
+            $statuses = DG_RE_Buyer_Leads::statuses();
+            $stages = DG_RE_Buyer_Leads::stages();
+            $entity_type = 're_buyer';
+            $back_url = admin_url('admin.php?page=dg-re-buyer-leads');
+            $title = 'Buyer Lead';
+        } else {
+            echo '<div class="wrap"><p>Lead service unavailable.</p></div>';
+            return;
+        }
+
+        if (!$lead) {
+            echo '<div class="wrap"><p>Lead not found.</p></div>';
+            return;
+        }
+
+        $name = trim(($lead->first_name ?? '') . ' ' . ($lead->last_name ?? ''));
+        $email = class_exists('DG_RE_Contacts') ? DG_RE_Contacts::display_email($lead->email ?? '') : ($lead->email ?? '');
+        $activities = class_exists('DG_Activities') ? array_merge(
+            DG_Activities::get_for_entity($entity_type, $id, 30),
+            DG_Activities::get_for_contact((int) $lead->contact_id, 30)
+        ) : [];
+        usort($activities, function ($a, $b) {
+            return strcmp($b->created_at, $a->created_at);
+        });
+        $activities = array_slice($activities, 0, 30);
+        $meta = json_decode($lead->pipeline_metadata ?? '{}', true);
+        $assignable_users = class_exists('DG_RE_Lead_Assignment') ? DG_RE_Lead_Assignment::users() : [];
+        ?>
+        <div class="wrap">
+            <h1><?php echo esc_html($title); ?> #<?php echo (int) $lead->id; ?></h1>
+            <p><a href="<?php echo esc_url($back_url); ?>">← Back to list</a>
+            <?php if (!empty($lead->dg_contact_id)) : ?>
+                | <a href="<?php echo esc_url(admin_url('admin.php?page=dg-platform-contacts&action=edit&id=' . (int) $lead->dg_contact_id)); ?>">View contact</a>
+            <?php endif; ?>
+            </p>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-top:16px;">
+                <div style="background:#fff;border:1px solid #ddd;border-radius:8px;padding:20px;">
+                    <h2 style="margin-top:0;">Contact</h2>
+                    <p><strong><?php echo esc_html($name ?: 'Unknown'); ?></strong></p>
+                    <?php if ($email) : ?><p><?php echo esc_html($email); ?></p><?php endif; ?>
+                    <?php if (!empty($lead->phone)) : ?><p><?php echo esc_html($lead->phone); ?></p><?php endif; ?>
+                    <?php if ($type === 'vendor' && !empty($lead->property_address)) : ?>
+                        <p><strong>Property:</strong> <?php echo esc_html($lead->property_address); ?></p>
+                    <?php endif; ?>
+                    <?php if ($type === 'buyer' && !empty($lead->requirements)) : ?>
+                        <p><strong>Enquiry:</strong><br><?php echo nl2br(esc_html($lead->requirements)); ?></p>
+                    <?php endif; ?>
+                    <?php if (!empty($meta['property_url'])) : ?>
+                        <p><a href="<?php echo esc_url($meta['property_url']); ?>" target="_blank">View property page</a></p>
+                    <?php endif; ?>
+                    <p style="color:#666;font-size:12px;">Created <?php echo esc_html($lead->created_at); ?></p>
+                </div>
+                <div style="background:#fff;border:1px solid #ddd;border-radius:8px;padding:20px;">
+                    <h2 style="margin-top:0;">Pipeline</h2>
+                    <form method="post">
+                        <?php wp_nonce_field('dg_re_lead_detail'); ?>
+                        <p>
+                            <label>Stage</label><br>
+                            <select name="stage">
+                                <?php foreach ($stages as $key => $label) : ?>
+                                    <option value="<?php echo esc_attr($key); ?>" <?php selected($lead->stage ?? '', $key); ?>><?php echo esc_html($label); ?></option>
+                                <?php endforeach; ?>
+                            </select>
+                        </p>
+                        <p>
+                            <label>Status</label><br>
+                            <select name="status">
+                                <?php foreach ($statuses as $key => $label) : ?>
+                                    <option value="<?php echo esc_attr($key); ?>" <?php selected($lead->status, $key === 'new' && $type === 'buyer' ? 'active' : $key); ?>><?php echo esc_html($label); ?></option>
+                                <?php endforeach; ?>
+                            </select>
+                        </p>
+                        <p>
+                            <label>Assigned to</label><br>
+                            <select name="assigned_to">
+                                <option value="0">Unassigned</option>
+                                <?php foreach ($assignable_users as $user) : ?>
+                                    <option value="<?php echo (int) $user->ID; ?>" <?php selected((int) ($lead->assigned_to ?? 0), (int) $user->ID); ?>><?php echo esc_html($user->display_name); ?></option>
+                                <?php endforeach; ?>
+                            </select>
+                        </p>
+                        <?php if ($type === 'vendor') : ?>
+                        <p>
+                            <label>Notes</label><br>
+                            <textarea name="notes" rows="4" style="width:100%;"><?php echo esc_textarea($lead->notes ?? ''); ?></textarea>
+                        </p>
+                        <?php endif; ?>
+                        <button type="submit" name="dg_re_save_lead_notes" class="button button-primary">Save</button>
+                    </form>
+                </div>
+            </div>
+            <div style="background:#fff;border:1px solid #ddd;border-radius:8px;padding:20px;margin-top:20px;">
+                <h2 style="margin-top:0;">Activity timeline</h2>
+                <?php if ($activities) : ?>
+                    <ul style="margin:0;padding-left:18px;">
+                        <?php foreach ($activities as $activity) : ?>
+                            <li style="margin-bottom:10px;">
+                                <strong><?php echo esc_html($activity->subject ?: $activity->activity_type); ?></strong>
+                                <span style="color:#888;font-size:12px;"> — <?php echo esc_html($activity->created_at); ?></span>
+                                <?php if (!empty($activity->content)) : ?><br><span style="color:#666;"><?php echo esc_html(wp_trim_words($activity->content, 20)); ?></span><?php endif; ?>
+                            </li>
+                        <?php endforeach; ?>
+                    </ul>
+                <?php else : ?>
+                    <p style="color:#999;">No activity logged yet.</p>
+                <?php endif; ?>
+            </div>
+        </div>
+        <?php
+    }
+
+    public function render_vendor_pipeline() {
+        if (!class_exists('DG_RE_Vendor_Leads')) {
+            echo '<div class="wrap"><h1>Vendor Pipeline</h1><p>Unavailable.</p></div>';
+            return;
+        }
+
+        if (isset($_POST['dg_re_advance_vendor_stage']) && check_admin_referer('dg_re_vendor_pipeline')) {
+            $lead_id = (int) ($_POST['lead_id'] ?? 0);
+            $stage = sanitize_text_field(wp_unslash($_POST['stage'] ?? ''));
+            if ($lead_id && DG_RE_Vendor_Leads::advance_stage($lead_id, $stage)) {
+                echo '<div class="notice notice-success is-dismissible"><p>Lead moved to ' . esc_html(DG_RE_Vendor_Leads::stages()[$stage] ?? $stage) . '.</p></div>';
+            }
+        }
+
+        $kanban = DG_RE_Vendor_Leads::list_for_kanban();
+        $stages = DG_RE_Vendor_Leads::stages();
+        $this->render_pipeline_board('Vendor Acquisition Pipeline', $kanban, $stages, 'dg-re-vendor-pipeline', 'dg_re_advance_vendor_stage', 'dg_re_vendor_pipeline');
+    }
+
+    public function render_buyer_leads() {
+        if (!class_exists('DG_RE_Buyer_Leads')) {
+            echo '<div class="wrap"><h1>Buyer Leads</h1><p>Unavailable.</p></div>';
+            return;
+        }
+
+        if (isset($_POST['dg_re_update_buyer_status']) && check_admin_referer('dg_re_buyer_lead_status')) {
+            $buyer_id = (int) ($_POST['buyer_id'] ?? 0);
+            $status = sanitize_text_field(wp_unslash($_POST['status'] ?? ''));
+            if ($buyer_id && DG_RE_Buyer_Leads::update_status($buyer_id, $status)) {
+                echo '<div class="notice notice-success is-dismissible"><p>Buyer status updated.</p></div>';
+            }
+        }
+
+        $assigned_filter = (int) ($_GET['assigned_to'] ?? 0);
+        $leads = DG_RE_Buyer_Leads::list([
+            'assigned_to' => $assigned_filter > 0 ? $assigned_filter : null,
+            'limit' => 100,
+        ]);
+        $statuses = DG_RE_Buyer_Leads::statuses();
+        $assignable_users = class_exists('DG_RE_Lead_Assignment') ? DG_RE_Lead_Assignment::users() : [];
+        ?>
+        <div class="wrap">
+            <h1>🛒 Buyer Leads</h1>
+            <p style="color:#666;">Property enquiry submissions. <a href="<?php echo esc_url(admin_url('admin.php?page=dg-re-buyer-pipeline')); ?>">View pipeline board →</a></p>
+            <form method="get" style="margin:12px 0;display:flex;gap:8px;align-items:center;">
+                <input type="hidden" name="page" value="dg-re-buyer-leads">
+                <label>Assigned:</label>
+                <select name="assigned_to" onchange="this.form.submit()">
+                    <option value="0">All</option>
+                    <?php foreach ($assignable_users as $user) : ?>
+                        <option value="<?php echo (int) $user->ID; ?>" <?php selected($assigned_filter, (int) $user->ID); ?>><?php echo esc_html($user->display_name); ?></option>
+                    <?php endforeach; ?>
+                </select>
+            </form>
+            <table class="wp-list-table widefat fixed striped" style="margin-top:12px;">
+                <thead><tr><th>ID</th><th>Contact</th><th>Requirements</th><th>Stage</th><th>Status</th><th>Assigned</th><th>Created</th></tr></thead>
+                <tbody>
+                    <?php if ($leads) : foreach ($leads as $lead) :
+                        $name = trim(($lead->first_name ?? '') . ' ' . ($lead->last_name ?? ''));
+                        $meta = json_decode($lead->pipeline_metadata ?? '{}', true);
+                        $property = $meta['property_address'] ?? '';
+                        ?>
+                        <tr>
+                            <td><?php echo (int) $lead->id; ?></td>
+                            <td>
+                                <strong><a href="<?php echo esc_url(admin_url('admin.php?page=dg-re-buyer-lead&id=' . (int) $lead->id)); ?>"><?php echo esc_html($name ?: 'Unknown'); ?></a></strong><br>
+                                <?php $email = DG_RE_Contacts::display_email($lead->email ?? ''); ?>
+                                <?php if ($email) : ?><small><?php echo esc_html($email); ?></small><br><?php endif; ?>
+                                <?php if (!empty($lead->phone)) : ?><small><?php echo esc_html($lead->phone); ?></small><?php endif; ?>
+                            </td>
+                            <td>
+                                <?php if ($property) : ?><strong><?php echo esc_html($property); ?></strong><br><?php endif; ?>
+                                <small><?php echo esc_html(wp_trim_words($lead->requirements ?? '', 20)); ?></small>
+                            </td>
+                            <td><?php echo esc_html(str_replace('_', ' ', $lead->stage ?? 'inquiry')); ?></td>
+                            <td>
+                                <form method="post" style="display:flex;gap:6px;align-items:center;">
+                                    <?php wp_nonce_field('dg_re_buyer_lead_status'); ?>
+                                    <input type="hidden" name="buyer_id" value="<?php echo (int) $lead->id; ?>">
+                                    <select name="status">
+                                        <?php foreach ($statuses as $key => $label) : ?>
+                                            <option value="<?php echo esc_attr($key); ?>" <?php selected($lead->status, $key === 'new' ? 'active' : $key); ?>><?php echo esc_html($label); ?></option>
+                                        <?php endforeach; ?>
+                                    </select>
+                                    <button type="submit" name="dg_re_update_buyer_status" class="button button-small">Save</button>
+                                </form>
+                            </td>
+                            <td><?php echo esc_html(DG_RE_Lead_Assignment::user_label($lead->assigned_to ?? 0)); ?></td>
+                            <td><?php echo esc_html($lead->created_at); ?></td>
+                        </tr>
+                    <?php endforeach; else : ?>
+                        <tr><td colspan="7" style="text-align:center;padding:30px 0;color:#999;">No buyer enquiries yet.</td></tr>
+                    <?php endif; ?>
+                </tbody>
+            </table>
+        </div>
+        <?php
+    }
+
+    public function render_buyer_pipeline() {
+        if (!class_exists('DG_RE_Buyer_Leads')) {
+            echo '<div class="wrap"><h1>Buyer Pipeline</h1><p>Unavailable.</p></div>';
+            return;
+        }
+
+        if (isset($_POST['dg_re_advance_buyer_stage']) && check_admin_referer('dg_re_buyer_pipeline')) {
+            $buyer_id = (int) ($_POST['buyer_id'] ?? 0);
+            $stage = sanitize_text_field(wp_unslash($_POST['stage'] ?? ''));
+            if ($buyer_id && DG_RE_Buyer_Leads::advance_stage($buyer_id, $stage)) {
+                echo '<div class="notice notice-success is-dismissible"><p>Buyer moved to ' . esc_html(DG_RE_Buyer_Leads::stages()[$stage] ?? $stage) . '.</p></div>';
+            }
+        }
+
+        $kanban = DG_RE_Buyer_Leads::list_for_kanban();
+        $stages = DG_RE_Buyer_Leads::stages();
+        $this->render_pipeline_board('Buyer Acquisition Pipeline', $kanban, $stages, 'dg-re-buyer-pipeline', 'dg_re_advance_buyer_stage', 'dg_re_buyer_pipeline', 'buyer_id');
+    }
+
+    private function render_pipeline_board($title, $kanban, $stages, $page, $submit_name, $nonce_action, $id_field = 'lead_id') {
+        ?>
+        <div class="wrap">
+            <h1>📋 <?php echo esc_html($title); ?></h1>
+            <p style="color:#666;margin-bottom:16px;">Drag-free kanban — use the dropdown on each card to advance a lead.</p>
+            <div style="display:grid;grid-template-columns:repeat(<?php echo count($stages); ?>, minmax(180px, 1fr));gap:12px;overflow-x:auto;padding-bottom:20px;">
+                <?php foreach ($stages as $stage_key => $stage_label) : ?>
+                    <div style="background:#f6f7f7;border-radius:8px;padding:10px;min-width:180px;">
+                        <div style="font-weight:600;margin-bottom:10px;padding-bottom:8px;border-bottom:2px solid #C9A46C;">
+                            <?php echo esc_html($stage_label); ?>
+                            <span style="background:#ddd;border-radius:10px;padding:2px 8px;font-size:11px;margin-left:4px;"><?php echo count($kanban[$stage_key] ?? []); ?></span>
+                        </div>
+                        <?php if (!empty($kanban[$stage_key])) : foreach ($kanban[$stage_key] as $card) :
+                            $name = trim(($card->first_name ?? '') . ' ' . ($card->last_name ?? ''));
+                            $email = DG_RE_Contacts::display_email($card->email ?? '');
+                            $address = $card->property_address ?? '';
+                            if (!$address && !empty($card->pipeline_metadata)) {
+                                $meta = json_decode($card->pipeline_metadata, true);
+                                $address = $meta['property_address'] ?? '';
+                            }
+                            if (!$address && !empty($card->requirements)) {
+                                $address = wp_trim_words($card->requirements, 8);
+                            }
+                            $record_id = $card->id;
+                            ?>
+                            <div style="background:#fff;border:1px solid #ddd;border-radius:6px;padding:10px;margin-bottom:8px;font-size:13px;">
+                                <strong><?php echo esc_html($name ?: 'Unknown'); ?></strong>
+                                <?php if ($address) : ?><div style="color:#666;margin:4px 0;"><?php echo esc_html($address); ?></div><?php endif; ?>
+                                <?php if ($email) : ?><div style="color:#888;font-size:11px;"><?php echo esc_html($email); ?></div><?php endif; ?>
+                                <form method="post" style="margin-top:8px;">
+                                    <?php wp_nonce_field($nonce_action); ?>
+                                    <input type="hidden" name="<?php echo esc_attr($id_field); ?>" value="<?php echo (int) $record_id; ?>">
+                                    <select name="stage" style="width:100%;font-size:11px;margin-bottom:4px;">
+                                        <?php foreach ($stages as $sk => $sl) : ?>
+                                            <option value="<?php echo esc_attr($sk); ?>" <?php selected($stage_key, $sk); ?>><?php echo esc_html($sl); ?></option>
+                                        <?php endforeach; ?>
+                                    </select>
+                                    <button type="submit" name="<?php echo esc_attr($submit_name); ?>" class="button button-small" style="width:100%;">Move</button>
+                                </form>
+                            </div>
+                        <?php endforeach; else : ?>
+                            <div style="color:#aaa;font-size:12px;text-align:center;padding:16px 0;">Empty</div>
+                        <?php endif; ?>
+                    </div>
+                <?php endforeach; ?>
+            </div>
+        </div>
+        <?php
+    }
+
     public function render_contacts() {
         global $wpdb;
         $contacts = $wpdb->get_results("SELECT * FROM {$wpdb->prefix}roe_crm_contacts ORDER BY created_at DESC LIMIT 100");
@@ -690,6 +1266,59 @@ class DG_Module_RealEstate {
             </table>
         </div>
         <?php
+    }
+
+    public function render_email_templates() {
+        if (!class_exists('DG_RE_Email_Templates')) {
+            echo '<div class="wrap"><p>Email templates unavailable.</p></div>';
+            return;
+        }
+        if (isset($_GET['saved'])) {
+            echo '<div class="notice notice-success is-dismissible"><p>Email templates saved.</p></div>';
+        }
+        $templates = DG_RE_Email_Templates::all();
+        ?>
+        <div class="wrap">
+            <h1>✉️ Email Templates</h1>
+            <p style="color:#666;">Placeholders: <?php echo esc_html(DG_RE_Email_Templates::placeholders_help()); ?></p>
+            <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>">
+                <?php wp_nonce_field('dg_re_save_email_templates'); ?>
+                <input type="hidden" name="action" value="dg_re_save_email_templates">
+                <?php foreach ($templates as $key => $template) : ?>
+                    <div style="background:#fff;border:1px solid #ddd;border-radius:8px;padding:16px;margin-bottom:16px;">
+                        <h2 style="margin-top:0;font-size:16px;"><?php echo esc_html($template['label'] ?? $key); ?></h2>
+                        <p>
+                            <label>Subject</label><br>
+                            <input type="text" name="templates[<?php echo esc_attr($key); ?>][subject]" value="<?php echo esc_attr($template['subject']); ?>" class="large-text">
+                        </p>
+                        <p>
+                            <label>Body</label><br>
+                            <textarea name="templates[<?php echo esc_attr($key); ?>][body]" rows="8" class="large-text code"><?php echo esc_textarea($template['body']); ?></textarea>
+                        </p>
+                    </div>
+                <?php endforeach; ?>
+                <p><button type="submit" class="button button-primary">Save all templates</button></p>
+            </form>
+            <div style="background:#F5F2EF;border-radius:8px;padding:16px;margin-top:8px;">
+                <h3 style="margin-top:0;">Booking shortcodes for /card/</h3>
+                <p style="margin-bottom:8px;">Add these to your Oxygen/Breakdance pages:</p>
+                <code>[roe_crm_booking_form service="property-appraisal"]</code><br>
+                <code>[roe_crm_booking_form service="strategy-call"]</code><br>
+                <code>[roe_crm_booking_form]</code> — shows service picker
+            </div>
+        </div>
+        <?php
+    }
+
+    public function handle_save_email_templates() {
+        if (!wp_verify_nonce($_POST['_wpnonce'] ?? '', 'dg_re_save_email_templates') || !current_user_can('manage_options')) {
+            wp_die('Unauthorized');
+        }
+        if (class_exists('DG_RE_Email_Templates') && isset($_POST['templates'])) {
+            DG_RE_Email_Templates::save(wp_unslash($_POST['templates']));
+        }
+        wp_redirect(admin_url('admin.php?page=dg-re-email-templates&saved=1'));
+        exit;
     }
     
     public function render_import() {
@@ -740,6 +1369,7 @@ add_action('dg_platform_modules_loaded', function() {
 // BOOKING CLASS
 // ============================================================
 
+if (!class_exists('Roe_CRM_Booking')) {
 class Roe_CRM_Booking {
     private $table_bookings, $table_services, $table_availability, $table_holidays;
     
@@ -814,11 +1444,13 @@ class Roe_CRM_Booking {
         return $result ? $wpdb->insert_id : false;
     }
 }
+}
 
 // ============================================================
 // PROPERTY IMPORTER CLASS
 // ============================================================
 
+if (!class_exists('Roe_Property_Importer')) {
 class Roe_Property_Importer {
     private $mapper;
     private $source;
@@ -948,11 +1580,13 @@ class Roe_Property_Importer {
         $this->wpdb->update($log_table, ['status' => $status, 'items_processed' => $processed, 'items_success' => $success, 'items_failed' => $failed, 'completed_at' => current_time('mysql'), 'log_message' => "Processed $processed, Success: $success, Failed: $failed"], ['id' => $this->log_id]);
     }
 }
+}
 
 // ============================================================
 // FEED MAPPER CLASS
 // ============================================================
 
+if (!class_exists('Roe_Feed_Mapper')) {
 class Roe_Feed_Mapper {
     private $internal_fields = [
         'external_id' => 'roe_property_external_id',
@@ -1027,25 +1661,31 @@ class Roe_Feed_Mapper {
         return $mapped_data;
     }
 }
+}
 
 // ============================================================
 // ENQUIRY HANDLER
 // ============================================================
 
-add_action('init', function() {
-    if (!isset($_POST['submit_enquiry'])) return;
-    
-    $name = sanitize_text_field($_POST['enquiry_name']);
-    $email = sanitize_email($_POST['enquiry_email']);
-    $phone = sanitize_text_field($_POST['enquiry_phone']);
-    $message = sanitize_textarea_field($_POST['enquiry_message']);
-    $property = sanitize_text_field($_POST['property_address']);
-    $property_url = sanitize_url($_POST['property_url']);
-    
-    $to = get_option('admin_email');
-    $subject = "New Property Enquiry: $property";
-    $body = "Name: $name\nEmail: $email\nPhone: $phone\nProperty: $property\nProperty URL: $property_url\n\nMessage:\n$message";
-    $headers = ["From: $name <$email>", "Reply-To: $email"];
-    wp_mail($to, $subject, $body, $headers);
-    echo '<script>alert("✅ Thank you for your enquiry! We\'ll be in touch shortly.");</script>';
-});
+if (!has_action('init', 'dg_re_handle_property_enquiry_submit')) {
+add_action('init', 'dg_re_handle_property_enquiry_submit');
+function dg_re_handle_property_enquiry_submit() {
+    if (!isset($_POST['submit_enquiry'])) {
+        return;
+    }
+    if (!isset($_POST['dg_re_enquiry_nonce']) || !wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['dg_re_enquiry_nonce'])), 'dg_re_property_enquiry')) {
+        return;
+    }
+
+    if (!function_exists('dg_re_process_property_enquiry')) {
+        return;
+    }
+
+    $result = dg_re_process_property_enquiry(wp_unslash($_POST));
+    $url = wp_get_referer() ?: home_url('/');
+    $url = remove_query_arg(['enquiry_sent', 'enquiry_error'], $url);
+    $url = add_query_arg(!empty($result['success']) ? 'enquiry_sent' : 'enquiry_error', '1', $url);
+    wp_safe_redirect($url);
+    exit;
+}
+}

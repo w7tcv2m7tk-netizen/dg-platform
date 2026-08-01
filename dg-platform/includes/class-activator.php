@@ -350,6 +350,7 @@ class DG_Activator {
             ",
             $wpdb->prefix . 'dg_re_buyers' => "
                 id bigint(20) NOT NULL AUTO_INCREMENT,
+                pipeline_id bigint(20) DEFAULT NULL,
                 contact_id bigint(20) NOT NULL,
                 requirements text,
                 budget_min decimal(15,2) DEFAULT NULL,
@@ -361,6 +362,7 @@ class DG_Activator {
                 created_at datetime DEFAULT CURRENT_TIMESTAMP,
                 updated_at datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
                 PRIMARY KEY (id),
+                KEY pipeline_id (pipeline_id),
                 KEY contact_id (contact_id),
                 KEY status (status)
             ",

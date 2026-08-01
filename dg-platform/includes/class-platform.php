@@ -34,6 +34,9 @@ class DG_Platform {
         add_action('admin_post_dg_save_task', [$this, 'handle_save_task']);
         add_action('admin_post_dg_save_calendar_event', [$this, 'handle_save_calendar_event']);
         add_action('admin_post_dg_complete_task', [$this, 'handle_complete_task']);
+        add_action('admin_post_dg_toggle_automation', [$this, 'handle_toggle_automation']);
+        add_action('admin_post_dg_save_automation', [$this, 'handle_save_automation']);
+        add_action('admin_post_dg_save_custom_fields', [$this, 'handle_save_custom_fields']);
     }
 
     public function init() {
@@ -97,7 +100,14 @@ class DG_Platform {
             add_submenu_page('dg-platform', 'Calendar', '📅 Calendar', 'dg_view_calendar', 'dg-platform-calendar', [$this, 'render_calendar']);
         }
         if (DG_Permissions::current_user_can('dg_view_activities')) {
+            add_submenu_page('dg-platform', 'Search', '🔍 Search', 'dg_view_contacts', 'dg-platform-search', [$this, 'render_search']);
             add_submenu_page('dg-platform', 'Activity', '🕐 Activity', 'dg_view_activities', 'dg-platform-activity', [$this, 'render_activity']);
+        }
+        if (DG_Permissions::current_user_can('dg_manage_modules')) {
+            add_submenu_page('dg-platform', 'Automations', '⚡ Automations', 'dg_manage_modules', 'dg-platform-automations', [$this, 'render_automations']);
+        }
+        if (DG_Permissions::current_user_can('dg_manage_contacts')) {
+            add_submenu_page('dg-platform', 'Custom Fields', '🏷️ Custom Fields', 'dg_manage_contacts', 'dg-platform-custom-fields', [$this, 'render_custom_fields']);
         }
         if (DG_Permissions::current_user_can('dg_view_reports')) {
             add_submenu_page('dg-platform', 'Reports', '📈 Reports', 'dg_view_reports', 'dg-platform-reports', [$this, 'render_reports']);
@@ -138,6 +148,9 @@ class DG_Platform {
             <div class="dg-panel">
                 <h3>🚀 Quick Actions</h3>
                 <div class="dg-actions">
+                    <?php if (DG_Permissions::current_user_can('dg_view_contacts')) : ?>
+                        <a href="<?php echo admin_url('admin.php?page=dg-platform-search'); ?>" class="button">🔍 Search</a>
+                    <?php endif; ?>
                     <?php if (DG_Permissions::current_user_can('dg_manage_contacts')) : ?>
                         <a href="<?php echo admin_url('admin.php?page=dg-platform-contacts&action=add'); ?>" class="button button-primary">➕ Add Contact</a>
                     <?php endif; ?>
@@ -194,6 +207,8 @@ class DG_Platform {
 
     private function render_contact_form($id = 0) {
         $contact = $id ? DG_Contacts::get($id) : null;
+        $custom_fields = DG_Entity_Meta::get_definitions('contact');
+        $custom_values = $id ? DG_Entity_Meta::get('contact', $id) : [];
         include DG_PLATFORM_PATH . 'templates/admin/contact-form.php';
     }
 
@@ -240,6 +255,67 @@ class DG_Platform {
         include DG_PLATFORM_PATH . 'templates/admin/api-settings.php';
     }
 
+    public function render_search() {
+        include DG_PLATFORM_PATH . 'templates/admin/search.php';
+    }
+
+    public function render_automations() {
+        include DG_PLATFORM_PATH . 'templates/admin/automations.php';
+    }
+
+    public function render_custom_fields() {
+        include DG_PLATFORM_PATH . 'templates/admin/custom-fields.php';
+    }
+
+    public function handle_toggle_automation() {
+        if (!wp_verify_nonce($_POST['_wpnonce'] ?? '', 'dg_toggle_automation') || !DG_Permissions::current_user_can('dg_manage_modules')) {
+            wp_die('Unauthorized');
+        }
+        global $wpdb;
+        $id = (int) ($_POST['automation_id'] ?? 0);
+        $active = !empty($_POST['is_active']) ? 1 : 0;
+        $wpdb->update(DG_Automation::table(), ['is_active' => $active], ['id' => $id]);
+        wp_redirect(admin_url('admin.php?page=dg-platform-automations&saved=1'));
+        exit;
+    }
+
+    public function handle_save_automation() {
+        if (!wp_verify_nonce($_POST['_wpnonce'] ?? '', 'dg_save_automation') || !DG_Permissions::current_user_can('dg_manage_modules')) {
+            wp_die('Unauthorized');
+        }
+        DG_Automation::create([
+            'name' => sanitize_text_field(wp_unslash($_POST['name'] ?? '')),
+            'module' => sanitize_text_field(wp_unslash($_POST['module'] ?? 'core')),
+            'trigger_type' => sanitize_text_field(wp_unslash($_POST['trigger_type'] ?? '')),
+            'is_active' => !empty($_POST['is_active']),
+            'steps' => [],
+        ]);
+        wp_redirect(admin_url('admin.php?page=dg-platform-automations&saved=1'));
+        exit;
+    }
+
+    public function handle_save_custom_fields() {
+        if (!wp_verify_nonce($_POST['_wpnonce'] ?? '', 'dg_save_custom_fields') || !DG_Permissions::current_user_can('dg_manage_contacts')) {
+            wp_die('Unauthorized');
+        }
+        $entity_type = sanitize_text_field(wp_unslash($_POST['entity_type'] ?? 'contact'));
+        $raw = isset($_POST['fields']) ? wp_unslash($_POST['fields']) : [];
+        $fields = [];
+        foreach ($raw as $field) {
+            if (empty($field['key']) || empty($field['label'])) {
+                continue;
+            }
+            $fields[] = [
+                'key' => sanitize_key($field['key']),
+                'label' => sanitize_text_field($field['label']),
+                'type' => sanitize_text_field($field['type'] ?? 'text'),
+            ];
+        }
+        DG_Entity_Meta::save_definitions($entity_type, $fields);
+        wp_redirect(admin_url('admin.php?page=dg-platform-custom-fields&saved=1'));
+        exit;
+    }
+
     public function handle_save_modules() {
         if (!wp_verify_nonce($_POST['_wpnonce'] ?? '', 'dg_save_modules') || !DG_Permissions::current_user_can('dg_manage_modules')) {
             wp_die('Unauthorized');
@@ -283,7 +359,27 @@ class DG_Platform {
         if ($id) {
             DG_Contacts::update($id, $data);
         } else {
-            $id = DG_Contacts::create($data);
+            $created = DG_Contacts::create($data);
+            if (is_wp_error($created)) {
+                wp_die(esc_html($created->get_error_message()));
+            }
+            $id = (int) $created;
+        }
+        if (!empty($_POST['custom_fields']) && is_array($_POST['custom_fields'])) {
+            $definitions = DG_Entity_Meta::get_definitions('contact');
+            $textarea_keys = [];
+            foreach ($definitions as $def) {
+                if (($def['type'] ?? '') === 'textarea') {
+                    $textarea_keys[] = $def['key'] ?? '';
+                }
+            }
+            foreach ($_POST['custom_fields'] as $key => $value) {
+                $key = sanitize_key($key);
+                $value = in_array($key, $textarea_keys, true)
+                    ? sanitize_textarea_field(wp_unslash($value))
+                    : sanitize_text_field(wp_unslash($value));
+                DG_Entity_Meta::set('contact', $id, $key, $value);
+            }
         }
         wp_redirect(admin_url('admin.php?page=dg-platform-contacts&saved=1&id=' . $id));
         exit;

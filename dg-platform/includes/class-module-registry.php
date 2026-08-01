@@ -83,6 +83,10 @@ class DG_Module_Registry {
                         'label' => 'Vendor Acquisition',
                         'stages' => ['vendor_lead', 'appraisal', 'listing', 'sale', 'settlement', 'past_client'],
                     ],
+                    'buyer_acquisition' => [
+                        'label' => 'Buyer Acquisition',
+                        'stages' => ['inquiry', 'qualified', 'viewing', 'offer', 'purchased'],
+                    ],
                 ],
             ],
             'accommodation' => [
@@ -198,7 +202,11 @@ class DG_Module_Registry {
     }
 
     public function get_active_modules() {
-        return get_option('dg_platform_active_modules', ['core']);
+        $active = get_option('dg_platform_active_modules', ['core']);
+        if (defined('DG_PLATFORM_SAFE_MODE') && DG_PLATFORM_SAFE_MODE) {
+            return ['core'];
+        }
+        return $active;
     }
 
     public function load_active_modules($platform) {
