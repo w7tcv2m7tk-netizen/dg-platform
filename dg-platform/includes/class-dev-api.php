@@ -47,6 +47,9 @@ class DG_Dev_API {
         if (DG_Permissions::current_user_can('dg_marketing_view_clients')) {
             return true;
         }
+        if (class_exists('DG_Acc_Permissions') && DG_Acc_Permissions::can_view_bookings()) {
+            return true;
+        }
 
         $api_key = self::extract_key_from_request($request);
         $stored = self::get_key();

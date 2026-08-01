@@ -240,7 +240,83 @@ const MARKETING_TOOLS = [
 
 
 
-const TOOLS = [...REAL_ESTATE_TOOLS, ...MARKETING_TOOLS];
+const ACCOMMODATION_TOOLS = [
+
+  {
+
+    name: "get_accommodation_summary",
+
+    description: "DigitalGate / Currumbin Valley Hideaway: properties, bookings, guests, housekeeping, check-ins tomorrow.",
+
+    inputSchema: {
+
+      type: "object",
+
+      properties: {
+
+        days: { type: "number", description: "Lookback window (default 30)" },
+
+      },
+
+    },
+
+  },
+
+  {
+
+    name: "list_accommodation_bookings",
+
+    description: "DigitalGate accommodation: list bookings with optional status filter.",
+
+    inputSchema: {
+
+      type: "object",
+
+      properties: {
+
+        status: { type: "string", description: "pending, confirmed, airbnb, bookingcom, cancelled, completed" },
+
+        limit: { type: "number" },
+
+        offset: { type: "number" },
+
+      },
+
+    },
+
+  },
+
+  {
+
+    name: "list_accommodation_properties",
+
+    description: "DigitalGate accommodation: list properties with rates and housekeeping status.",
+
+    inputSchema: { type: "object", properties: {} },
+
+  },
+
+  {
+
+    name: "list_accommodation_guests",
+
+    description: "DigitalGate accommodation: list guest CRM records.",
+
+    inputSchema: {
+
+      type: "object",
+
+      properties: { limit: { type: "number" } },
+
+    },
+
+  },
+
+];
+
+
+
+const TOOLS = [...REAL_ESTATE_TOOLS, ...MARKETING_TOOLS, ...ACCOMMODATION_TOOLS];
 
 
 
@@ -382,6 +458,30 @@ async function handleTool(name, args) {
 
       return dgFetch("/marketing/audits", { limit: args.limit || 25 });
 
+    case "get_accommodation_summary":
+
+      return dgFetch("/accommodation/summary", { days: args.days || 30 });
+
+    case "list_accommodation_bookings":
+
+      return dgFetch("/accommodation/bookings", {
+
+        status: args.status,
+
+        limit: args.limit || 25,
+
+        offset: args.offset || 0,
+
+      });
+
+    case "list_accommodation_properties":
+
+      return dgFetch("/accommodation/properties");
+
+    case "list_accommodation_guests":
+
+      return dgFetch("/accommodation/guests", { limit: args.limit || 25 });
+
     default:
 
       throw new Error(`Unknown tool: ${name}`);
@@ -394,7 +494,7 @@ async function handleTool(name, args) {
 
 const server = new Server(
 
-  { name: "dg-platform", version: "1.1.0" },
+  { name: "dg-platform", version: "1.2.0" },
 
   { capabilities: { tools: {} } }
 

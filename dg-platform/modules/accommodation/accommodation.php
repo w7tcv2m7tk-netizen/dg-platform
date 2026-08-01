@@ -5,7 +5,7 @@
  * 
  * @package DG_Platform
  * @subpackage Accommodation
- * @version 10.4.0
+ * @version 10.5.0
  */
 
 if (!defined('ABSPATH')) {
@@ -46,6 +46,14 @@ class DG_Module_Accommodation {
             'class-acc-guests.php',
             'class-acc-reports.php',
             'class-acc-admin-views.php',
+            'class-acc-ota.php',
+            'class-acc-payments.php',
+            'class-acc-admin-pages.php',
+            'class-acc-dev-api.php',
+            'class-acc-admin-notifications.php',
+            'class-acc-housekeeping.php',
+            'class-acc-checkin.php',
+            'class-acc-shortcodes.php',
         ] as $file) {
             $path = $dir . $file;
             if (file_exists($path)) {
@@ -124,57 +132,19 @@ class DG_Module_Accommodation {
         // Admin Bar
         add_action('admin_bar_menu', [$this, 'update_admin_bar_menu'], 999);
         
-        // Shortcodes - All 10
-        add_shortcode('dg_accommodation_display', [$this, 'accommodation_display_shortcode']);
-        add_shortcode('dg_accommodation_details', [$this, 'accommodation_details_shortcode']);
-        add_shortcode('dg_accommodation_enquiry', [$this, 'accommodation_enquiry_shortcode']);
-        add_shortcode('dg_booking_confirmation', [$this, 'booking_confirmation_shortcode']);
-        add_shortcode('dg_calendar', [$this, 'booking_calendar_shortcode']);
-        add_shortcode('dg_accommodation_calendar', [$this, 'booking_calendar_shortcode']);
-        add_shortcode('dg_airbnb', [$this, 'airbnb_shortcode']);
-        add_shortcode('dg_bookingcom', [$this, 'bookingcom_shortcode']);
-        add_shortcode('dg_enquiry_form', [$this, 'enquiry_form_shortcode']);
-        add_shortcode('dg_contact_form', [$this, 'contact_form_shortcode']);
-        add_shortcode('dg_stripe_elements', [$this, 'stripe_elements_shortcode']);
-        
-        // AJAX Handlers
-        add_action('wp_ajax_dg_ota_sync', [$this, 'ajax_ota_sync']);
-        add_action('wp_ajax_dg_airbnb_sync', [$this, 'ajax_ota_sync']);
-        add_action('wp_ajax_dg_refresh_calendar', [$this, 'ajax_refresh_calendar']);
-        add_action('wp_ajax_nopriv_dg_refresh_calendar', [$this, 'ajax_refresh_calendar']);
+        // AJAX Handlers (enquiry/contact remain on module)
         add_action('wp_ajax_dg_submit_enquiry', [$this, 'handle_enquiry_submission']);
         add_action('wp_ajax_nopriv_dg_submit_enquiry', [$this, 'handle_enquiry_submission']);
         add_action('wp_ajax_dg_submit_contact', [$this, 'handle_contact_submission']);
         add_action('wp_ajax_nopriv_dg_submit_contact', [$this, 'handle_contact_submission']);
-        add_action('wp_ajax_dg_reload_stripe', [$this, 'ajax_reload_stripe']);
-        add_action('wp_ajax_dg_admin_get_bookings', [$this, 'admin_get_bookings']);
-        
-        // REST API
-        add_action('rest_api_init', [$this, 'rest_api_init']);
-        
-        // Payment Handling
-        add_action('init', [$this, 'handle_payid_booking'], 1);
-        add_action('init', [$this, 'handle_stripe_redirect']);
         
         // Guest Handling
         add_action('dg_booking_confirmed', [$this, 'upsert_guest_from_booking']);
         add_action('save_post_dg_booking', [$this, 'upsert_guest_from_booking_on_save'], 20);
         
-        // Admin Scripts
-        add_action('admin_enqueue_scripts', [$this, 'admin_calendar_scripts']);
-        
         // Cron Jobs
-        add_action('wp', [$this, 'schedule_ota_sync']);
-        add_action('dg_hourly_ota_sync', [$this, 'run_hourly_ota_sync']);
         add_action('dg_cleanup_expired_bookings', [$this, 'cleanup_expired_bookings']);
-        
-        // Admin Auto-Sync
-        add_action('admin_init', [$this, 'auto_sync_on_admin_load']);
-        add_action('admin_init', [$this, 'add_force_sync_buttons']);
         add_action('admin_init', [$this, 'cleanup_orphaned_ota_bookings']);
-        
-        // Stripe Status Notice
-        add_action('admin_notices', [$this, 'stripe_status_notice']);
     }
     
     public function register_platform_menus() {
@@ -647,6 +617,11 @@ class DG_Module_Accommodation {
         
         foreach ($post_ids as $post_id) {
             update_post_meta($post_id, 'dg_booking_status', $new_status);
+            if ($new_status === 'confirmed') {
+                delete_post_meta($post_id, '_dg_acc_notified_confirmed');
+                do_action('dg_booking_confirmed', $post_id);
+                update_post_meta($post_id, '_dg_acc_notified_confirmed', 'yes');
+            }
         }
         
         $count = count($post_ids);
@@ -850,10 +825,10 @@ class DG_Module_Accommodation {
         add_submenu_page('edit.php?post_type=dg_accommodation', 'All Bookings', 'All Bookings', 'manage_options', 'edit.php?post_type=dg_booking');
         add_submenu_page('edit.php?post_type=dg_accommodation', 'Add New Booking', 'Add New Booking', 'manage_options', 'post-new.php?post_type=dg_booking');
         add_submenu_page('edit.php?post_type=dg_accommodation', 'Accommodation Types', 'Types', 'manage_options', 'edit-tags.php?taxonomy=dg_accommodation_type&post_type=dg_accommodation');
-        add_submenu_page('edit.php?post_type=dg_accommodation', 'Booking Calendar', '📅 Calendar', 'manage_options', 'dg-admin-calendar', [$this, 'admin_calendar_page']);
-        add_submenu_page('edit.php?post_type=dg_accommodation', 'Booking Settings', 'Booking Settings', 'manage_options', 'dg-booking-settings', [$this, 'booking_settings_page']);
-        add_submenu_page('edit.php?post_type=dg_accommodation', '💳 Stripe Settings', '💳 Stripe Settings', 'manage_options', 'dg-stripe-settings', [$this, 'stripe_settings_page']);
-        add_submenu_page('edit.php?post_type=dg_accommodation', 'Force Sync OTA', '🔄 Sync OTA (All)', 'manage_options', 'dg-force-sync-all', [$this, 'force_sync_all_page']);
+        add_submenu_page('edit.php?post_type=dg_accommodation', 'Booking Calendar', '📅 Calendar', 'manage_options', 'dg-admin-calendar', ['DG_Acc_Admin_Pages', 'admin_calendar_page']);
+        add_submenu_page('edit.php?post_type=dg_accommodation', 'Booking Settings', 'Booking Settings', 'manage_options', 'dg-booking-settings', ['DG_Acc_Admin_Pages', 'booking_settings_page']);
+        add_submenu_page('edit.php?post_type=dg_accommodation', '💳 Stripe Settings', '💳 Stripe Settings', 'manage_options', 'dg-stripe-settings', ['DG_Acc_Admin_Pages', 'stripe_settings_page']);
+        add_submenu_page('edit.php?post_type=dg_accommodation', 'Force Sync OTA', '🔄 Sync OTA (All)', 'manage_options', 'dg-force-sync-all', ['DG_Acc_Admin_Pages', 'force_sync_all_page']);
         
         // Guest menu
         add_submenu_page('edit.php?post_type=dg_accommodation', 'Guests', '👥 Guests', 'manage_options', 'edit.php?post_type=dg_guest');
@@ -1792,256 +1767,6 @@ class DG_Module_Accommodation {
         }
     }
     
-    // ============================================================
-    // BOOKING SETTINGS PAGE (Snippet 4)
-    // ============================================================
-    
-    public function booking_settings_page() {
-        if (isset($_POST['dg_booking_page_id'])) {
-            update_option('dg_booking_page_id', intval($_POST['dg_booking_page_id']));
-            echo '<div class="notice notice-success"><p>Booking page updated!</p></div>';
-        }
-        $selected_page = get_option('dg_booking_page_id', 0);
-        ?>
-        <div class="wrap">
-            <h1>Booking Settings</h1>
-            <form method="post">
-                <table class="form-table">
-                    <tr>
-                        <th><label for="dg_booking_page_id">Booking Page</label></th>
-                        <td>
-                            <select name="dg_booking_page_id">
-                                <option value="0">— Select —</option>
-                                <?php foreach (get_pages(['post_status' => 'publish']) as $page): ?>
-                                    <option value="<?php echo $page->ID; ?>" <?php selected($selected_page, $page->ID); ?>><?php echo esc_html($page->post_title); ?></option>
-                                <?php endforeach; ?>
-                            </select>
-                        </td>
-                    </tr>
-                </table>
-                <?php submit_button('Save Settings'); ?>
-            </form>
-        </div>
-        <?php
-    }
-    
-    // ============================================================
-    // STRIPE SETTINGS PAGE (Snippet 5)
-    // ============================================================
-    
-    public function stripe_settings_page() {
-        if (isset($_POST['submit_stripe_settings'])) {
-            update_option('dg_stripe_enabled', isset($_POST['stripe_enabled']) ? 'yes' : 'no');
-            update_option('dg_stripe_publishable_key', sanitize_text_field($_POST['stripe_publishable_key']));
-            update_option('dg_stripe_secret_key', sanitize_text_field($_POST['stripe_secret_key']));
-            update_option('dg_stripe_webhook_secret', sanitize_text_field($_POST['stripe_webhook_secret']));
-            update_option('dg_stripe_test_mode', isset($_POST['stripe_test_mode']) ? 'yes' : 'no');
-            echo '<div class="notice notice-success"><p>✅ Stripe settings saved!</p></div>';
-        }
-        ?>
-        <div class="wrap">
-            <h1>💳 Stripe Payment Settings</h1>
-            <form method="post">
-                <table class="form-table">
-                    <tr><th>Enable Stripe</th>
-                        <td><label><input type="checkbox" name="stripe_enabled" value="1" <?php checked(get_option('dg_stripe_enabled', 'no'), 'yes'); ?>> Enable credit card payments</label></td></tr>
-                    <tr><th>Test Mode</th>
-                        <td><label><input type="checkbox" name="stripe_test_mode" value="1" <?php checked(get_option('dg_stripe_test_mode', 'yes'), 'yes'); ?>> Use test mode</label></td></tr>
-                    <tr><th>Publishable Key</th>
-                        <td><input type="text" name="stripe_publishable_key" value="<?php echo esc_attr(get_option('dg_stripe_publishable_key', '')); ?>" style="width:500px;"></td></tr>
-                    <tr><th>Secret Key</th>
-                        <td><input type="password" name="stripe_secret_key" value="<?php echo esc_attr(get_option('dg_stripe_secret_key', '')); ?>" style="width:500px;"></td></tr>
-                    <tr><th>Webhook Secret</th>
-                        <td><input type="text" name="stripe_webhook_secret" value="<?php echo esc_attr(get_option('dg_stripe_webhook_secret', '')); ?>" style="width:500px;"></td></tr>
-                </table>
-                <?php submit_button('Save Stripe Settings', 'primary', 'submit_stripe_settings'); ?>
-            </form>
-            <hr>
-            <h2>🔗 Webhook URL</h2>
-            <code style="background:#f1f1f1;padding:10px;display:block;"><?php echo home_url('/wp-json/dg-stripe/v1/webhook'); ?></code>
-            <p><strong>Events:</strong> <code>checkout.session.completed</code></p>
-        </div>
-        <?php
-    }
-    
-    // ============================================================
-    // FORCE SYNC ALL PAGE (Snippet 7)
-    // ============================================================
-    
-    public function force_sync_all_page() {
-        $accommodations = get_posts(['post_type' => 'dg_accommodation', 'posts_per_page' => -1]);
-        $has_ota = [];
-        foreach ($accommodations as $acc) {
-            $airbnb = get_post_meta($acc->ID, 'dg_ical_url', true);
-            $bookingcom = get_post_meta($acc->ID, 'dg_bookingcom_ical_url', true);
-            if (!empty($airbnb) || !empty($bookingcom)) {
-                $has_ota[] = ['id' => $acc->ID, 'title' => $acc->post_title, 'airbnb' => $airbnb, 'bookingcom' => $bookingcom];
-            }
-        }
-        ?>
-        <div class="wrap">
-            <h1>🔄 Force Sync ALL OTA Bookings</h1>
-            <div style="background:#fff;padding:20px;border:1px solid #ddd;border-radius:4px;margin:20px 0;">
-                <p>Sync bookings from <strong>Airbnb</strong> and <strong>Booking.com</strong> for all accommodations.</p>
-                <div style="display:flex;gap:15px;flex-wrap:wrap;">
-                    <button onclick="forceSyncAll('airbnb')" class="button button-primary" style="background:#ff5a5f;border-color:#ff5a5f;color:#fff;padding:12px 40px;">🔄 Sync All Airbnb</button>
-                    <button onclick="forceSyncAll('bookingcom')" class="button button-primary" style="background:#003580;border-color:#003580;color:#fff;padding:12px 40px;">🔄 Sync All Booking.com</button>
-                    <button onclick="forceSyncAll('all')" class="button button-primary" style="background:#28a745;border-color:#28a745;color:#fff;padding:12px 40px;">🔄 Sync ALL</button>
-                </div>
-                <div id="sync-result" style="margin-top:20px;padding:15px;background:#f8f9fa;border-radius:4px;display:none;"></div>
-            </div>
-        </div>
-        <script>
-        var otaAccommodations = <?php echo json_encode(array_column($has_ota, 'id')); ?>;
-        function forceSyncAll(source) {
-            var result = document.getElementById('sync-result');
-            result.style.display = 'block';
-            result.innerHTML = '⏳ Syncing...';
-            var accommodations = otaAccommodations;
-            if (accommodations.length === 0) {
-                result.innerHTML = '❌ No accommodations with OTA URLs found.';
-                return;
-            }
-            var total = accommodations.length;
-            var processed = 0;
-            var imported = 0;
-            var errors = 0;
-            var totalOps = source === 'all' ? total * 2 : total;
-            
-            accommodations.forEach(function(accId) {
-                var sourcesToSync = source === 'all' ? ['airbnb', 'bookingcom'] : [source];
-                sourcesToSync.forEach(function(src) {
-                    jQuery.ajax({
-                        url: ajaxurl,
-                        type: 'POST',
-                        data: {
-                            action: 'dg_ota_sync',
-                            accommodation_id: accId,
-                            source: src,
-                            nonce: '<?php echo wp_create_nonce('dg_calendar_nonce'); ?>'
-                        },
-                        success: function(response) {
-                            processed++;
-                            if (response.success) imported++;
-                            else if (response.data && response.data.message.indexOf('No iCal URL') === -1) errors++;
-                            updateProgress();
-                        },
-                        error: function() { processed++; errors++; updateProgress(); }
-                    });
-                });
-            });
-            
-            function updateProgress() {
-                var progress = Math.round((processed / totalOps) * 100);
-                result.innerHTML = '⏳ Syncing... ' + processed + ' of ' + totalOps + ' (' + progress + '%)';
-                if (processed === totalOps) {
-                    result.innerHTML = '✅ Complete! Imported: ' + imported + ', Errors: ' + errors;
-                    result.style.color = '#28a745';
-                }
-            }
-        }
-        </script>
-        <?php
-    }
-    
-    // ============================================================
-    // ADMIN CALENDAR PAGE (Snippet 8)
-    // ============================================================
-    
-    public function admin_calendar_page() {
-        ?>
-        <div class="wrap">
-            <h1>📅 Booking Calendar</h1>
-            <div id="dg-admin-calendar" style="background:#fff;padding:20px;border-radius:8px;border:1px solid #ddd;min-height:500px;"></div>
-        </div>
-        <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            var calendarEl = document.getElementById('dg-admin-calendar');
-            if (!calendarEl || typeof FullCalendar === 'undefined') {
-                calendarEl.innerHTML = '<p style="text-align:center;padding:40px;color:#666;">Loading calendar... Please ensure FullCalendar is loaded.</p>';
-                return;
-            }
-            
-            var calendar = new FullCalendar.Calendar(calendarEl, {
-                initialView: 'dayGridMonth',
-                headerToolbar: { left: 'prev,next today', center: 'title', right: 'dayGridMonth,timeGridWeek' },
-                events: function(fetchInfo, successCallback) {
-                    jQuery.ajax({
-                        url: ajaxurl,
-                        type: 'POST',
-                        data: {
-                            action: 'dg_admin_get_bookings',
-                            start: fetchInfo.startStr,
-                            end: fetchInfo.endStr,
-                            nonce: '<?php echo wp_create_nonce('dg_calendar_nonce'); ?>'
-                        },
-                        success: function(response) {
-                            if (response.success) {
-                                var events = response.data.map(function(b) {
-                                    var color = '#ffc107';
-                                    if (b.status === 'confirmed') color = '#28a745';
-                                    else if (b.status === 'cancelled') color = '#dc3545';
-                                    else if (b.status === 'airbnb') color = '#ff5a5f';
-                                    else if (b.status === 'bookingcom') color = '#003580';
-                                    return {
-                                        id: b.id,
-                                        title: b.guest_name + ' - ' + b.accommodation,
-                                        start: b.checkin,
-                                        end: b.checkout,
-                                        color: color,
-                                        extendedProps: b
-                                    };
-                                });
-                                successCallback(events);
-                            }
-                        }
-                    });
-                },
-                eventClick: function(info) {
-                    var p = info.event.extendedProps;
-                    alert('Booking #' + p.id + '\nGuest: ' + p.guest_name + '\nAccommodation: ' + p.accommodation + '\nCheck-in: ' + p.checkin + '\nCheck-out: ' + p.checkout + '\nStatus: ' + p.status);
-                }
-            });
-            calendar.render();
-        });
-        </script>
-        <?php
-    }
-    
-    public function admin_calendar_scripts($hook) {
-        if ($hook !== 'dg_accommodation_page_dg-admin-calendar') return;
-        wp_enqueue_style('fullcalendar-css', 'https://cdn.jsdelivr.net/npm/fullcalendar@5.11.5/main.min.css', [], '5.11.5');
-        wp_enqueue_script('fullcalendar-js', 'https://cdn.jsdelivr.net/npm/fullcalendar@5.11.5/main.min.js', ['jquery'], '5.11.5', true);
-    }
-    
-    public function admin_get_bookings() {
-        if (!isset($_POST['nonce']) || !wp_verify_nonce($_POST['nonce'], 'dg_calendar_nonce')) {
-            wp_send_json_error('Invalid nonce');
-            return;
-        }
-        
-        $bookings = get_posts([
-            'post_type' => 'dg_booking',
-            'posts_per_page' => -1,
-            'meta_query' => [
-                ['key' => 'dg_booking_checkin', 'value' => $_POST['end'], 'compare' => '<', 'type' => 'DATE'],
-                ['key' => 'dg_booking_checkout', 'value' => $_POST['start'], 'compare' => '>', 'type' => 'DATE']
-            ]
-        ]);
-        
-        $events = [];
-        foreach ($bookings as $b) {
-            $events[] = [
-                'id' => $b->ID,
-                'guest_name' => get_post_meta($b->ID, 'dg_booking_name', true) ?: 'Guest',
-                'accommodation' => get_post_meta($b->ID, 'dg_booking_accommodation_name', true) ?: 'Unknown',
-                'checkin' => get_post_meta($b->ID, 'dg_booking_checkin', true),
-                'checkout' => get_post_meta($b->ID, 'dg_booking_checkout', true),
-                'status' => get_post_meta($b->ID, 'dg_booking_status', true) ?: 'pending',
-            ];
-        }
-        wp_send_json_success($events);
-    }
     
     // ============================================================
     // SHORTCODES (Snippet 4)
@@ -2534,106 +2259,6 @@ class DG_Module_Accommodation {
         return ob_get_clean();
     }
     
-    // ============================================================
-    // PAYID BOOKING HANDLER (Snippet 5)
-    // ============================================================
-    
-    public function handle_payid_booking() {
-        if (!isset($_POST['dg_payid_submit'])) return;
-        if (!isset($_POST['dg_enquiry_nonce']) || !wp_verify_nonce($_POST['dg_enquiry_nonce'], 'dg_enquiry_action')) {
-            wp_die('Security check failed.');
-        }
-        
-        $accommodation_id = isset($_POST['accommodation_id']) ? intval($_POST['accommodation_id']) : 0;
-        $checkin = isset($_POST['booking_checkin']) ? sanitize_text_field($_POST['booking_checkin']) : '';
-        $checkout = isset($_POST['booking_checkout']) ? sanitize_text_field($_POST['booking_checkout']) : '';
-        $name = isset($_POST['enquiry_name']) ? sanitize_text_field($_POST['enquiry_name']) : '';
-        $email = isset($_POST['enquiry_email']) ? sanitize_email($_POST['enquiry_email']) : '';
-        $phone = isset($_POST['enquiry_phone']) ? sanitize_text_field($_POST['enquiry_phone']) : '';
-        $guests = isset($_POST['enquiry_guests']) ? intval($_POST['enquiry_guests']) : 2;
-        $message = isset($_POST['enquiry_message']) ? sanitize_textarea_field($_POST['enquiry_message']) : '';
-        
-        if (empty($name) || empty($email)) wp_die('Please fill in all required fields.');
-        
-        $accommodation_name = get_the_title($accommodation_id);
-        $nights = $checkin && $checkout ? round((strtotime($checkout) - strtotime($checkin)) / (60 * 60 * 24)) : 1;
-        $rate = floatval(get_post_meta($accommodation_id, 'dg_weekday_rate', true));
-        $cleaning_fee = floatval(get_post_meta($accommodation_id, 'dg_cleaning_fee', true));
-        $total = ($rate * $nights) + $cleaning_fee;
-        $booking_ref = 'PAYID-' . date('Ymd') . '-' . rand(1000, 9999);
-        
-        $booking_id = wp_insert_post([
-            'post_type' => 'dg_booking',
-            'post_title' => $booking_ref . ' - ' . $name,
-            'post_status' => 'publish',
-            'meta_input' => [
-                'dg_booking_accommodation_id' => $accommodation_id,
-                'dg_booking_accommodation_name' => $accommodation_name,
-                'dg_booking_checkin' => $checkin,
-                'dg_booking_checkout' => $checkout,
-                'dg_booking_nights' => $nights,
-                'dg_booking_total' => $total,
-                'dg_booking_guests' => $guests,
-                'dg_booking_name' => $name,
-                'dg_booking_email' => $email,
-                'dg_booking_phone' => $phone,
-                'dg_booking_message' => $message,
-                'dg_booking_ref' => $booking_ref,
-                'dg_booking_paid' => 'no',
-                'dg_booking_payment_method' => 'payid',
-                'dg_booking_status' => 'pending',
-            ]
-        ]);
-        
-        if (is_wp_error($booking_id)) wp_die('Error creating booking.');
-        
-        $this->send_booking_confirmation([
-            'email' => $email, 'accommodation' => $accommodation_name,
-            'checkin' => $checkin, 'checkout' => $checkout, 'nights' => $nights,
-            'total' => $total, 'subtotal' => $total - $cleaning_fee, 'cleaning_fee' => $cleaning_fee,
-            'guests' => $guests, 'name' => $name, 'booking_ref' => $booking_ref
-        ]);
-        
-        wp_redirect(home_url('/booking-confirmed/?ref=' . $booking_ref . '&payment_method=payid'));
-        exit;
-    }
-    
-    public function handle_stripe_redirect() {
-        // Stripe redirect handling - simplified
-        if (!isset($_POST['dg_stripe_redirect'])) return;
-        // Full implementation would go here
-    }
-    
-    // ============================================================
-    // EMAIL FUNCTIONS (Snippet 5)
-    // ============================================================
-    
-    private function send_booking_confirmation($data) {
-        $subject = "📋 Booking Confirmation - " . $data['accommodation'];
-        $html = '
-        <html><head><style>body{font-family:Arial,sans-serif;color:#2F2F2F;padding:20px;}.container{max-width:600px;margin:0 auto;background:#fff;padding:30px;border-radius:16px;border:1px solid #E0D6CC;}h2{color:#1C2B2A;border-bottom:2px solid #C9A46C;padding-bottom:10px;}.highlight{background:#f5f2ef;padding:20px;border-radius:10px;margin:15px 0;border-left:4px solid #C9A46C;}.payid-box{background:#f0f8ff;padding:20px;border-radius:10px;border:2px dashed #B9A48A;}</style></head>
-        <body><div class="container">
-            <h2>🏡 Thank You for Your Booking!</h2>
-            <p>Dear <strong>' . esc_html($data['name']) . '</strong>,</p>
-            <div class="highlight">
-                <p><strong>Accommodation:</strong> ' . esc_html($data['accommodation']) . '</p>
-                <p><strong>Check-in:</strong> ' . date('l, F j, Y', strtotime($data['checkin'])) . '</p>
-                <p><strong>Check-out:</strong> ' . date('l, F j, Y', strtotime($data['checkout'])) . '</p>
-                <p><strong>Nights:</strong> ' . esc_html($data['nights']) . '</p>
-                <p><strong>Total:</strong> $' . number_format(floatval($data['total']), 2) . '</p>
-                <p><strong>Reference:</strong> ' . esc_html($data['booking_ref']) . '</p>
-            </div>
-            <div class="payid-box">
-                <p><strong>PayID:</strong> payid@currumbinvalleyhideaway.com.au</p>
-                <p><strong>Reference:</strong> ' . esc_html($data['booking_ref']) . '</p>
-                <p><strong>Amount:</strong> $' . number_format(floatval($data['total']), 2) . '</p>
-            </div>
-            <p>Once payment is confirmed, you\'ll receive check-in instructions.</p>
-            <p>Warm regards,<br><strong>Currumbin Valley Hideaway</strong></p>
-        </div></body></html>';
-        
-        wp_mail($data['email'], $subject, $html, ['Content-Type: text/html; charset=UTF-8', 'From: Currumbin Valley Hideaway <bookings@currumbinvalleyhideaway.com.au>']);
-    }
     
     // ============================================================
     // AJAX HANDLERS (Snippet 10)
@@ -2697,183 +2322,6 @@ class DG_Module_Accommodation {
         wp_send_json_success();
     }
     
-    // ============================================================
-    // OTA SYNC AJAX (Snippet 7)
-    // ============================================================
-    
-    public function ajax_ota_sync() {
-        if (!isset($_POST['nonce']) || !wp_verify_nonce($_POST['nonce'], 'dg_calendar_nonce')) {
-            wp_send_json_error('Invalid nonce');
-            return;
-        }
-        
-        $accommodation_id = isset($_POST['accommodation_id']) ? intval($_POST['accommodation_id']) : 0;
-        $source = isset($_POST['source']) ? sanitize_text_field($_POST['source']) : 'airbnb';
-        
-        if (!$accommodation_id) {
-            wp_send_json_error('Invalid accommodation ID');
-            return;
-        }
-        
-        // Rebuild blocked dates from all bookings
-        $this->rebuild_blocked_dates($accommodation_id);
-        
-        wp_send_json_success(['message' => 'Calendar updated successfully']);
-    }
-    
-    private function rebuild_blocked_dates($accommodation_id) {
-        $bookings = get_posts([
-            'post_type' => 'dg_booking',
-            'posts_per_page' => -1,
-            'meta_query' => [['key' => 'dg_booking_accommodation_id', 'value' => $accommodation_id, 'compare' => '=']]
-        ]);
-        
-        $blocked_ranges = [];
-        foreach ($bookings as $b) {
-            $checkin = get_post_meta($b->ID, 'dg_booking_checkin', true);
-            $checkout = get_post_meta($b->ID, 'dg_booking_checkout', true);
-            $status = get_post_meta($b->ID, 'dg_booking_status', true);
-            if ($status !== 'cancelled' && $checkin && $checkout) {
-                $blocked_ranges[] = $checkin . ' to ' . $checkout;
-            }
-        }
-        $blocked_ranges = array_unique($blocked_ranges);
-        sort($blocked_ranges);
-        update_post_meta($accommodation_id, 'dg_blocked_dates', implode("\n", $blocked_ranges));
-        return $blocked_ranges;
-    }
-    
-    public function ajax_refresh_calendar() {
-        if (!isset($_POST['accommodation_id']) || !isset($_POST['nonce']) || 
-            !wp_verify_nonce($_POST['nonce'], 'dg_calendar_nonce')) {
-            wp_send_json_error('Invalid request');
-            return;
-        }
-        
-        $blocked = $this->rebuild_blocked_dates(intval($_POST['accommodation_id']));
-        wp_send_json_success(['blocked_dates' => $blocked]);
-    }
-    
-    // ============================================================
-    // STRIPE STATUS NOTICE (Snippet 5)
-    // ============================================================
-    
-    public function stripe_status_notice() {
-        $screen = get_current_screen();
-        if (!$screen || strpos($screen->id, 'dg_accommodation') === false && strpos($screen->id, 'dg-stripe') === false) return;
-        if (!current_user_can('manage_options')) return;
-        
-        $loaded = class_exists('\Stripe\Stripe');
-        $enabled = get_option('dg_stripe_enabled', 'no');
-        
-        if ($loaded && $enabled === 'yes') {
-            echo '<div class="notice notice-success"><p>✅ Stripe is loaded and enabled.</p></div>';
-        } elseif ($loaded && $enabled === 'no') {
-            echo '<div class="notice notice-info"><p>💳 Stripe is loaded but not enabled. <a href="' . admin_url('edit.php?post_type=dg_accommodation&page=dg-stripe-settings') . '">Enable Stripe</a></p></div>';
-        } elseif (!$loaded) {
-            echo '<div class="notice notice-warning"><p>⚠️ Stripe is not loaded. <a href="' . admin_url('edit.php?post_type=dg_accommodation&page=dg-stripe-settings') . '">Check Stripe settings</a></p></div>';
-        }
-    }
-    
-    // ============================================================
-    // REST API - STRIPE (Snippet 5)
-    // ============================================================
-    
-    public function rest_api_init() {
-        register_rest_route('dg-stripe/v1', '/webhook', [
-            'methods' => 'POST',
-            'callback' => [$this, 'stripe_webhook_handler'],
-            'permission_callback' => '__return_true',
-        ]);
-        register_rest_route('dg-stripe/v1', '/create-payment-intent', [
-            'methods' => 'POST',
-            'callback' => [$this, 'create_payment_intent_api'],
-            'permission_callback' => '__return_true',
-        ]);
-    }
-    
-    public function stripe_webhook_handler($request) {
-        error_log('Stripe webhook received');
-        return new WP_REST_Response('Webhook received', 200);
-    }
-    
-    public function create_payment_intent_api($request) {
-        $data = $request->get_json_params();
-        if (empty($data['booking_total'])) return ['error' => 'Missing booking data'];
-        
-        $total = floatval(str_replace('$', '', $data['booking_total']));
-        $booking_ref = 'BOOK-' . time() . '-' . rand(1000, 9999);
-        
-        // Store temp booking data
-        update_option('dg_temp_booking_' . $booking_ref, [
-            'accommodation_id' => $data['accommodation_id'] ?? 0,
-            'checkin' => $data['booking_checkin'] ?? '',
-            'checkout' => $data['booking_checkout'] ?? '',
-            'nights' => $data['booking_nights'] ?? 0,
-            'total' => $total,
-            'name' => $data['enquiry_name'] ?? '',
-            'email' => $data['enquiry_email'] ?? '',
-            'phone' => $data['enquiry_phone'] ?? '',
-            'guests' => $data['enquiry_guests'] ?? 2,
-        ]);
-        
-        return [
-            'clientSecret' => 'pi_' . time() . '_secret_' . rand(1000, 9999),
-            'booking_ref' => $booking_ref,
-        ];
-    }
-    
-    public function ajax_reload_stripe() {
-        if (!current_user_can('manage_options')) wp_send_json_error('Unauthorized');
-        wp_send_json_success(['message' => 'Stripe reloaded']);
-    }
-    
-    // ============================================================
-    // AUTO SYNC & CLEANUP (Snippet 7)
-    // ============================================================
-    
-    public function auto_sync_on_admin_load() {
-        global $pagenow;
-        if ($pagenow !== 'post.php' || !isset($_GET['post']) || get_post_type($_GET['post']) !== 'dg_accommodation') return;
-        
-        $post_id = intval($_GET['post']);
-        $last_sync = get_post_meta($post_id, 'dg_ical_last_sync', true);
-        $url = get_post_meta($post_id, 'dg_ical_url', true);
-        
-        if ($url && (!$last_sync || (time() - strtotime($last_sync)) > 21600)) {
-            $this->rebuild_blocked_dates($post_id);
-            update_post_meta($post_id, 'dg_ical_last_sync', current_time('mysql'));
-        }
-    }
-    
-    public function add_force_sync_buttons() {
-        global $pagenow;
-        if ($pagenow !== 'post.php' || !isset($_GET['post']) || get_post_type($_GET['post']) !== 'dg_accommodation') return;
-        ?>
-        <script>
-        jQuery(document).ready(function($) {
-            var notice = $('<div class="notice notice-info"><p><button class="button button-primary" onclick="dgForceSync()">🔄 Sync OTA Now</button> <span id="dg-sync-status" style="margin-left:10px;"></span></p></div>');
-            $('.wrap h1').after(notice);
-            window.dgForceSync = function() {
-                $('#dg-sync-status').text('⏳ Syncing...');
-                $.ajax({
-                    url: ajaxurl,
-                    type: 'POST',
-                    data: {
-                        action: 'dg_ota_sync',
-                        accommodation_id: <?php echo intval($_GET['post']); ?>,
-                        source: 'airbnb',
-                        nonce: '<?php echo wp_create_nonce('dg_calendar_nonce'); ?>'
-                    },
-                    success: function(r) {
-                        $('#dg-sync-status').text(r.success ? '✅ ' + r.data.message : '❌ ' + r.data.message);
-                    }
-                });
-            };
-        });
-        </script>
-        <?php
-    }
     
     public function cleanup_expired_bookings() {
         $bookings = get_posts([
@@ -2893,22 +2341,6 @@ class DG_Module_Accommodation {
         // Optional cleanup function
     }
     
-    public function schedule_ota_sync() {
-        if (!wp_next_scheduled('dg_hourly_ota_sync')) {
-            wp_schedule_event(time(), 'hourly', 'dg_hourly_ota_sync');
-        }
-    }
-    
-    public function run_hourly_ota_sync() {
-        $accommodations = get_posts([
-            'post_type' => 'dg_accommodation',
-            'posts_per_page' => -1,
-            'meta_query' => [['key' => 'dg_ical_url', 'value' => '', 'compare' => '!=']]
-        ]);
-        foreach ($accommodations as $acc) {
-            $this->rebuild_blocked_dates($acc->ID);
-        }
-    }
 }
 
 // ============================================================

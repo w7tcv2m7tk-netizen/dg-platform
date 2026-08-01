@@ -39,6 +39,7 @@ class DG_Acc_Admin_Views {
                         <a class="button" href="<?php echo esc_url(admin_url('admin.php?page=dg-admin-calendar')); ?>">📅 Calendar</a>
                         <a class="button" href="<?php echo esc_url(admin_url('edit.php?post_type=dg_guest')); ?>">👥 Guests</a>
                         <a class="button" href="<?php echo esc_url(admin_url('admin.php?page=dg-force-sync-all')); ?>">🔄 Sync OTA</a>
+                        <a class="button" href="<?php echo esc_url(admin_url('admin.php?page=dg-acc-housekeeping')); ?>">🧹 Housekeeping</a>
                     </p>
                 </div>
                 <div class="dg-panel" style="margin-top:0;">

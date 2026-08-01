@@ -9,7 +9,7 @@
         <ol style="color:#666;max-width:820px;line-height:1.7;">
             <li>In WordPress: <strong>DG Platform → API Settings</strong> (this page) — copy the Dev API Key below.</li>
             <li>On your Mac: open <code>~/.cursor/mcp.json</code> and paste the key into <code>DG_DEV_API_KEY</code> for the site you want (<code>https://digitalgate.com.au</code> or <code>https://roerealty.com.au</code>).</li>
-            <li>Restart Cursor, then ask the agent to run tools like <code>get_marketing_summary</code> (DigitalGate) or <code>get_pipeline_summary</code> (Roe Realty).</li>
+            <li>Restart Cursor, then ask the agent to run tools like <code>get_marketing_summary</code>, <code>get_accommodation_summary</code> (DigitalGate), or <code>get_pipeline_summary</code> (Roe Realty).</li>
         </ol>
         <?php
         $dev_key = class_exists('DG_Dev_API') ? DG_Dev_API::get_or_create_key() : '';
@@ -35,7 +35,8 @@
                     <p class="description">Send as <code>X-API-Key</code> header. Examples:</p>
                     <ul style="margin:0 0 0 1em;color:#666;">
                         <li>Roe Realty: <code><?php echo esc_html(rest_url(DG_REST_NAMESPACE . '/leads/summary')); ?></code></li>
-                        <li>DigitalGate: <code><?php echo esc_html(rest_url(DG_REST_NAMESPACE . '/marketing/summary')); ?></code></li>
+                        <li>DigitalGate marketing: <code><?php echo esc_html(rest_url(DG_REST_NAMESPACE . '/marketing/summary')); ?></code></li>
+                        <li>DigitalGate accommodation: <code><?php echo esc_html(rest_url(DG_REST_NAMESPACE . '/accommodation/summary')); ?></code></li>
                         <li>Agency audit webhook: <code><?php echo esc_html(rest_url('dg/v1/audit-webhook')); ?></code></li>
                     </ul>
                     <?php if (class_exists('DG_Site_Profile')) : ?>
