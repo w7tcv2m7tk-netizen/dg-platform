@@ -293,18 +293,8 @@ function dg_re_process_property_enquiry($data) {
         ];
     }
 
-    $admin_to = apply_filters('dg_re_property_enquiry_admin_email', get_option('admin_email'));
-    $subject = 'New Property Enquiry: ' . ($property ?: 'Unknown property');
-    $body = "Name: $name\nEmail: $email\nPhone: $phone\nProperty: $property\nProperty URL: $property_url\n\nMessage:\n$message";
-    $headers = [
-        'Content-Type: text/plain; charset=UTF-8',
-        'From: Ben Roe | Roe Realty <ben@roerealty.com.au>',
-        'Reply-To: ' . $name . ' <' . $email . '>',
-    ];
-    wp_mail($admin_to, $subject, $body, $headers);
-
     if (class_exists('DG_RE_Buyer_Leads')) {
-        DG_RE_Buyer_Leads::create([
+        $buyer_id = DG_RE_Buyer_Leads::create([
             'full_name' => $name,
             'email' => $email,
             'phone' => $phone,
@@ -315,6 +305,12 @@ function dg_re_process_property_enquiry($data) {
             'source' => 'property_enquiry',
             'status' => 'new',
         ]);
+        if (is_wp_error($buyer_id)) {
+            return [
+                'success' => false,
+                'message' => $buyer_id->get_error_message(),
+            ];
+        }
     }
 
     return [

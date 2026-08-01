@@ -35,6 +35,26 @@ class DG_RE_Email_Templates {
                 'subject' => 'Your Roe Realty Appointment Confirmation',
                 'body' => "Hi {first_name},\n\nYour appointment is confirmed.\n\nService: {service_name}\nWhen: {appointment_when}\n\nIf you need to reschedule, reply to this email or call 0420 227 227.\n\nBest regards,\nBen Roe | Roe Realty\nhttps://roerealty.com.au",
             ],
+            'buyer_enquiry_admin' => [
+                'label' => 'Buyer Enquiry — Admin Notification',
+                'subject' => 'New Buyer Enquiry - {property_address}',
+                'body' => "--- NEW BUYER ENQUIRY ---\n\nName: {full_name}\nEmail: {email}\nPhone: {phone}\nProperty: {property_address}\nURL: {property_url}\n\nMessage:\n{notes}\n\nSubmitted: {submitted_at}\n\nView pipeline: https://roerealty.com.au/wp-admin/admin.php?page=dg-re-buyer-leads",
+            ],
+            'vendor_lead_admin' => [
+                'label' => 'Vendor Lead — Admin Notification',
+                'subject' => 'New Vendor Lead - {property_address}',
+                'body' => "--- NEW VENDOR LEAD ---\n\nName: {full_name}\nEmail: {email}\nPhone: {phone}\nProperty: {property_address}\nSource: {source}\n\nNotes:\n{notes}\n\nSubmitted: {submitted_at}",
+            ],
+            'vendor_lead_booked_admin' => [
+                'label' => 'Vendor Lead Booked — Admin Notification',
+                'subject' => 'Vendor Lead Booked Appraisal - {full_name}',
+                'body' => "A vendor lead booked an appointment.\n\nName: {full_name}\nEmail: {email}\nPhone: {phone}\nProperty: {property_address}\nService: {service_name}\nWhen: {appointment_when}\n\n{notes}",
+            ],
+            'weekly_pipeline_report' => [
+                'label' => 'Weekly Pipeline Report — Admin Email',
+                'subject' => 'Roe Realty Weekly Pipeline Report',
+                'body' => "Weekly CRM summary ({report_period})\n\nTHIS MONTH\nProperty reports: {property_reports}\nBookings: {bookings_month}\nVendor → appraisal+ rate: {conversion_rate}%\n\nLAST 7 DAYS\nVendor leads: {vendor_leads_week}\nBuyer enquiries: {buyer_leads_week}\nBookings: {bookings_week}\n\nVENDOR PIPELINE\n{vendor_pipeline}\n\nBUYER PIPELINE\n{buyer_pipeline}\n\nLEADS BY SOURCE\n{lead_sources}\n\nFull dashboard:\n{admin_url}",
+            ],
             'followup_2' => [
                 'label' => 'Follow-up Email 2 (Day 1)',
                 'subject' => 'What most homeowners miss in their property report',
@@ -110,18 +130,24 @@ class DG_RE_Email_Templates {
     }
 
     public static function placeholders_help() {
-        return '{first_name}, {full_name}, {email}, {phone}, {property_address}, {service_name}, {appointment_when}, {submitted_at}, {notes}';
+        return '{first_name}, {full_name}, {email}, {phone}, {property_address}, {property_url}, {source}, {service_name}, {appointment_when}, {submitted_at}, {notes}, {report_period}, {vendor_pipeline}, {buyer_pipeline}, {lead_sources}, {admin_url}';
     }
 
     public static function maybe_upgrade() {
         $version = get_option('dg_re_email_templates_version', '0');
-        if (version_compare($version, '10.0.8', '>=')) {
+        if (version_compare($version, '10.0.10', '>=')) {
             return;
         }
         $saved = get_option(self::OPTION, []);
         $upgrade_keys = ['property_report_lead', 'followup_2', 'followup_3', 'followup_4', 'followup_5'];
+        $add_if_missing = ['buyer_enquiry_admin', 'vendor_lead_admin', 'vendor_lead_booked_admin', 'weekly_pipeline_report'];
         foreach (self::defaults() as $key => $default) {
             if (in_array($key, $upgrade_keys, true)) {
+                $saved[$key] = [
+                    'subject' => $default['subject'],
+                    'body' => $default['body'],
+                ];
+            } elseif (in_array($key, $add_if_missing, true) && empty($saved[$key])) {
                 $saved[$key] = [
                     'subject' => $default['subject'],
                     'body' => $default['body'],
@@ -129,11 +155,11 @@ class DG_RE_Email_Templates {
             }
         }
         update_option(self::OPTION, $saved);
-        update_option('dg_re_email_templates_version', '10.0.8');
+        update_option('dg_re_email_templates_version', '10.0.10');
     }
 
     public static function reset_to_defaults() {
         delete_option(self::OPTION);
-        update_option('dg_re_email_templates_version', '10.0.8');
+        update_option('dg_re_email_templates_version', '10.0.10');
     }
 }

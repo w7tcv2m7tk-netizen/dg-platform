@@ -5,7 +5,7 @@
     <?php if (isset($_GET['dev_key_regenerated'])) : ?><div class="notice notice-success"><p>Dev API key regenerated. Update your Cursor MCP config with the new key.</p></div><?php endif; ?>
     <div class="dg-panel" style="margin-bottom:20px;">
         <h2>Cursor / Dev API</h2>
-        <p style="color:#666;">Use this key so Cursor MCP can query live CRM data while you build. Never commit it to git or expose it on the frontend.</p>
+        <p style="color:#666;">Use this key so Cursor MCP can query live CRM data while you build. Never commit it to git or expose it on the frontend. If this key was ever shared, click <strong>Regenerate key</strong> and update <code>~/.cursor/mcp.json</code>.</p>
         <?php
         $dev_key = class_exists('DG_Dev_API') ? DG_Dev_API::get_or_create_key() : '';
         $regenerate_url = wp_nonce_url(admin_url('admin-post.php?action=dg_regenerate_dev_api_key'), 'dg_regenerate_dev_api_key');

@@ -87,6 +87,8 @@ class DG_Module_RealEstate {
             'class-property-report-followups.php',
             'class-pipeline-reports.php',
             'class-crm-dev-api.php',
+            'class-admin-notifications.php',
+            'class-pipeline-report-email.php',
             'booking-handler.php',
             'booking-shortcode.php',
             'properties-shortcodes.php',
@@ -813,6 +815,10 @@ class DG_Module_RealEstate {
                     <a href="<?php echo admin_url('admin.php?page=dg-re-buyer-leads'); ?>" class="button">🛒 Buyer Leads</a>
                     <a href="<?php echo admin_url('admin.php?page=dg-re-import'); ?>" class="button">📥 Import Properties</a>
                 </div>
+            </div>
+            <div style="background:#F5F2EF;padding:16px;border-radius:8px;margin-top:16px;font-size:13px;color:#555;">
+                <strong>Staff access:</strong> Assign the <em>DG Sales Agent</em> role under Users for CRM access without full admin.
+                Weekly pipeline reports email to <?php echo esc_html(apply_filters('dg_re_admin_notification_email', 'enquiries@roerealty.com.au')); ?> every Monday 8am.
             </div>
         </div>
         <?php

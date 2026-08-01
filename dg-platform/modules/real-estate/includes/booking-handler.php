@@ -92,7 +92,11 @@ function dg_re_process_booking_creation($data) {
         ]);
     }
 
-    dg_re_maybe_update_lead_on_booking($contact_id, $email, $booking_type);
+    dg_re_maybe_update_lead_on_booking($contact_id, $email, $booking_type, [
+        'booking_id' => (int) $booking_id,
+        'service_name' => $service_name,
+        'appointment_when' => date('l, j F Y', strtotime($date)) . ' at ' . date('g:i A', strtotime($time_normalized)),
+    ]);
 
     dg_re_send_booking_emails([
         'name' => $name,
@@ -167,20 +171,52 @@ function dg_re_send_booking_emails($booking) {
     wp_mail($booking['email'], $confirm['subject'], $confirm['body'], $headers);
 }
 
-function dg_re_maybe_update_lead_on_booking($contact_id, $email, $booking_type) {
+function dg_re_maybe_update_lead_on_booking($contact_id, $email, $booking_type, $context = []) {
     if (!class_exists('DG_RE_Vendor_Leads')) {
-        return;
+        return null;
     }
+
     global $wpdb;
     $leads_table = DG_RE_Vendor_Leads::leads_table();
+    $contacts_table = $wpdb->prefix . 'dg_contacts';
+    $email = sanitize_email($email);
+
     $lead = $wpdb->get_row($wpdb->prepare(
-        "SELECT id FROM $leads_table WHERE contact_id = %d ORDER BY created_at DESC LIMIT 1",
-        $contact_id
+        "SELECT l.id, l.property_address FROM $leads_table l
+         LEFT JOIN $contacts_table c ON l.contact_id = c.id
+         WHERE l.contact_id = %d OR c.email = %s
+         ORDER BY l.created_at DESC LIMIT 1",
+        (int) $contact_id,
+        $email
     ));
-    if ($lead) {
-        DG_RE_Vendor_Leads::update_status((int) $lead->id, 'appointment_booked');
-        if ($booking_type === 'property_appraisal') {
-            DG_RE_Vendor_Leads::advance_stage((int) $lead->id, 'appraisal');
-        }
+
+    if (!$lead) {
+        return null;
     }
+
+    $lead_id = (int) $lead->id;
+    DG_RE_Vendor_Leads::update_status($lead_id, 'appointment_booked');
+    if ($booking_type === 'property_appraisal') {
+        DG_RE_Vendor_Leads::advance_stage($lead_id, 'appraisal');
+    }
+
+    if (class_exists('DG_Activities')) {
+        DG_Activities::log([
+            'entity_type' => 're_lead',
+            'entity_id' => $lead_id,
+            'contact_id' => (int) $contact_id,
+            'activity_type' => 'booking',
+            'subject' => 'Appointment booked — pipeline updated',
+            'content' => $context['appointment_when'] ?? '',
+            'metadata' => [
+                'booking_id' => $context['booking_id'] ?? null,
+                'booking_type' => $booking_type,
+                'stage' => $booking_type === 'property_appraisal' ? 'appraisal' : 'vendor_lead',
+            ],
+        ]);
+    }
+
+    do_action('dg_re_vendor_lead_booking_linked', $lead_id, $context['booking_id'] ?? 0, $contact_id, $context);
+
+    return $lead_id;
 }
