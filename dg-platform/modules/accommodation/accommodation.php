@@ -54,6 +54,7 @@ class DG_Module_Accommodation {
             'class-acc-housekeeping.php',
             'class-acc-checkin.php',
             'class-acc-shortcodes.php',
+            'class-acc-listing-status.php',
         ] as $file) {
             $path = $dir . $file;
             if (file_exists($path)) {
@@ -307,11 +308,11 @@ class DG_Module_Accommodation {
         $types = [
             'Private Studio' => ['slug' => 'private-studio', 'description' => 'Intimate studio accommodation with private entrance'],
             'Tiny Home' => ['slug' => 'tiny-home', 'description' => 'Compact eco-friendly tiny house experience'],
-            'Sanctuary Dome' => ['slug' => 'sanctuary-dome', 'description' => 'Premium dome with private sanctuary feel'],
-            'Rainforest Dome' => ['slug' => 'rainforest-dome', 'description' => 'Dome accommodation surrounded by rainforest'],
-            'Canopy Dome' => ['slug' => 'canopy-dome', 'description' => 'Dome accommodation with canopy views'],
-            'Starlight Dome' => ['slug' => 'starlight-dome', 'description' => 'Dome accommodation with stargazing skylights'],
-            'The Shed' => ['slug' => 'the-shed', 'description' => 'Rustic converted shed with modern amenities'],
+            'Sanctuary Dome' => ['slug' => 'sanctuary-dome', 'description' => 'Premium glass dome — coming soon'],
+            'Rainforest Dome' => ['slug' => 'rainforest-dome', 'description' => 'Rainforest glass dome — coming soon'],
+            'Canopy Dome' => ['slug' => 'canopy-dome', 'description' => 'Canopy glass dome — coming soon'],
+            'Starlight Dome' => ['slug' => 'starlight-dome', 'description' => 'Stargazing glass dome — coming soon'],
+            'The Shed' => ['slug' => 'the-shed', 'description' => 'Functions and events venue — booking opening in future'],
         ];
         
         foreach ($types as $name => $args) {
@@ -1128,6 +1129,20 @@ class DG_Module_Accommodation {
             
             <!-- Availability -->
             <div class="dg-section-title">📅 Availability</div>
+            <?php
+            $listing_status = class_exists('DG_Acc_Listing_Status')
+                ? get_post_meta($post->ID, DG_Acc_Listing_Status::META, true) ?: DG_Acc_Listing_Status::infer_from_type($post->ID)
+                : 'bookable';
+            ?>
+            <div class="dg-meta-field full-width">
+                <label for="dg_listing_status">Listing status</label>
+                <select name="dg_listing_status" id="dg_listing_status" style="width:100%;max-width:400px;">
+                    <?php foreach (DG_Acc_Listing_Status::labels() as $value => $label) : ?>
+                        <option value="<?php echo esc_attr($value); ?>" <?php selected($listing_status, $value); ?>><?php echo esc_html($label); ?></option>
+                    <?php endforeach; ?>
+                </select>
+                <div class="helper">Domes default to <strong>Coming soon</strong>. The Shed defaults to <strong>Events & functions</strong>. Studio and Tiny Home stay open for bookings.</div>
+            </div>
             <div class="dg-meta-field">
                 <label for="dg_checkin_time">Check-in Time</label>
                 <input type="time" name="dg_checkin_time" value="<?php echo esc_attr(get_post_meta($post->ID, 'dg_checkin_time', true) ?: '15:00'); ?>">
@@ -1658,6 +1673,13 @@ class DG_Module_Accommodation {
         } else {
             update_post_meta($post_id, 'dg_features', []);
         }
+
+        if (isset($_POST['dg_listing_status']) && class_exists('DG_Acc_Listing_Status')) {
+            $status = sanitize_text_field($_POST['dg_listing_status']);
+            if (isset(DG_Acc_Listing_Status::labels()[$status])) {
+                update_post_meta($post_id, DG_Acc_Listing_Status::META, $status);
+            }
+        }
     }
     
     public function save_booking_meta($post_id) {
@@ -1794,6 +1816,8 @@ class DG_Module_Accommodation {
                 $price_display = $price ? '$' . number_format($price, 0) . '/night' : 'Contact for Price';
                 $image = has_post_thumbnail() ? get_the_post_thumbnail_url(get_the_ID(), 'medium_large') : '';
                 $featured = get_post_meta(get_the_ID(), 'dg_featured', true);
+                $listing_label = class_exists('DG_Acc_Listing_Status') ? DG_Acc_Listing_Status::public_label(get_the_ID()) : '';
+                $bookable = class_exists('DG_Acc_Listing_Status') ? DG_Acc_Listing_Status::is_bookable(get_the_ID()) : true;
             ?>
             <div class="dg-accommodation-card" style="background:#fff;border-radius:24px;overflow:hidden;border:1px solid #E0D6CC;transition:all 0.3s ease;">
                 <div style="height:200px;overflow:hidden;position:relative;">
@@ -1802,10 +1826,14 @@ class DG_Module_Accommodation {
                     <?php else: ?>
                         <div style="background:#E0D6CC;height:100%;display:flex;align-items:center;justify-content:center;color:#6B7A78;">No Image</div>
                     <?php endif; ?>
-                    <?php if ($featured): ?>
+                    <?php if ($listing_label): ?>
+                        <span style="position:absolute;top:1rem;left:1rem;background:#1C2B2A;color:#fff;padding:0.3rem 0.8rem;border-radius:40px;font-size:0.7rem;"><?php echo esc_html($listing_label); ?></span>
+                    <?php elseif ($featured): ?>
                         <span style="position:absolute;top:1rem;right:1rem;background:#B9A48A;color:#fff;padding:0.3rem 0.8rem;border-radius:40px;font-size:0.7rem;">⭐ Featured</span>
                     <?php endif; ?>
+                    <?php if ($bookable): ?>
                     <span style="position:absolute;bottom:1rem;left:1rem;background:rgba(44,62,80,0.9);color:#fff;padding:0.4rem 1rem;border-radius:40px;"><?php echo $price_display; ?></span>
+                    <?php endif; ?>
                 </div>
                 <div style="padding:1.5rem;text-align:center;">
                     <h3 style="font-size:1.2rem;font-weight:600;color:#2F2F2F;margin:0 0 0.5rem 0;">
@@ -1840,6 +1868,8 @@ class DG_Module_Accommodation {
         $baths = get_post_meta($post_id, 'dg_bathrooms', true);
         $description = get_post_meta($post_id, 'dg_description', true);
         $image = has_post_thumbnail($post_id) ? get_the_post_thumbnail_url($post_id, 'large') : '';
+        $bookable = class_exists('DG_Acc_Listing_Status') ? DG_Acc_Listing_Status::is_bookable($post_id) : true;
+        $listing_label = class_exists('DG_Acc_Listing_Status') ? DG_Acc_Listing_Status::public_label($post_id) : '';
         
         ob_start();
         ?>
@@ -1860,8 +1890,12 @@ class DG_Module_Accommodation {
                     <?php endif; ?>
                 </div>
                 <div style="background:#fff;padding:1.5rem;border-radius:12px;border:1px solid #E0D6CC;height:fit-content;">
-                    <h3 style="text-align:center;color:#1C2B2A;">💰 <?php echo $price_display; ?></h3>
-                    <a href="<?php echo home_url('/book-now/?accommodation=' . $post_id); ?>" style="display:block;width:100%;padding:0.8rem;background:#B9A48A;color:#fff;border:none;border-radius:40px;font-size:1rem;font-weight:600;text-align:center;text-decoration:none;cursor:pointer;">📅 Check Availability</a>
+                    <?php if ($listing_label): ?>
+                        <p style="text-align:center;color:#1C2B2A;font-weight:600;margin:0 0 1rem;">🔜 <?php echo esc_html($listing_label); ?></p>
+                    <?php else: ?>
+                        <h3 style="text-align:center;color:#1C2B2A;">💰 <?php echo $price_display; ?></h3>
+                        <a href="<?php echo home_url('/book-now/?accommodation=' . $post_id); ?>" style="display:block;width:100%;padding:0.8rem;background:#B9A48A;color:#fff;border:none;border-radius:40px;font-size:1rem;font-weight:600;text-align:center;text-decoration:none;cursor:pointer;">📅 Check Availability</a>
+                    <?php endif; ?>
                 </div>
             </div>
             <div style="padding:1rem 0;font-size:0.85rem;color:#999;border-top:1px solid #E0D6CC;text-align:center;">

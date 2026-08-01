@@ -123,6 +123,7 @@ class DG_Acc_Dev_API {
                 'weekday_rate' => (float) get_post_meta($p->ID, 'dg_weekday_rate', true),
                 'cleaning_fee' => (float) get_post_meta($p->ID, 'dg_cleaning_fee', true),
                 'housekeeping_status' => get_post_meta($p->ID, 'dg_housekeeping_status', true) ?: 'unknown',
+                'listing_status' => class_exists('DG_Acc_Listing_Status') ? DG_Acc_Listing_Status::get($p->ID) : 'bookable',
                 'checkin_slug' => get_post_meta($p->ID, 'dg_checkin_slug', true),
             ];
         }
