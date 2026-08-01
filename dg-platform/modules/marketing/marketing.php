@@ -173,95 +173,98 @@ class DG_Module_Marketing {
     // ============================================================
     
     private function get_audit_email_templates($company_name, $full_name, $audit_data, $audit_url) {
+        $h2 = 'color:#FFFFFF;font-size:22px;font-weight:700;margin:0 0 16px;letter-spacing:-0.02em;';
+        $p = 'color:#E2E8F0;font-size:16px;line-height:1.65;margin:0 0 16px;';
+        $ul = 'color:#E2E8F0;font-size:15px;line-height:1.8;padding-left:20px;margin:0 0 16px;';
+        $link = 'color:#60A5FA;text-decoration:none;';
+        $cta = 'background:#3B82F6;color:#fff;padding:14px 32px;border-radius:50px;text-decoration:none;font-weight:600;display:inline-block;';
+
         $templates = [
             1 => [
                 'subject' => 'Your Agency Visibility Audit Results Are In',
                 'content' => '
-                <h2 style="color:#1a1a2e;">Hi ' . $full_name . ',</h2>
-                <p style="color:#333;font-size:16px;line-height:1.6;">Your Agency Visibility Audit for <strong>' . $company_name . '</strong> is ready.</p>
-                <p style="color:#333;font-size:16px;line-height:1.6;">Here are your key results:</p>
-                <table style="width:100%;border-collapse:collapse;margin:20px 0;background:#f9f9f9;border-radius:8px;overflow:hidden;">
-                    <tr><td style="padding:12px 16px;border:1px solid #e0e0e0;font-weight:600;background:#f0f0f0;">Overall Score</td><td style="padding:12px 16px;border:1px solid #e0e0e0;font-weight:700;background:#f0f0f0;">' . $audit_data['overall_score'] . '%</td></tr>
-                    <tr><td style="padding:12px 16px;border:1px solid #e0e0e0;font-weight:600;">Grade</td><td style="padding:12px 16px;border:1px solid #e0e0e0;font-weight:700;">' . $audit_data['grade'] . '</td></tr>
-                    <tr><td style="padding:12px 16px;border:1px solid #e0e0e0;font-weight:600;">AI Visibility</td><td style="padding:12px 16px;border:1px solid #e0e0e0;font-weight:700;">' . $audit_data['ai_score'] . '%</td></tr>
-                    <tr><td style="padding:12px 16px;border:1px solid #e0e0e0;font-weight:600;">Website Performance</td><td style="padding:12px 16px;border:1px solid #e0e0e0;font-weight:700;">' . $audit_data['website_score'] . '%</td></tr>
-                </table>
-                <p style="margin:30px 0 20px 0;text-align:center;"><a href="' . $audit_url . '" style="background:#3B82F6;color:#fff;padding:14px 32px;border-radius:999px;text-decoration:none;font-weight:600;display:inline-block;">View Full Report</a></p>
-                <p style="color:#334155;font-size:16px;line-height:1.65;">I\'ll send you a breakdown of your top growth opportunities in my next email.</p>
+                <h2 style="' . $h2 . '">Hi ' . esc_html($full_name) . ',</h2>
+                <p style="' . $p . '">Your Agency Visibility Audit for <strong style="color:#60A5FA;">' . esc_html($company_name) . '</strong> is ready.</p>
+                <p style="' . $p . '">Here are your key results:</p>
+                ' . (class_exists('DG_Marketing_Emails') ? DG_Marketing_Emails::score_table([
+                    'Overall Score' => $audit_data['overall_score'] . '%',
+                    'Grade' => $audit_data['grade'],
+                    'AI Visibility' => $audit_data['ai_score'] . '%',
+                    'Website Performance' => $audit_data['website_score'] . '%',
+                ]) : '') . '
+                <p style="margin:30px 0 20px 0;text-align:center;"><a href="' . esc_url($audit_url) . '" style="' . $cta . '">View Full Report</a></p>
+                <p style="' . $p . '">I\'ll send you a breakdown of your top growth opportunities in my next email.</p>
                 '
             ],
             2 => [
                 'subject' => 'Your AI Visibility Breakdown & What It Means',
                 'content' => '
-                <h2 style="color:#1a1a2e;">Hi ' . $full_name . ',</h2>
-                <p style="color:#333;font-size:16px;line-height:1.6;">Let\'s break down your AI Visibility score for <strong>' . $company_name . '</strong>.</p>
-                <p style="color:#333;font-size:16px;line-height:1.6;">Your AI Visibility score is <strong>' . $audit_data['ai_score'] . '%</strong> ' . ($audit_data['ai_score'] < 50 ? '— this means AI systems like ChatGPT and Google AI Mode are not currently recommending your agency.' : '— this is a solid foundation, but there\'s room to grow.') . '</p>
-                <p style="color:#333;font-size:16px;line-height:1.6;">Here\'s how AI visibility works:</p>
-                <ul style="color:#333;font-size:15px;line-height:1.8;padding-left:20px;">
+                <h2 style="' . $h2 . '">Hi ' . esc_html($full_name) . ',</h2>
+                <p style="' . $p . '">Let\'s break down your AI Visibility score for <strong style="color:#60A5FA;">' . esc_html($company_name) . '</strong>.</p>
+                <p style="' . $p . '">Your AI Visibility score is <strong style="color:#FFFFFF;">' . $audit_data['ai_score'] . '%</strong> ' . ($audit_data['ai_score'] < 50 ? '— this means AI systems like ChatGPT and Google AI Mode are not currently recommending your agency.' : '— this is a solid foundation, but there\'s room to grow.') . '</p>
+                <p style="' . $p . '">Here\'s how AI visibility works:</p>
+                <ul style="' . $ul . '">
                     <li>AI systems scan the web for consistent, trusted information</li>
                     <li>They look for authority signals, reviews, and local citations</li>
                     <li>The more consistent your presence, the higher your AI visibility</li>
                 </ul>
-                <p style="color:#333;font-size:16px;line-height:1.6;">Want to see how this compares to other agencies in your area? <a href="' . admin_url('admin.php?page=dg-platform-ai') . '" style="color:#3B82F6;">View the AI Visibility Dashboard →</a></p>
-
+                <p style="' . $p . '">Want to see how this compares to other agencies in your area? <a href="' . esc_url(admin_url('admin.php?page=dg-platform-ai')) . '" style="' . $link . '">View the AI Visibility Dashboard →</a></p>
                 '
             ],
             3 => [
                 'subject' => 'Your Website Performance & Lead Generation Potential',
                 'content' => '
-                <h2 style="color:#1a1a2e;">Hi ' . $full_name . ',</h2>
-                <p style="color:#333;font-size:16px;line-height:1.6;">Let\'s talk about your website performance and lead potential for <strong>' . $company_name . '</strong>.</p>
-                <p style="color:#333;font-size:16px;line-height:1.6;">Your website scored <strong>' . $audit_data['website_score'] . '%</strong> on Google PageSpeed ' . ($audit_data['website_score'] < 50 ? '— which is below average. This means potential vendors are likely leaving your site before enquiring.' : '— which is above average, giving you a good foundation.') . '</p>
-                <p style="color:#333;font-size:16px;line-height:1.6;"><strong>Your Lead Potential Score:</strong> ' . $audit_data['vendor_lead_score'] . '%</p>
-                <p style="color:#333;font-size:16px;line-height:1.6;">Based on our analysis, here\'s what\'s holding back your lead generation:</p>
-                <ul style="color:#333;font-size:15px;line-height:1.8;padding-left:20px;">
+                <h2 style="' . $h2 . '">Hi ' . esc_html($full_name) . ',</h2>
+                <p style="' . $p . '">Let\'s talk about your website performance and lead potential for <strong style="color:#60A5FA;">' . esc_html($company_name) . '</strong>.</p>
+                <p style="' . $p . '">Your website scored <strong style="color:#FFFFFF;">' . $audit_data['website_score'] . '%</strong> on Google PageSpeed ' . ($audit_data['website_score'] < 50 ? '— which is below average. This means potential vendors are likely leaving your site before enquiring.' : '— which is above average, giving you a good foundation.') . '</p>
+                <p style="' . $p . '"><strong style="color:#FFFFFF;">Your Lead Potential Score:</strong> ' . $audit_data['vendor_lead_score'] . '%</p>
+                <p style="' . $p . '">Based on our analysis, here\'s what\'s holding back your lead generation:</p>
+                <ul style="' . $ul . '">
                     <li>' . ($audit_data['website_score'] < 50 ? '❌ Slow loading times are hurting conversions' : '✅ Your website speed is good') . '</li>
                     <li>' . ($audit_data['vendor_lead_score'] < 50 ? '❌ Limited content targeting vendors' : '✅ You have good vendor-focused content') . '</li>
                     <li>' . ($audit_data['google_score'] < 50 ? '❌ Google visibility needs improvement' : '✅ Your Google presence is strong') . '</li>
                 </ul>
-                <p style="margin:30px 0 20px 0;text-align:center;"><a href="' . $audit_url . '" style="background:#3B82F6;color:#fff;padding:12px 28px;border-radius:50px;text-decoration:none;font-weight:600;display:inline-block;">See Your Full Website Analysis →</a></p>
-
+                <p style="margin:30px 0 20px 0;text-align:center;"><a href="' . esc_url($audit_url) . '" style="' . $cta . '">See Your Full Website Analysis →</a></p>
                 '
             ],
             4 => [
                 'subject' => 'Action Plan: 3 Steps to Improve Your Agency Visibility',
                 'content' => '
-                <h2 style="color:#1a1a2e;">Hi ' . $full_name . ',</h2>
-                <p style="color:#333;font-size:16px;line-height:1.6;">Based on your audit for <strong>' . $company_name . '</strong>, here are the <strong>3 most impactful actions</strong> you can take right now:</p>
-                <ol style="color:#333;font-size:15px;line-height:1.8;padding-left:20px;">
-                    <li><strong>Build local authority content</strong> — Create suburb-specific landing pages with detailed market insights</li>
-                    <li><strong>Improve your Google Business Profile</strong> — Add photos, posts, and respond to all reviews</li>
-                    <li><strong>Optimize for AI search</strong> — Structure your content to answer common vendor questions</li>
+                <h2 style="' . $h2 . '">Hi ' . esc_html($full_name) . ',</h2>
+                <p style="' . $p . '">Based on your audit for <strong style="color:#60A5FA;">' . esc_html($company_name) . '</strong>, here are the <strong style="color:#FFFFFF;">3 most impactful actions</strong> you can take right now:</p>
+                <ol style="' . $ul . '">
+                    <li><strong style="color:#FFFFFF;">Build local authority content</strong> — Create suburb-specific landing pages with detailed market insights</li>
+                    <li><strong style="color:#FFFFFF;">Improve your Google Business Profile</strong> — Add photos, posts, and respond to all reviews</li>
+                    <li><strong style="color:#FFFFFF;">Optimize for AI search</strong> — Structure your content to answer common vendor questions</li>
                 </ol>
-                <p style="color:#333;font-size:16px;line-height:1.6;">Here\'s a more detailed breakdown of your growth opportunities:</p>
-                <ul style="color:#333;font-size:15px;line-height:1.8;padding-left:20px;">'
-                . implode('', array_map(function($rec) { return '<li>✓ ' . $rec . '</li>'; }, array_slice($audit_data['recommendations'], 0, 3))) .
+                <p style="' . $p . '">Here\'s a more detailed breakdown of your growth opportunities:</p>
+                <ul style="' . $ul . '">'
+                . implode('', array_map(function($rec) { return '<li>✓ ' . esc_html($rec) . '</li>'; }, array_slice($audit_data['recommendations'], 0, 3))) .
                 '</ul>
-                <p style="margin:30px 0 20px 0;text-align:center;"><a href="https://digitalgate.com.au/strategy-session" style="background:#3B82F6;color:#fff;padding:12px 28px;border-radius:50px;text-decoration:none;font-weight:600;display:inline-block;">Book Your Free Strategy Session →</a></p>
-
+                <p style="margin:30px 0 20px 0;text-align:center;"><a href="https://digitalgate.com.au/strategy-session" style="' . $cta . '">Book Your Free Strategy Session →</a></p>
                 '
             ],
             5 => [
                 'subject' => 'Final Step: Let\'s Build Your Growth Plan',
                 'content' => '
-                <h2 style="color:#1a1a2e;">Hi ' . $full_name . ',</h2>
-                <p style="color:#333;font-size:16px;line-height:1.6;">This is the final email in your Agency Visibility Audit series for <strong>' . $company_name . '</strong>.</p>
-                <p style="color:#333;font-size:16px;line-height:1.6;">Here\'s what we\'ve covered so far:</p>
-                <ul style="color:#333;font-size:15px;line-height:1.8;padding-left:20px;">
+                <h2 style="' . $h2 . '">Hi ' . esc_html($full_name) . ',</h2>
+                <p style="' . $p . '">This is the final email in your Agency Visibility Audit series for <strong style="color:#60A5FA;">' . esc_html($company_name) . '</strong>.</p>
+                <p style="' . $p . '">Here\'s what we\'ve covered so far:</p>
+                <ul style="' . $ul . '">
                     <li>✅ Your AI visibility score and breakdown</li>
                     <li>✅ Your website performance and lead potential</li>
                     <li>✅ 3 key actions to improve your visibility</li>
                 </ul>
-                <p style="color:#333;font-size:16px;line-height:1.6;"><strong>Now it\'s time to take the next step.</strong></p>
-                <p style="color:#333;font-size:16px;line-height:1.6;">I\'d like to offer you a <strong>free 30-minute strategy session</strong> where we\'ll:</p>
-                <ul style="color:#333;font-size:15px;line-height:1.8;padding-left:20px;">
+                <p style="' . $p . '"><strong style="color:#FFFFFF;">Now it\'s time to take the next step.</strong></p>
+                <p style="' . $p . '">I\'d like to offer you a <strong style="color:#FFFFFF;">free 30-minute strategy session</strong> where we\'ll:</p>
+                <ul style="' . $ul . '">
                     <li>Walk through your audit results in detail</li>
                     <li>Identify your highest-value opportunities</li>
                     <li>Build a custom growth plan for your agency</li>
                 </ul>
-                <p style="margin:30px 0 20px 0;text-align:center;"><a href="https://digitalgate.com.au/strategy-session" style="background:#3B82F6;color:#fff;padding:14px 36px;border-radius:50px;text-decoration:none;font-weight:600;font-size:16px;display:inline-block;">📅 Book Your Free Strategy Session</a></p>
-                <p style="color:#333;font-size:16px;line-height:1.6;">Looking forward to helping you grow,</p>
-
+                <p style="margin:30px 0 20px 0;text-align:center;"><a href="https://digitalgate.com.au/strategy-session" style="' . $cta . ' font-size:16px;padding:14px 36px;">📅 Book Your Free Strategy Session</a></p>
+                <p style="color:#E2E8F0;font-size:16px;line-height:1.65;margin:16px 0 0;">Looking forward to helping you grow,</p>
+                <p style="color:#E2E8F0;font-size:16px;line-height:1.65;margin:8px 0 0;"><strong style="color:#FFFFFF;">Ben Roe</strong><br><span style="color:#94A3B8;font-size:14px;">DigitalGate · Licensed QLD Real Estate Agent</span></p>
                 '
             ]
         ];

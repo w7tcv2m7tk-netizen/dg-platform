@@ -1,11 +1,19 @@
 {
   "mcpServers": {
-    "dg-platform": {
+    "dg-platform-digitalgate": {
+      "command": "node",
+      "args": ["${workspaceFolder}/dg-platform/mcp-server/index.js"],
+      "env": {
+        "DG_PLATFORM_URL": "https://digitalgate.com.au",
+        "DG_DEV_API_KEY": "paste-from-wp-admin-api-settings"
+      }
+    },
+    "dg-platform-roe-realty": {
       "command": "node",
       "args": ["${workspaceFolder}/dg-platform/mcp-server/index.js"],
       "env": {
         "DG_PLATFORM_URL": "https://roerealty.com.au",
-        "DG_DEV_API_KEY": "dgdev_8Gr7Rqm1qKOLoHPukmTYREjeX4BMpFZNqJLLQXL7"
+        "DG_DEV_API_KEY": "paste-from-wp-admin-api-settings"
       }
     }
   }

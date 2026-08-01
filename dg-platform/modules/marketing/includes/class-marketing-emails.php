@@ -1,6 +1,7 @@
 <?php
 /**
  * DigitalGate HTML email branding (audit sequence + notifications).
+ * Matches digitalgate.com.au — dark premium, Inter, blue gradient CTAs.
  *
  * @package DG_Platform
  */
@@ -10,6 +11,9 @@ if (!defined('ABSPATH')) {
 }
 
 class DG_Marketing_Emails {
+
+    const LOGO_URL = 'https://digitalgate.com.au/wp-content/uploads/2026/05/DigitalGate-Banner-Light.png';
+    const ICON_URL = 'https://digitalgate.com.au/wp-content/uploads/2026/05/Gate-Icon-Light-Door-scaled.png';
 
     public static function init() {
         if (!class_exists('DG_Site_Profile') || !DG_Site_Profile::is_digitalgate()) {
@@ -27,12 +31,15 @@ class DG_Marketing_Emails {
         return 'Ben Roe | DigitalGate';
     }
 
-    public static function mail_headers() {
-        return [
-            'Content-Type: text/html; charset=UTF-8',
+    public static function mail_headers($html = true) {
+        $headers = [
             'From: Ben Roe | DigitalGate <hello@digitalgate.com.au>',
             'Reply-To: Ben Roe <hello@digitalgate.com.au>',
         ];
+        $headers[] = $html
+            ? 'Content-Type: text/html; charset=UTF-8'
+            : 'Content-Type: text/plain; charset=UTF-8';
+        return $headers;
     }
 
     public static function site_url($path = '') {
@@ -43,35 +50,44 @@ class DG_Marketing_Emails {
         $footer_note = $options['footer_note'] ?? 'You\'re receiving this because you requested an Agency Visibility Audit.';
         $unsubscribe = $options['unsubscribe_url'] ?? self::site_url('/unsubscribe');
 
-        return '<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>'
-            . '<body style="margin:0;padding:0;background:#EFF3F8;font-family:Georgia,\'Times New Roman\',serif;">'
-            . '<table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="background:#EFF3F8;padding:32px 16px;"><tr><td align="center">'
-            . '<table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="max-width:600px;background:#ffffff;border:1px solid #D8E2EF;border-radius:16px;overflow:hidden;">'
-            . '<tr><td style="padding:28px 32px 16px;background:#1a1a2e;border-bottom:3px solid #3B82F6;">'
-            . '<div style="font-size:22px;font-weight:700;color:#ffffff;letter-spacing:0.02em;">DigitalGate</div>'
-            . '<div style="font-size:13px;color:#94A3B8;margin-top:4px;">Agency Growth &amp; AI Visibility</div>'
+        return '<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">'
+            . '<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">'
+            . '</head>'
+            . '<body style="margin:0;padding:0;background:#0A0F1A;font-family:Inter,-apple-system,BlinkMacSystemFont,\'Segoe UI\',sans-serif;">'
+            . '<table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="background:#0A0F1A;padding:32px 16px;"><tr><td align="center">'
+            . '<table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="max-width:600px;background:#141B2B;border:1px solid rgba(59,130,246,0.12);border-radius:24px;overflow:hidden;">'
+            . '<tr><td style="padding:32px 32px 24px;text-align:center;border-bottom:1px solid rgba(255,255,255,0.06);">'
+            . '<img src="' . esc_url(self::LOGO_URL) . '" alt="DigitalGate" width="200" style="max-width:200px;height:auto;display:block;margin:0 auto 12px;">'
+            . '<div style="font-size:12px;font-weight:600;color:#94A3B8;letter-spacing:0.12em;text-transform:uppercase;">AI Visibility &amp; Lead Generation</div>'
             . '</td></tr>'
-            . '<tr><td style="padding:32px;font-family:Arial,Helvetica,sans-serif;">' . $inner_html . '</td></tr>'
-            . '<tr><td style="padding:20px 32px 28px;background:#F8FAFC;border-top:1px solid #E2E8F0;font-size:13px;line-height:1.6;color:#64748B;text-align:center;font-family:Arial,Helvetica,sans-serif;">'
-            . 'Ben Roe | DigitalGate &nbsp;·&nbsp; <a href="' . esc_url(self::site_url()) . '" style="color:#3B82F6;text-decoration:none;">digitalgate.com.au</a>'
-            . '<br><span style="font-size:12px;color:#94A3B8;margin-top:8px;display:inline-block;">'
-            . esc_html($footer_note) . ' <a href="' . esc_url($unsubscribe) . '" style="color:#3B82F6;">Unsubscribe</a>'
-            . '</span></td></tr>'
+            . '<tr><td style="padding:32px;font-family:Inter,-apple-system,BlinkMacSystemFont,\'Segoe UI\',sans-serif;color:#E2E8F0;">' . $inner_html . '</td></tr>'
+            . '<tr><td style="padding:24px 32px 32px;background:#0A0F1A;border-top:1px solid rgba(255,255,255,0.06);text-align:center;">'
+            . '<img src="' . esc_url(self::ICON_URL) . '" alt="" width="48" style="max-width:48px;height:auto;opacity:0.7;margin-bottom:12px;">'
+            . '<p style="margin:0 0 6px;font-size:13px;line-height:1.6;color:#64748B;">'
+            . '© ' . date('Y') . ' DigitalGate. All rights reserved.'
+            . '</p>'
+            . '<p style="margin:0 0 6px;font-size:13px;line-height:1.6;color:#64748B;">'
+            . '<a href="' . esc_url(self::site_url()) . '" style="color:#60A5FA;text-decoration:none;">digitalgate.com.au</a>'
+            . '</p>'
+            . '<p style="margin:12px 0 0;font-size:11px;line-height:1.5;color:#475569;">'
+            . esc_html($footer_note) . ' <a href="' . esc_url($unsubscribe) . '" style="color:#60A5FA;">Unsubscribe</a>'
+            . '</p>'
+            . '</td></tr>'
             . '</table></td></tr></table></body></html>';
     }
 
     public static function cta($url, $label) {
         return '<table role="presentation" cellpadding="0" cellspacing="0" style="margin:28px auto 8px;"><tr><td align="center">'
-            . '<a href="' . esc_url($url) . '" style="display:inline-block;background:#3B82F6;color:#ffffff;text-decoration:none;font-weight:600;font-size:16px;padding:14px 32px;border-radius:999px;">'
+            . '<a href="' . esc_url($url) . '" style="display:inline-block;background:#3B82F6;color:#ffffff;text-decoration:none;font-weight:600;font-size:15px;padding:14px 36px;border-radius:50px;box-shadow:0 8px 30px rgba(59,130,246,0.25);">'
             . esc_html($label) . '</a></td></tr></table>';
     }
 
     public static function score_table($rows) {
-        $html = '<table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="border-collapse:collapse;margin:20px 0;">';
+        $html = '<table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="border-collapse:collapse;margin:20px 0;border-radius:12px;overflow:hidden;">';
         foreach ($rows as $label => $value) {
             $html .= '<tr>';
-            $html .= '<td style="padding:12px 16px;border-bottom:1px solid #E2E8F0;width:50%;font-weight:600;color:#475569;background:#F8FAFC;">' . esc_html($label) . '</td>';
-            $html .= '<td style="padding:12px 16px;border-bottom:1px solid #E2E8F0;font-weight:700;color:#1a1a2e;">' . esc_html((string) $value) . '</td>';
+            $html .= '<td style="padding:12px 16px;border-bottom:1px solid rgba(255,255,255,0.06);width:50%;font-weight:600;color:#94A3B8;background:rgba(255,255,255,0.03);">' . esc_html($label) . '</td>';
+            $html .= '<td style="padding:12px 16px;border-bottom:1px solid rgba(255,255,255,0.06);font-weight:700;color:#FFFFFF;background:rgba(255,255,255,0.03);">' . esc_html((string) $value) . '</td>';
             $html .= '</tr>';
         }
         $html .= '</table>';
@@ -79,9 +95,9 @@ class DG_Marketing_Emails {
     }
 
     public static function initial_audit_email($name, $company_name, $audit_data, $audit_url) {
-        $inner = '<h1 style="color:#1a1a2e;font-size:24px;margin:0 0 16px;">Your Agency Visibility Audit</h1>';
-        $inner .= '<p style="color:#334155;font-size:16px;line-height:1.65;">Hi ' . esc_html($name) . ',</p>';
-        $inner .= '<p style="color:#334155;font-size:16px;line-height:1.65;">Thank you for requesting a Visibility Audit for <strong>' . esc_html($company_name) . '</strong>.</p>';
+        $inner = '<h1 style="color:#FFFFFF;font-size:24px;font-weight:700;margin:0 0 16px;letter-spacing:-0.02em;">Your Agency Visibility Audit</h1>';
+        $inner .= '<p style="color:#E2E8F0;font-size:16px;line-height:1.65;margin:0 0 16px;">Hi ' . esc_html($name) . ',</p>';
+        $inner .= '<p style="color:#E2E8F0;font-size:16px;line-height:1.65;margin:0 0 16px;">Thank you for requesting a Visibility Audit for <strong style="color:#60A5FA;">' . esc_html($company_name) . '</strong>.</p>';
         $inner .= self::score_table([
             'Overall Score' => $audit_data['overall_score'] . '%',
             'Grade' => $audit_data['grade'],
@@ -89,9 +105,10 @@ class DG_Marketing_Emails {
             'Website Performance' => $audit_data['website_score'] . '%',
         ]);
         if (!empty($audit_data['recommendations'])) {
-            $inner .= '<h3 style="color:#1a1a2e;font-size:18px;">Top recommendations</h3><ul style="color:#334155;line-height:1.7;padding-left:20px;">';
+            $inner .= '<h3 style="color:#FFFFFF;font-size:18px;font-weight:600;margin:24px 0 12px;">Top recommendations</h3>';
+            $inner .= '<ul style="color:#E2E8F0;line-height:1.7;padding-left:20px;margin:0;">';
             foreach (array_slice($audit_data['recommendations'], 0, 4) as $rec) {
-                $inner .= '<li>' . esc_html($rec) . '</li>';
+                $inner .= '<li style="margin-bottom:8px;">' . esc_html($rec) . '</li>';
             }
             $inner .= '</ul>';
         }

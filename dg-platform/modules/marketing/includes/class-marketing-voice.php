@@ -200,16 +200,9 @@ class DG_Marketing_Voice {
         $body .= "Agency client ID: {$company_id}\n\n";
         $body .= "Summary:\n" . sanitize_textarea_field($data['ai_call_summary'] ?? '') . "\n";
 
-        $headers = ['Content-Type: text/plain; charset=UTF-8'];
-        if (class_exists('DG_Marketing_Emails')) {
-            $headers = [
-                'Content-Type: text/plain; charset=UTF-8',
-                'From: Ben Roe | DigitalGate <hello@digitalgate.com.au>',
-                'Reply-To: Ben Roe <hello@digitalgate.com.au>',
-            ];
-        } elseif (class_exists('DG_RE_Email_Templates')) {
-            $headers = DG_RE_Email_Templates::mail_headers(false);
-        }
+        $headers = class_exists('DG_Marketing_Emails')
+            ? DG_Marketing_Emails::mail_headers(false)
+            : ['Content-Type: text/plain; charset=UTF-8'];
 
         wp_mail($to, $subject, $body, $headers);
     }
