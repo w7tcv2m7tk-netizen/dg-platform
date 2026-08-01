@@ -30,6 +30,7 @@ class DG_Module_RealEstate {
         // Register hooks
         add_action('init', [$this, 'register_post_types']);
         add_action('init', [$this, 'create_tables']);
+        add_action('init', [$this, 'maybe_upgrade_data'], 5);
         add_action('init', [$this, 'schedule_cron']);
         add_action('dg_platform_register_menus', [$this, 'register_menus'], 15);
         add_action('dg_platform_quick_actions', [$this, 'quick_actions']);
@@ -78,11 +79,13 @@ class DG_Module_RealEstate {
         $includes = __DIR__ . '/includes/';
         $files = [
             'class-re-contacts.php',
+            'class-re-permissions.php',
             'class-lead-assignment.php',
             'class-email-templates.php',
             'class-vendor-leads.php',
             'class-buyer-leads.php',
             'class-property-report-followups.php',
+            'class-pipeline-reports.php',
             'booking-handler.php',
             'booking-shortcode.php',
             'properties-shortcodes.php',
@@ -187,31 +190,39 @@ class DG_Module_RealEstate {
         ]);
     }
     
+    public function maybe_upgrade_data() {
+        if (class_exists('DG_RE_Email_Templates')) {
+            DG_RE_Email_Templates::maybe_upgrade();
+        }
+    }
+
     // ============================================================
     // ADMIN MENUS - Everything under DG Platform
     // ============================================================
     
     public function register_menus() {
-        // Main Real Estate menu
-        add_submenu_page('dg-platform', 'Real Estate', '🏠 Real Estate', 'manage_options', 'dg-re-dashboard', [$this, 'render_dashboard']);
-        
-        // Properties - Link to the post type list but with our own page
-        add_submenu_page('dg-platform', 'Properties', '🏷️ Properties', 'manage_options', 'edit.php?post_type=property');
-        
-        // Agents - Link to the post type list but with our own page
-        add_submenu_page('dg-platform', 'Agents', '👤 Agents', 'manage_options', 'edit.php?post_type=agent');
-        
-        // Additional submenus
-        add_submenu_page('dg-platform', 'Contacts', '📇 Contacts', 'manage_options', 'dg-re-contacts', [$this, 'render_contacts']);
-        add_submenu_page('dg-platform', 'Vendor Leads', '🎯 Vendor Leads', 'manage_options', 'dg-re-vendor-leads', [$this, 'render_vendor_leads']);
-        add_submenu_page(null, 'Vendor Lead', 'Vendor Lead', 'manage_options', 'dg-re-vendor-lead', [$this, 'render_vendor_lead_detail']);
-        add_submenu_page('dg-platform', 'Vendor Pipeline', '📋 Vendor Pipeline', 'manage_options', 'dg-re-vendor-pipeline', [$this, 'render_vendor_pipeline']);
-        add_submenu_page('dg-platform', 'Buyer Leads', '🛒 Buyer Leads', 'manage_options', 'dg-re-buyer-leads', [$this, 'render_buyer_leads']);
-        add_submenu_page(null, 'Buyer Lead', 'Buyer Lead', 'manage_options', 'dg-re-buyer-lead', [$this, 'render_buyer_lead_detail']);
-        add_submenu_page('dg-platform', 'Buyer Pipeline', '📋 Buyer Pipeline', 'manage_options', 'dg-re-buyer-pipeline', [$this, 'render_buyer_pipeline']);
-        add_submenu_page('dg-platform', 'Bookings', '📅 Bookings', 'manage_options', 'dg-re-bookings', [$this, 'render_bookings']);
-        add_submenu_page('dg-platform', 'Email Templates', '✉️ Email Templates', 'manage_options', 'dg-re-email-templates', [$this, 'render_email_templates']);
-        add_submenu_page('dg-platform', 'Import', '📥 Import', 'manage_options', 'dg-re-import', [$this, 'render_import']);
+        $view_leads = DG_RE_Permissions::cap_view_leads();
+        $manage_leads = DG_RE_Permissions::cap_manage_leads();
+        $view_buyers = DG_RE_Permissions::cap_view_buyers();
+        $view_listings = DG_RE_Permissions::cap_view_listings();
+        $view_agents = DG_RE_Permissions::cap_view_agents();
+        $view_appraisals = DG_RE_Permissions::cap_view_appraisals();
+        $import_cap = DG_RE_Permissions::cap_import();
+
+        add_submenu_page('dg-platform', 'Real Estate', '🏠 Real Estate', $view_leads, 'dg-re-dashboard', [$this, 'render_dashboard']);
+        add_submenu_page('dg-platform', 'Properties', '🏷️ Properties', $view_listings, 'edit.php?post_type=property');
+        add_submenu_page('dg-platform', 'Agents', '👤 Agents', $view_agents, 'edit.php?post_type=agent');
+        add_submenu_page('dg-platform', 'Contacts', '📇 Contacts', $view_leads, 'dg-re-contacts', [$this, 'render_contacts']);
+        add_submenu_page('dg-platform', 'Vendor Leads', '🎯 Vendor Leads', $view_leads, 'dg-re-vendor-leads', [$this, 'render_vendor_leads']);
+        add_submenu_page(null, 'Vendor Lead', 'Vendor Lead', $view_leads, 'dg-re-vendor-lead', [$this, 'render_vendor_lead_detail']);
+        add_submenu_page('dg-platform', 'Vendor Pipeline', '📋 Vendor Pipeline', $view_leads, 'dg-re-vendor-pipeline', [$this, 'render_vendor_pipeline']);
+        add_submenu_page('dg-platform', 'Buyer Leads', '🛒 Buyer Leads', $view_buyers, 'dg-re-buyer-leads', [$this, 'render_buyer_leads']);
+        add_submenu_page(null, 'Buyer Lead', 'Buyer Lead', $view_buyers, 'dg-re-buyer-lead', [$this, 'render_buyer_lead_detail']);
+        add_submenu_page('dg-platform', 'Buyer Pipeline', '📋 Buyer Pipeline', $view_buyers, 'dg-re-buyer-pipeline', [$this, 'render_buyer_pipeline']);
+        add_submenu_page('dg-platform', 'Pipeline Reports', '📊 Pipeline Reports', $view_leads, 'dg-re-pipeline-reports', [$this, 'render_pipeline_reports']);
+        add_submenu_page('dg-platform', 'Bookings', '📅 Bookings', $view_appraisals, 'dg-re-bookings', [$this, 'render_bookings']);
+        add_submenu_page('dg-platform', 'Email Templates', '✉️ Email Templates', $manage_leads, 'dg-re-email-templates', [$this, 'render_email_templates']);
+        add_submenu_page('dg-platform', 'Import', '📥 Import', $import_cap, 'dg-re-import', [$this, 'render_import']);
     }
     
     // ============================================================
@@ -797,6 +808,7 @@ class DG_Module_RealEstate {
                     <a href="<?php echo admin_url('post-new.php?post_type=property'); ?>" class="button button-primary">➕ Add Property</a>
                     <a href="<?php echo admin_url('post-new.php?post_type=agent'); ?>" class="button">👤 Add Agent</a>
                     <a href="<?php echo admin_url('admin.php?page=dg-re-vendor-pipeline'); ?>" class="button">📋 Vendor Pipeline</a>
+                    <a href="<?php echo admin_url('admin.php?page=dg-re-pipeline-reports'); ?>" class="button">📊 Pipeline Reports</a>
                     <a href="<?php echo admin_url('admin.php?page=dg-re-buyer-leads'); ?>" class="button">🛒 Buyer Leads</a>
                     <a href="<?php echo admin_url('admin.php?page=dg-re-import'); ?>" class="button">📥 Import Properties</a>
                 </div>
@@ -1248,6 +1260,112 @@ class DG_Module_RealEstate {
         <?php
     }
     
+    public function render_pipeline_reports() {
+        if (!class_exists('DG_RE_Pipeline_Reports')) {
+            echo '<div class="wrap"><h1>Pipeline Reports</h1><p>Reports unavailable.</p></div>';
+            return;
+        }
+
+        $vendor_stages = DG_RE_Pipeline_Reports::vendor_stage_counts();
+        $vendor_sources = DG_RE_Pipeline_Reports::vendor_source_counts();
+        $buyer_stages = DG_RE_Pipeline_Reports::buyer_stage_counts();
+        $conversion = DG_RE_Pipeline_Reports::vendor_conversion_summary();
+        $activity = DG_RE_Pipeline_Reports::recent_activity_summary(30);
+        $bookings_month = DG_RE_Pipeline_Reports::bookings_this_month();
+        $reports_month = DG_RE_Pipeline_Reports::property_reports_this_month();
+        $vendor_total = array_sum(array_column($vendor_stages, 'count'));
+        $buyer_total = array_sum(array_column($buyer_stages, 'count'));
+        ?>
+        <div class="wrap">
+            <h1>📊 Pipeline Reports</h1>
+            <p style="color:#666;">Vendor acquisition funnel, lead sources, and booking activity.</p>
+
+            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;margin:20px 0;">
+                <div style="background:#fff;padding:16px;border-radius:10px;border-left:4px solid #C9A46C;">
+                    <div style="font-size:24px;font-weight:700;"><?php echo (int) $reports_month; ?></div>
+                    <div style="color:#666;font-size:13px;">Property reports this month</div>
+                </div>
+                <div style="background:#fff;padding:16px;border-radius:10px;border-left:4px solid #F57C00;">
+                    <div style="font-size:24px;font-weight:700;"><?php echo (int) $bookings_month; ?></div>
+                    <div style="color:#666;font-size:13px;">Bookings this month</div>
+                </div>
+                <div style="background:#fff;padding:16px;border-radius:10px;border-left:4px solid #00897B;">
+                    <div style="font-size:24px;font-weight:700;"><?php echo (int) $conversion['rate']; ?>%</div>
+                    <div style="color:#666;font-size:13px;">Vendor → appraisal+ rate</div>
+                </div>
+                <div style="background:#fff;padding:16px;border-radius:10px;border-left:4px solid #1565C0;">
+                    <div style="font-size:24px;font-weight:700;"><?php echo (int) $activity['vendor_leads']; ?></div>
+                    <div style="color:#666;font-size:13px;">Vendor leads (30 days)</div>
+                </div>
+                <div style="background:#fff;padding:16px;border-radius:10px;border-left:4px solid #5E35B1;">
+                    <div style="font-size:24px;font-weight:700;"><?php echo (int) $activity['buyer_leads']; ?></div>
+                    <div style="color:#666;font-size:13px;">Buyer enquiries (30 days)</div>
+                </div>
+            </div>
+
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:20px;">
+                <div style="background:#fff;border:1px solid #ddd;border-radius:8px;padding:20px;">
+                    <h2 style="margin-top:0;">Vendor pipeline by stage</h2>
+                    <p style="color:#888;font-size:12px;margin-top:-8px;"><?php echo (int) $vendor_total; ?> active leads total</p>
+                    <table class="widefat striped" style="margin-top:12px;">
+                        <thead><tr><th>Stage</th><th style="width:80px;text-align:right;">Count</th><th style="width:120px;">Share</th></tr></thead>
+                        <tbody>
+                            <?php foreach ($vendor_stages as $key => $row) :
+                                $pct = $vendor_total > 0 ? round(($row['count'] / $vendor_total) * 100) : 0;
+                                ?>
+                                <tr>
+                                    <td><?php echo esc_html($row['label']); ?></td>
+                                    <td style="text-align:right;"><?php echo (int) $row['count']; ?></td>
+                                    <td>
+                                        <div style="background:#eee;border-radius:4px;height:8px;overflow:hidden;">
+                                            <div style="background:#C9A46C;height:100%;width:<?php echo (int) $pct; ?>%;"></div>
+                                        </div>
+                                    </td>
+                                </tr>
+                            <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                    <p style="margin:12px 0 0;color:#666;font-size:12px;">
+                        <?php echo (int) $conversion['appraisal_plus']; ?> of <?php echo (int) $conversion['total']; ?> vendor leads reached appraisal stage or beyond.
+                    </p>
+                </div>
+
+                <div style="background:#fff;border:1px solid #ddd;border-radius:8px;padding:20px;">
+                    <h2 style="margin-top:0;">Leads by source</h2>
+                    <?php if ($vendor_sources) : ?>
+                        <table class="widefat striped" style="margin-top:12px;">
+                            <thead><tr><th>Source</th><th style="width:80px;text-align:right;">Count</th></tr></thead>
+                            <tbody>
+                                <?php foreach ($vendor_sources as $row) : ?>
+                                    <tr>
+                                        <td><?php echo esc_html(ucwords(str_replace('_', ' ', $row->source))); ?></td>
+                                        <td style="text-align:right;"><?php echo (int) $row->total; ?></td>
+                                    </tr>
+                                <?php endforeach; ?>
+                            </tbody>
+                        </table>
+                    <?php else : ?>
+                        <p style="color:#999;">No vendor leads recorded yet.</p>
+                    <?php endif; ?>
+                </div>
+            </div>
+
+            <div style="background:#fff;border:1px solid #ddd;border-radius:8px;padding:20px;">
+                <h2 style="margin-top:0;">Buyer pipeline by stage</h2>
+                <p style="color:#888;font-size:12px;margin-top:-8px;"><?php echo (int) $buyer_total; ?> active buyers total</p>
+                <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-top:12px;">
+                    <?php foreach ($buyer_stages as $key => $row) : ?>
+                        <div style="background:#f6f7f7;border-radius:6px;padding:12px;text-align:center;">
+                            <div style="font-size:22px;font-weight:700;"><?php echo (int) $row['count']; ?></div>
+                            <div style="font-size:12px;color:#666;"><?php echo esc_html($row['label']); ?></div>
+                        </div>
+                    <?php endforeach; ?>
+                </div>
+            </div>
+        </div>
+        <?php
+    }
+
     public function render_bookings() {
         global $wpdb;
         $bookings = $wpdb->get_results("SELECT b.*, c.email, c.first_name, c.last_name FROM {$wpdb->prefix}roe_crm_bookings b LEFT JOIN {$wpdb->prefix}roe_crm_contacts c ON b.contact_id = c.id ORDER BY b.booking_date DESC LIMIT 50");
@@ -1311,7 +1429,7 @@ class DG_Module_RealEstate {
     }
 
     public function handle_save_email_templates() {
-        if (!wp_verify_nonce($_POST['_wpnonce'] ?? '', 'dg_re_save_email_templates') || !current_user_can('manage_options')) {
+        if (!wp_verify_nonce($_POST['_wpnonce'] ?? '', 'dg_re_save_email_templates') || !DG_RE_Permissions::can_manage_leads()) {
             wp_die('Unauthorized');
         }
         if (class_exists('DG_RE_Email_Templates') && isset($_POST['templates'])) {
