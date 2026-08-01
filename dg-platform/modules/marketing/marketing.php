@@ -144,12 +144,6 @@ class DG_Module_Marketing {
         if (class_exists('DG_Marketing_Voice')) {
             DG_Marketing_Voice::register_routes();
         }
-
-        register_rest_route('dg/v1', '/audit-webhook', [
-            'methods' => 'POST',
-            'callback' => [$this, 'handle_audit_webhook'],
-            'permission_callback' => '__return_true'
-        ]);
     }
     
     // Voice agent webhook — see DG_Marketing_Voice
@@ -396,18 +390,26 @@ class DG_Module_Marketing {
         if (empty($data)) {
             $data = $request->get_params();
         }
-        
-        $agency_website_raw = sanitize_text_field($data['agency_website'] ?? '');
-        $agency_website = $this->format_website_url($agency_website_raw);
-        $agency_name = sanitize_text_field($data['agency_name'] ?? '');
-        $full_name = sanitize_text_field($data['full_name'] ?? '');
+
+        $agency_website_raw = sanitize_text_field($data['agency_website'] ?? $data['website'] ?? $data['agency_url'] ?? '');
+        $agency_name = sanitize_text_field($data['agency_name'] ?? $data['company_name'] ?? $data['business_name'] ?? '');
+        $full_name = sanitize_text_field($data['full_name'] ?? $data['name'] ?? trim(($data['first_name'] ?? '') . ' ' . ($data['last_name'] ?? '')));
         $email = sanitize_email($data['email'] ?? '');
-        $phone = sanitize_text_field($data['phone'] ?? '');
+        $phone = sanitize_text_field($data['phone'] ?? $data['mobile'] ?? '');
         
-        if (empty($agency_website) || empty($agency_name) || empty($full_name) || empty($email)) {
+        if (empty($agency_website_raw) || empty($agency_name) || empty($full_name) || empty($email)) {
             return new WP_REST_Response([
                 'success' => false,
                 'message' => 'Missing required fields'
+            ], 400);
+        }
+
+        $agency_website = $this->format_website_url($agency_website_raw);
+        
+        if (empty($agency_website)) {
+            return new WP_REST_Response([
+                'success' => false,
+                'message' => 'Invalid agency website'
             ], 400);
         }
         
@@ -562,6 +564,7 @@ class DG_Module_Marketing {
         
         // Send initial email
         $this->send_audit_email($email, $full_name, $company, $audit_data, $audit_url);
+        $this->send_audit_admin_notification($full_name, $email, $phone, $agency_name, $agency_website, $audit_data, $audit_url, $company_id);
         
         // Schedule 5-email automation sequence
         $this->schedule_audit_emails(
@@ -603,6 +606,37 @@ class DG_Module_Marketing {
         $headers = class_exists('DG_Marketing_Emails')
             ? DG_Marketing_Emails::mail_headers()
             : ['Content-Type: text/html; charset=UTF-8'];
+
+        wp_mail($to, $subject, $message, $headers);
+    }
+
+    private function send_audit_admin_notification($full_name, $email, $phone, $agency_name, $agency_website, $audit_data, $audit_url, $company_id) {
+        $to = apply_filters('dg_marketing_admin_email', get_option('admin_email'));
+        $subject = 'New Agency Audit: ' . $agency_name;
+
+        if (class_exists('DG_Marketing_Emails')) {
+            $client_url = admin_url('admin.php?page=dg-platform-clients&client_id=' . (int) $company_id . '&tab=view');
+            $message = DG_Marketing_Emails::admin_notification('New Free Agency Audit', [
+                'Agency' => $agency_name,
+                'Website' => $agency_website,
+                'Contact' => $full_name,
+                'Email' => $email,
+                'Phone' => $phone ?: 'Not provided',
+                'Overall Score' => $audit_data['overall_score'] . '% (' . $audit_data['grade'] . ')',
+                'AI Visibility' => $audit_data['ai_score'] . '%',
+                'Website Performance' => $audit_data['website_score'] . '%',
+            ], [
+                'footer_note' => 'Internal DigitalGate notification.',
+                'cta_url' => $audit_url,
+                'cta_label' => 'View Audit Report',
+                'secondary_cta_url' => $client_url,
+                'secondary_cta_label' => 'Open Client in CRM',
+            ]);
+            $headers = DG_Marketing_Emails::mail_headers(true);
+        } else {
+            $message = "New agency audit\n\n{$agency_name}\n{$full_name}\n{$email}\n{$audit_url}";
+            $headers = ['Content-Type: text/plain; charset=UTF-8'];
+        }
 
         wp_mail($to, $subject, $message, $headers);
     }

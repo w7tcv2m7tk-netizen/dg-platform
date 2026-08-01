@@ -51,6 +51,12 @@ class DG_REST_Controller {
             'permission_callback' => '__return_true',
         ]);
 
+        register_rest_route(DG_REST_NAMESPACE, '/audit-webhook', [
+            'methods' => 'POST',
+            'callback' => [__CLASS__, 'legacy_audit_webhook'],
+            'permission_callback' => '__return_true',
+        ]);
+
         do_action('dg_platform_register_rest_routes');
     }
 
@@ -168,7 +174,16 @@ class DG_REST_Controller {
     }
 
     public static function legacy_audit_webhook($request) {
-        return apply_filters('dg_legacy_audit_webhook', new WP_REST_Response(['success' => true], 200), $request);
+        $core = class_exists('DG_Platform') ? DG_Platform::get_instance() : null;
+        $marketing = $core ? $core->get_module('marketing') : null;
+        if ($marketing && method_exists($marketing, 'handle_audit_webhook')) {
+            return $marketing->handle_audit_webhook($request);
+        }
+
+        return apply_filters('dg_legacy_audit_webhook', new WP_REST_Response([
+            'success' => false,
+            'message' => 'Marketing module is not active',
+        ], 503), $request);
     }
 }
 

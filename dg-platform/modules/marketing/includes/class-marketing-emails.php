@@ -82,6 +82,49 @@ class DG_Marketing_Emails {
             . esc_html($label) . '</a></td></tr></table>';
     }
 
+    public static function admin_notification($heading, $rows, $options = []) {
+        $inner = '<h1 style="color:#FFFFFF;font-size:22px;font-weight:700;margin:0 0 20px;letter-spacing:-0.02em;">' . esc_html($heading) . '</h1>';
+        $inner .= self::detail_table($rows);
+
+        if (!empty($options['body_html'])) {
+            $inner .= $options['body_html'];
+        }
+
+        if (!empty($options['cta_url']) && !empty($options['cta_label'])) {
+            $inner .= self::cta($options['cta_url'], $options['cta_label']);
+        }
+
+        if (!empty($options['secondary_cta_url']) && !empty($options['secondary_cta_label'])) {
+            $inner .= '<p style="text-align:center;margin:0;"><a href="' . esc_url($options['secondary_cta_url']) . '" style="color:#60A5FA;text-decoration:none;font-size:14px;">'
+                . esc_html($options['secondary_cta_label']) . ' →</a></p>';
+        }
+
+        return self::wrap($inner, array_merge([
+            'footer_note' => 'Internal notification from DigitalGate.',
+        ], $options));
+    }
+
+    public static function detail_table($rows) {
+        $html = '<table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="border-collapse:collapse;margin:0 0 8px;">';
+        foreach ($rows as $label => $value) {
+            if ($value === '' || $value === null) {
+                continue;
+            }
+            $display = $value;
+            if (is_string($value) && preg_match('#^https?://#', $value)) {
+                $display = '<a href="' . esc_url($value) . '" style="color:#60A5FA;text-decoration:none;">' . esc_html($value) . '</a>';
+            } else {
+                $display = esc_html((string) $value);
+            }
+            $html .= '<tr>';
+            $html .= '<td style="padding:10px 12px;border-bottom:1px solid rgba(255,255,255,0.06);width:38%;font-weight:600;color:#94A3B8;vertical-align:top;">' . esc_html($label) . '</td>';
+            $html .= '<td style="padding:10px 12px;border-bottom:1px solid rgba(255,255,255,0.06);color:#E2E8F0;vertical-align:top;">' . $display . '</td>';
+            $html .= '</tr>';
+        }
+        $html .= '</table>';
+        return $html;
+    }
+
     public static function score_table($rows) {
         $html = '<table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="border-collapse:collapse;margin:20px 0;border-radius:12px;overflow:hidden;">';
         foreach ($rows as $label => $value) {
