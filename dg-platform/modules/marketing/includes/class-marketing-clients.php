@@ -29,6 +29,67 @@ class DG_Marketing_Clients {
         ));
     }
 
+    public static function get_org_id($company_id) {
+        global $wpdb;
+        $company = self::get($company_id);
+        if (!$company) {
+            return 0;
+        }
+        $orgs = $wpdb->prefix . 'dg_organisations';
+        if ($wpdb->get_var("SHOW COLUMNS FROM $orgs LIKE 'legacy_id'")) {
+            $org_id = $wpdb->get_var($wpdb->prepare(
+                "SELECT id FROM $orgs WHERE legacy_table = 'dg_platform_companies' AND legacy_id = %d LIMIT 1",
+                (int) $company_id
+            ));
+            if ($org_id) {
+                return (int) $org_id;
+            }
+        }
+        if (!empty($company->email)) {
+            $org_id = $wpdb->get_var($wpdb->prepare(
+                "SELECT id FROM $orgs WHERE email = %s LIMIT 1",
+                $company->email
+            ));
+            if ($org_id) {
+                return (int) $org_id;
+            }
+        }
+        return (int) self::sync_company($company_id);
+    }
+
+    public static function get_company_id($org_id) {
+        global $wpdb;
+        $orgs = $wpdb->prefix . 'dg_organisations';
+        $org = $wpdb->get_row($wpdb->prepare("SELECT * FROM $orgs WHERE id = %d", (int) $org_id));
+        if (!$org) {
+            return 0;
+        }
+        if ($wpdb->get_var("SHOW COLUMNS FROM $orgs LIKE 'legacy_id'") && !empty($org->legacy_id) && ($org->legacy_table ?? '') === 'dg_platform_companies') {
+            return (int) $org->legacy_id;
+        }
+        if (!empty($org->email)) {
+            $id = $wpdb->get_var($wpdb->prepare(
+                'SELECT id FROM ' . self::companies_table() . ' WHERE email = %s LIMIT 1',
+                $org->email
+            ));
+            if ($id) {
+                return (int) $id;
+            }
+        }
+        return 0;
+    }
+
+    public static function list_clients($args = []) {
+        global $wpdb;
+        $table = self::companies_table();
+        $limit = isset($args['limit']) ? (int) $args['limit'] : 100;
+        $where = '1=1';
+        if (!empty($args['status'])) {
+            $where .= $wpdb->prepare(' AND status = %s', $args['status']);
+        }
+        return $wpdb->get_results("SELECT * FROM $table WHERE $where ORDER BY created_at DESC LIMIT $limit");
+    }
+
     public static function sync_company($company_id) {
         global $wpdb;
 
@@ -60,6 +121,14 @@ class DG_Marketing_Clients {
             'source' => $company->source ?: 'marketing',
             'notes' => $company->notes,
         ];
+
+        $legacy_link = [
+            'legacy_table' => 'dg_platform_companies',
+            'legacy_id' => (int) $company_id,
+        ];
+        if ($wpdb->get_var("SHOW COLUMNS FROM $orgs_table LIKE 'legacy_id'")) {
+            $org_data = array_merge($org_data, $legacy_link);
+        }
 
         if ($org_id) {
             $wpdb->update($orgs_table, $org_data, ['id' => (int) $org_id]);

@@ -98,6 +98,65 @@ class DG_Search {
             }
         }
 
+        if (class_exists('DG_Marketing_Clients')) {
+            $clients = $wpdb->get_results($wpdb->prepare(
+                'SELECT id, company_name, email, website, status FROM ' . DG_Marketing_Clients::companies_table() .
+                ' WHERE company_name LIKE %s OR email LIKE %s OR website LIKE %s ORDER BY created_at DESC LIMIT %d',
+                $like, $like, $like, $limit
+            ));
+            foreach ($clients as $row) {
+                $results[] = [
+                    'type' => 'agency_client',
+                    'id' => (int) $row->id,
+                    'title' => $row->company_name,
+                    'subtitle' => 'Agency client · ' . ucfirst($row->status),
+                    'url' => admin_url('admin.php?page=dg-platform-clients&client_id=' . $row->id . '&tab=view'),
+                ];
+            }
+
+            $audits = $wpdb->prefix . 'dg_platform_audits';
+            if ($wpdb->get_var("SHOW TABLES LIKE '$audits'") === $audits) {
+                $audit_rows = $wpdb->get_results($wpdb->prepare(
+                    "SELECT a.id, a.overall_score, a.grade, c.company_name
+                     FROM $audits a
+                     LEFT JOIN " . DG_Marketing_Clients::companies_table() . " c ON c.id = a.company_id
+                     WHERE c.company_name LIKE %s OR a.grade LIKE %s
+                     ORDER BY a.audit_date DESC LIMIT %d",
+                    $like, $like, $limit
+                ));
+                foreach ($audit_rows as $row) {
+                    $results[] = [
+                        'type' => 'visibility_audit',
+                        'id' => (int) $row->id,
+                        'title' => ($row->company_name ?: 'Audit') . ' — ' . $row->overall_score . '%',
+                        'subtitle' => 'Grade ' . $row->grade,
+                        'url' => admin_url('admin.php?page=dg-platform-audits'),
+                    ];
+                }
+            }
+
+            $voice = $wpdb->prefix . 'dg_platform_voice_logs';
+            if ($wpdb->get_var("SHOW TABLES LIKE '$voice'") === $voice) {
+                $voice_rows = $wpdb->get_results($wpdb->prepare(
+                    "SELECT v.id, v.lead_score, v.call_summary, c.company_name
+                     FROM $voice v
+                     LEFT JOIN " . DG_Marketing_Clients::companies_table() . " c ON c.id = v.company_id
+                     WHERE v.call_summary LIKE %s OR c.company_name LIKE %s
+                     ORDER BY v.created_at DESC LIMIT %d",
+                    $like, $like, $limit
+                ));
+                foreach ($voice_rows as $row) {
+                    $results[] = [
+                        'type' => 'voice_lead',
+                        'id' => (int) $row->id,
+                        'title' => ($row->company_name ?: 'Voice lead') . ' — ' . $row->lead_score . '/100',
+                        'subtitle' => wp_trim_words($row->call_summary, 10),
+                        'url' => admin_url('admin.php?page=dg-platform-voice'),
+                    ];
+                }
+            }
+        }
+
         return array_slice($results, 0, $limit);
     }
 }

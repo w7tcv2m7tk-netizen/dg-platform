@@ -1,7 +1,7 @@
 <?php
 /**
  * Marketing Module - DigitalGate agency CRM, audits, voice agent
- * Version: 10.1.0
+ * Version: 10.2.0
  */
 
 if (!defined('ABSPATH')) exit;
@@ -57,6 +57,8 @@ class DG_Module_Marketing {
         add_action('admin_post_dg_marketing_generate_audit', [$this, 'handle_generate_audit']);
         add_action('admin_post_dg_marketing_delete_audit', [$this, 'handle_delete_audit']);
         add_action('admin_post_dg_marketing_import_csv', ['DG_Marketing_Import', 'handle_upload']);
+        add_action('admin_post_dg_marketing_attach_document', ['DG_Marketing_Admin_Views', 'handle_attach_document']);
+        add_action('admin_post_dg_marketing_save_email_templates', [__CLASS__, 'handle_save_email_templates']);
         
         add_action('rest_api_init', [$this, 'register_rest_routes']);
         
@@ -74,17 +76,48 @@ class DG_Module_Marketing {
         // CREATE AUTOMATION TABLE ON INIT
         // ============================================================
         add_action('init', [$this, 'create_automation_table']);
+        add_filter('dg_platform_dashboard_widgets', [$this, 'dashboard_widgets']);
+    }
+
+    public function dashboard_widgets($widgets) {
+        if (!class_exists('DG_Marketing_Pipeline_Reports')) {
+            return $widgets;
+        }
+        $activity = DG_Marketing_Pipeline_Reports::recent_activity_summary(30);
+        $widgets[] = [
+            'id' => 'marketing_clients',
+            'label' => 'Agency Clients',
+            'value' => DG_Marketing_Pipeline_Reports::client_conversion_summary()['total'],
+            'color' => '#3B82F6',
+        ];
+        $widgets[] = [
+            'id' => 'marketing_audits',
+            'label' => 'Audits (30d)',
+            'value' => $activity['audits'],
+            'color' => '#8B5CF6',
+        ];
+        return $widgets;
     }
 
     private function load_includes() {
         $dir = __DIR__ . '/includes/';
         foreach ([
             'class-marketing-permissions.php',
+            'class-marketing-contacts.php',
             'class-marketing-clients.php',
+            'class-marketing-client-pipeline.php',
+            'class-marketing-pipeline-reports.php',
+            'class-marketing-pipeline-report-email.php',
+            'class-marketing-lead-assignment.php',
+            'class-marketing-form-security.php',
+            'class-marketing-email-templates.php',
+            'class-marketing-emails.php',
+            'class-marketing-admin-notifications.php',
+            'class-marketing-admin-views.php',
+            'class-marketing-ai-visibility.php',
             'class-marketing-import.php',
             'class-marketing-voice.php',
             'class-marketing-dev-api.php',
-            'class-marketing-emails.php',
         ] as $file) {
             $path = $dir . $file;
             if (file_exists($path)) {
@@ -385,6 +418,13 @@ class DG_Module_Marketing {
     
     public function handle_audit_webhook($request) {
         global $wpdb;
+
+        if (class_exists('DG_Marketing_Form_Security')) {
+            $guard = DG_Marketing_Form_Security::guard_rest($request, 'agency_audit');
+            if ($guard instanceof WP_REST_Response) {
+                return $guard;
+            }
+        }
         
         $data = $request->get_json_params();
         if (empty($data)) {
@@ -562,9 +602,31 @@ class DG_Module_Marketing {
         $audit_url = $this->audit_url . $filename;
         $wpdb->update($table_audits, ['pdf_path' => $audit_url], ['id' => $audit_id]);
         
-        // Send initial email
+        // Send initial email + notifications
         $this->send_audit_email($email, $full_name, $company, $audit_data, $audit_url);
-        $this->send_audit_admin_notification($full_name, $email, $phone, $agency_name, $agency_website, $audit_data, $audit_url, $company_id);
+
+        if (class_exists('DG_Marketing_AI_Visibility')) {
+            DG_Marketing_AI_Visibility::record_scan($company_id, $audit_data, 'audit_webhook');
+        }
+
+        DG_Marketing_Clients::sync_company($company_id);
+        do_action('dg_marketing_audit_created', $company_id, $full_name, $email, $phone, $agency_name, [
+            'website' => $agency_website,
+            'audit_data' => $audit_data,
+            'audit_url' => $audit_url,
+        ]);
+        do_action('dg_marketing_client_created', $company_id, [
+            'company_name' => $agency_name,
+            'email' => $email,
+            'source' => 'webhook_audit',
+        ]);
+
+        if (class_exists('DG_Permissions')) {
+            DG_Permissions::log_audit('marketing_audit_created', 'organisation', DG_Marketing_Clients::get_org_id($company_id), null, [
+                'audit_id' => $audit_id,
+                'grade' => $grade,
+            ]);
+        }
         
         // Schedule 5-email automation sequence
         $this->schedule_audit_emails(
@@ -606,37 +668,6 @@ class DG_Module_Marketing {
         $headers = class_exists('DG_Marketing_Emails')
             ? DG_Marketing_Emails::mail_headers()
             : ['Content-Type: text/html; charset=UTF-8'];
-
-        wp_mail($to, $subject, $message, $headers);
-    }
-
-    private function send_audit_admin_notification($full_name, $email, $phone, $agency_name, $agency_website, $audit_data, $audit_url, $company_id) {
-        $to = apply_filters('dg_marketing_admin_email', get_option('admin_email'));
-        $subject = 'New Agency Audit: ' . $agency_name;
-
-        if (class_exists('DG_Marketing_Emails')) {
-            $client_url = admin_url('admin.php?page=dg-platform-clients&client_id=' . (int) $company_id . '&tab=view');
-            $message = DG_Marketing_Emails::admin_notification('New Free Agency Audit', [
-                'Agency' => $agency_name,
-                'Website' => $agency_website,
-                'Contact' => $full_name,
-                'Email' => $email,
-                'Phone' => $phone ?: 'Not provided',
-                'Overall Score' => $audit_data['overall_score'] . '% (' . $audit_data['grade'] . ')',
-                'AI Visibility' => $audit_data['ai_score'] . '%',
-                'Website Performance' => $audit_data['website_score'] . '%',
-            ], [
-                'footer_note' => 'Internal DigitalGate notification.',
-                'cta_url' => $audit_url,
-                'cta_label' => 'View Audit Report',
-                'secondary_cta_url' => $client_url,
-                'secondary_cta_label' => 'Open Client in CRM',
-            ]);
-            $headers = DG_Marketing_Emails::mail_headers(true);
-        } else {
-            $message = "New agency audit\n\n{$agency_name}\n{$full_name}\n{$email}\n{$audit_url}";
-            $headers = ['Content-Type: text/plain; charset=UTF-8'];
-        }
 
         wp_mail($to, $subject, $message, $headers);
     }
@@ -1198,11 +1229,25 @@ class DG_Module_Marketing {
     // ============================================================
     
     public function register_menus() {
+        add_submenu_page('dg-platform', 'DigitalGate CRM', '📊 DigitalGate CRM', DG_Marketing_Permissions::menu_cap_clients(), 'dg-marketing-dashboard', ['DG_Marketing_Admin_Views', 'render_dashboard']);
         add_submenu_page('dg-platform', 'Agency Clients', '🤝 Agency Clients', DG_Marketing_Permissions::menu_cap_clients(), 'dg-platform-clients', [$this, 'render_clients']);
+        add_submenu_page('dg-platform', 'Client Pipeline', '🗂️ Client Pipeline', DG_Marketing_Permissions::menu_cap_clients(), 'dg-marketing-client-pipeline', ['DG_Marketing_Admin_Views', 'render_client_pipeline']);
+        add_submenu_page('dg-platform', 'Pipeline Reports', '📈 Pipeline Reports', DG_Marketing_Permissions::menu_cap_clients(), 'dg-marketing-pipeline-reports', ['DG_Marketing_Admin_Views', 'render_pipeline_reports']);
         add_submenu_page('dg-platform', 'Import Contacts', '📥 Import Contacts', DG_Marketing_Permissions::menu_cap_import(), 'dg-marketing-import', ['DG_Marketing_Import', 'render_admin_page']);
         add_submenu_page('dg-platform', 'Voice Agent', '🎙️ Voice Agent', DG_Marketing_Permissions::menu_cap_voice(), 'dg-platform-voice', [$this, 'render_voice']);
         add_submenu_page('dg-platform', 'Visibility Audits', '🔍 Audits', DG_Marketing_Permissions::menu_cap_audits(), 'dg-platform-audits', [$this, 'render_audits']);
         add_submenu_page('dg-platform', 'AI Visibility', '🤖 AI Visibility', DG_Marketing_Permissions::menu_cap_ai(), 'dg-platform-ai', [$this, 'render_ai']);
+        add_submenu_page('dg-platform', 'Email Templates', '✉️ Email Templates', DG_Marketing_Permissions::menu_cap_clients(), 'dg-marketing-email-templates', ['DG_Marketing_Admin_Views', 'render_email_templates']);
+    }
+
+    public function handle_save_email_templates() {
+        $this->require_manage_clients();
+        check_admin_referer('dg_marketing_email_templates');
+        if (class_exists('DG_Marketing_Email_Templates')) {
+            DG_Marketing_Email_Templates::save($_POST['templates'] ?? []);
+        }
+        wp_safe_redirect(admin_url('admin.php?page=dg-marketing-email-templates&saved=1'));
+        exit;
     }
     
     public function quick_actions() {
@@ -1654,6 +1699,16 @@ class DG_Module_Marketing {
                 'meta_value' => $ai_final
             ]);
         }
+
+        if (class_exists('DG_Marketing_AI_Visibility')) {
+            DG_Marketing_AI_Visibility::record_scan($company_id, [
+                'ai_score' => $ai_final,
+                'google_score' => $google_score,
+                'website_score' => $website_score,
+                'overall_score' => $overall_score,
+                'grade' => $grade,
+            ], 'manual_audit');
+        }
         
         wp_redirect(admin_url('admin.php?page=dg-platform-audits&generated=1'));
         exit;
@@ -1838,34 +1893,40 @@ class DG_Module_Marketing {
     // ============================================================
     
     public function render_ai() {
-        global $wpdb;
-        $clients = $this->wpdb->get_results("SELECT id, company_name, suburb FROM {$wpdb->prefix}dg_platform_companies WHERE status = 'active' ORDER BY company_name");
-        $scores = [];
-        foreach ($clients as $client) {
-            $scores[$client->id] = $this->wpdb->get_var($this->wpdb->prepare("SELECT meta_value FROM {$wpdb->prefix}dg_platform_company_meta WHERE company_id = %d AND meta_key = 'ai_visibility_score'", $client->id));
-        }
+        $averages = class_exists('DG_Marketing_AI_Visibility') ? DG_Marketing_AI_Visibility::platform_averages() : [];
+        $recent = class_exists('DG_Marketing_AI_Visibility') ? DG_Marketing_AI_Visibility::recent_scans(25) : [];
         ?>
-        <div class="wrap">
+        <div class="wrap dg-platform-wrap">
             <h1>🤖 AI Visibility Dashboard</h1>
-            <div style="background:#fff;padding:20px;border:1px solid #ddd;border-radius:12px;margin:20px 0;">
-                <p>AI Visibility scores show how well agencies appear in AI search results (ChatGPT, Gemini, Perplexity, etc.)</p>
-                <p style="font-size:12px;color:#999;">* Scores are based on real AI platform checks when API keys are configured.</p>
-                <div style="margin-top:10px;display:flex;gap:12px;flex-wrap:wrap;"><a href="<?php echo admin_url('admin.php?page=dg-platform-audits'); ?>" class="button button-primary">🔍 Run Audit</a><a href="<?php echo admin_url('admin.php?page=dg-platform-clients'); ?>" class="button">🤝 View Clients</a><a href="<?php echo admin_url('admin.php?page=dg-platform-api'); ?>" class="button">🔑 API Settings</a></div>
+            <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin:20px 0;">
+                <div class="dg-panel"><div style="font-size:24px;font-weight:700;"><?php echo esc_html($averages['ai_avg'] ?? 0); ?>%</div><div>Avg AI score (90d)</div></div>
+                <div class="dg-panel"><div style="font-size:24px;font-weight:700;"><?php echo esc_html($averages['google_avg'] ?? 0); ?>%</div><div>Avg Google score</div></div>
+                <div class="dg-panel"><div style="font-size:24px;font-weight:700;"><?php echo esc_html($averages['web_avg'] ?? 0); ?>%</div><div>Avg website score</div></div>
+                <div class="dg-panel"><div style="font-size:24px;font-weight:700;"><?php echo (int) ($averages['scans'] ?? 0); ?></div><div>Scans recorded</div></div>
+            </div>
+            <p style="color:#64748B;">Tracks ChatGPT, Gemini, and PageSpeed results from agency audits over time.</p>
+            <div style="margin:10px 0 20px;display:flex;gap:12px;flex-wrap:wrap;">
+                <a href="<?php echo esc_url(admin_url('admin.php?page=dg-platform-audits')); ?>" class="button button-primary">Run audit</a>
+                <a href="<?php echo esc_url(admin_url('admin.php?page=dg-marketing-pipeline-reports')); ?>" class="button">Pipeline reports</a>
+                <a href="<?php echo esc_url(admin_url('admin.php?page=dg-platform-api')); ?>" class="button">API settings</a>
             </div>
             <table class="wp-list-table widefat fixed striped">
-                <thead><tr><th>Rank</th><th>Agency</th><th>Suburb</th><th>AI Score</th><th>Status</th></tr></thead>
+                <thead><tr><th>Date</th><th>Agency</th><th>AI</th><th>Google</th><th>Website</th><th>Overall</th><th>Grade</th><th>Source</th></tr></thead>
                 <tbody>
-                    <?php if ($clients) : $rank = 1; foreach ($clients as $client) : $score = $scores[$client->id] ? intval($scores[$client->id]) : 0; ?>
-                        <tr>
-                            <td><strong>#<?php echo $rank++; ?></strong></td>
-                            <td><?php echo esc_html($client->company_name); ?></td>
-                            <td><?php echo esc_html($client->suburb); ?></td>
-                            <td><span style="font-weight:700;font-size:18px;color:<?php echo $score > 70 ? '#34D399' : ($score > 40 ? '#FBBF24' : '#F87171'); ?>;"><?php echo $score; ?>%</span><div style="width:100px;height:6px;background:#f0f0f0;border-radius:3px;margin-top:4px;"><div style="width:<?php echo $score; ?>%;height:100%;background:<?php echo $score > 70 ? '#34D399' : ($score > 40 ? '#FBBF24' : '#F87171'); ?>;border-radius:3px;"></div></div></td>
-                            <td><span style="background:<?php echo $score > 70 ? '#34D399' : ($score > 40 ? '#FBBF24' : '#F87171'); ?>;color:#fff;padding:2px 10px;border-radius:12px;font-size:11px;"><?php echo $score > 70 ? 'Strong' : ($score > 40 ? 'Medium' : 'Needs Improvement'); ?></span></td>
-                        </tr>
-                    <?php endforeach; else : ?>
-                        <tr><td colspan="5" style="text-align:center;padding:30px 0;color:#999;">No clients yet. <a href="<?php echo admin_url('admin.php?page=dg-platform-clients'); ?>">Add your first client</a></td></tr>
-                    <?php endif; ?>
+                <?php if ($recent) : foreach ($recent as $scan) : ?>
+                    <tr>
+                        <td><?php echo esc_html($scan->created_at); ?></td>
+                        <td><?php echo esc_html($scan->company_name ?: 'Client #' . $scan->company_id); ?></td>
+                        <td><?php echo (int) $scan->ai_score; ?>%</td>
+                        <td><?php echo (int) $scan->google_score; ?>%</td>
+                        <td><?php echo (int) $scan->website_score; ?>%</td>
+                        <td><?php echo (int) $scan->overall_score; ?>%</td>
+                        <td><?php echo esc_html($scan->grade); ?></td>
+                        <td><?php echo esc_html($scan->scan_source); ?></td>
+                    </tr>
+                <?php endforeach; else : ?>
+                    <tr><td colspan="8" style="text-align:center;padding:24px;color:#64748B;">No scan history yet. Submit a free agency audit to begin.</td></tr>
+                <?php endif; ?>
                 </tbody>
             </table>
         </div>
@@ -1955,6 +2016,7 @@ class DG_Module_Marketing {
                 <a href="<?php echo admin_url('admin.php?page=dg-platform-clients&client_id=' . $client_id . '&tab=contacts'); ?>" class="nav-tab <?php echo $active_tab === 'contacts' ? 'nav-tab-active' : ''; ?>">👤 Contacts (<?php echo count($contacts); ?>)</a>
                 <a href="<?php echo admin_url('admin.php?page=dg-platform-clients&client_id=' . $client_id . '&tab=notes'); ?>" class="nav-tab <?php echo $active_tab === 'notes' ? 'nav-tab-active' : ''; ?>">📝 Notes (<?php echo count($notes); ?>)</a>
                 <a href="<?php echo admin_url('admin.php?page=dg-platform-clients&client_id=' . $client_id . '&tab=audits'); ?>" class="nav-tab <?php echo $active_tab === 'audits' ? 'nav-tab-active' : ''; ?>">🔍 Audits (<?php echo count($audits); ?>)</a>
+                <a href="<?php echo admin_url('admin.php?page=dg-platform-clients&client_id=' . $client_id . '&tab=documents'); ?>" class="nav-tab <?php echo $active_tab === 'documents' ? 'nav-tab-active' : ''; ?>">📎 Documents</a>
             </h2>
             <div style="background:#fff;padding:20px;border:1px solid #ddd;border-radius:8px;margin:20px 0;">
                 <?php
@@ -1962,6 +2024,7 @@ class DG_Module_Marketing {
                     case 'contacts': $this->render_contacts_tab($client_id, $contacts); break;
                     case 'notes': $this->render_notes_tab($client_id, $notes); break;
                     case 'audits': $this->render_audits_tab($client_id, $audits); break;
+                    case 'documents': DG_Marketing_Admin_Views::render_documents_tab($client_id); break;
                     default: $this->render_overview_tab($client_id, $client, $contacts, $notes, $audits);
                 }
                 ?>

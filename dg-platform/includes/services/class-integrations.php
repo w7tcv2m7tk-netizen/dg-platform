@@ -111,10 +111,10 @@ class DG_Integrations {
             'openai' => (bool) self::get_api_key('openai'),
             'gemini' => (bool) self::get_api_key('gemini'),
             'twilio' => (bool) (self::get_api_key('twilio_sid') && self::get_api_key('twilio_token')),
-            'rankmath' => (bool) self::get_api_key('rankmath'),
-            'gsc' => (bool) self::get_api_key('gsc'),
-            'gbp' => (bool) self::get_api_key('gbp'),
-            'fluentcrm' => (bool) self::get_api_key('fluentcrm'),
+            'rankmath' => (bool) (self::get_api_key('rankmath') && apply_filters('dg_integrations_rankmath_active', false)),
+            'gsc' => (bool) (self::get_api_key('gsc') && apply_filters('dg_integrations_gsc_active', false)),
+            'gbp' => (bool) (self::get_api_key('gbp') && apply_filters('dg_integrations_gbp_active', false)),
+            'fluentcrm' => (bool) (self::get_api_key('fluentcrm') && function_exists('FluentCrmApi')),
             'stripe' => (bool) self::get_api_key('stripe_secret'),
         ];
     }

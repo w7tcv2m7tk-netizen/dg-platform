@@ -75,6 +75,10 @@ class DG_Marketing_Permissions {
         return DG_Permissions::current_user_can(self::cap_view_voice());
     }
 
+    public static function can_manage_voice() {
+        return DG_Permissions::current_user_can(self::cap_manage_voice());
+    }
+
     public static function can_import() {
         return DG_Permissions::current_user_can(self::cap_import());
     }

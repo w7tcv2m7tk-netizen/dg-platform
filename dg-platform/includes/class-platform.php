@@ -119,6 +119,9 @@ class DG_Platform {
         if (DG_Permissions::current_user_can('dg_manage_roles')) {
             add_submenu_page('dg-platform', 'Roles', '👥 Roles', 'dg_manage_roles', 'dg-platform-roles', [$this, 'render_roles']);
         }
+        if (DG_Permissions::current_user_can('dg_manage_platform')) {
+            add_submenu_page('dg-platform', 'Audit Log', '📋 Audit Log', 'dg_manage_platform', 'dg-platform-audit-log', [$this, 'render_audit_log']);
+        }
         if (DG_Permissions::current_user_can('dg_manage_api_keys')) {
             add_submenu_page('dg-platform', 'API Settings', '🔑 API Settings', 'dg_manage_api_keys', 'dg-platform-api', [$this, 'render_api_settings']);
         }
@@ -258,6 +261,13 @@ class DG_Platform {
 
     public function render_search() {
         include DG_PLATFORM_PATH . 'templates/admin/search.php';
+    }
+
+    public function render_audit_log() {
+        global $wpdb;
+        $table = $wpdb->prefix . 'dg_audit_log';
+        $logs = $wpdb->get_results("SELECT * FROM $table ORDER BY created_at DESC LIMIT 200");
+        include DG_PLATFORM_PATH . 'templates/admin/audit-log.php';
     }
 
     public function render_automations() {

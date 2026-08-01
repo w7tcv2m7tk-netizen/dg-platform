@@ -76,9 +76,17 @@ class DG_Marketing_Dev_API {
     }
 
     public static function get_summary($request) {
-        global $wpdb;
-
         $days = (int) $request->get_param('days');
+        if (class_exists('DG_Marketing_Pipeline_Reports')) {
+            $summary = DG_Marketing_Pipeline_Reports::summary($days);
+            $summary['recent_clients'] = array_map(
+                [__CLASS__, 'format_client'],
+                DG_Marketing_Clients::list_clients(['limit' => 10])
+            );
+            return rest_ensure_response($summary);
+        }
+
+        global $wpdb;
         $since = date('Y-m-d H:i:s', strtotime('-' . $days . ' days'));
         $companies = $wpdb->prefix . 'dg_platform_companies';
         $audits = $wpdb->prefix . 'dg_platform_audits';

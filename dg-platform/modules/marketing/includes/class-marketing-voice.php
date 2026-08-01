@@ -70,7 +70,14 @@ class DG_Marketing_Voice {
             'created_at' => current_time('mysql'),
         ]);
 
-        self::notify_admin($data, $company_id, $score, $qualified);
+        do_action('dg_marketing_voice_lead_created', $company_id, $data, $score, $qualified);
+
+        if (class_exists('DG_Permissions')) {
+            DG_Permissions::log_audit('marketing_voice_lead', 'organisation', DG_Marketing_Clients::get_org_id($company_id), null, [
+                'score' => $score,
+                'qualified' => $qualified,
+            ]);
+        }
 
         if (class_exists('DG_Activities')) {
             DG_Activities::log([
@@ -180,50 +187,5 @@ class DG_Marketing_Voice {
             return $base . 'appraisal-optimization';
         }
         return $base . 'agency-growth-audit';
-    }
-
-    private static function notify_admin($data, $company_id, $score, $qualified) {
-        $to = apply_filters('dg_marketing_admin_email', get_option('admin_email'));
-        $subject = 'New AI Voice Lead: ' . sanitize_text_field($data['name'] ?? 'Unknown');
-        $client_url = admin_url('admin.php?page=dg-platform-clients&client_id=' . (int) $company_id . '&tab=view');
-        $booking_url = self::booking_url($data);
-
-        if (class_exists('DG_Marketing_Emails')) {
-            $summary = sanitize_textarea_field($data['ai_call_summary'] ?? '');
-            $body_html = '';
-            if ($summary !== '') {
-                $body_html = '<h3 style="color:#FFFFFF;font-size:16px;margin:24px 0 8px;">Call summary</h3>'
-                    . '<p style="color:#E2E8F0;font-size:15px;line-height:1.65;margin:0;">' . nl2br(esc_html($summary)) . '</p>';
-            }
-
-            $message = DG_Marketing_Emails::admin_notification('New AI Voice Lead', [
-                'Name' => sanitize_text_field($data['name'] ?? 'N/A'),
-                'Email' => sanitize_email($data['email'] ?? ''),
-                'Phone' => sanitize_text_field($data['phone'] ?? 'N/A'),
-                'Business' => sanitize_text_field($data['business_name'] ?? 'N/A'),
-                'Website' => esc_url_raw($data['website_url'] ?? '') ?: 'N/A',
-                'Service interest' => sanitize_text_field($data['service_interest'] ?? 'N/A'),
-                'Budget' => sanitize_text_field($data['budget_range'] ?? 'N/A'),
-                'Lead score' => $score . '/100',
-                'Qualified' => $qualified ? 'Yes' : 'No',
-                'CRM client ID' => (string) $company_id,
-            ], [
-                'body_html' => $body_html,
-                'footer_note' => 'Internal DigitalGate notification — AI voice agent.',
-                'cta_url' => $booking_url,
-                'cta_label' => 'Suggested booking link',
-                'secondary_cta_url' => $client_url,
-                'secondary_cta_label' => 'Open client in CRM',
-            ]);
-            $headers = DG_Marketing_Emails::mail_headers(true);
-        } else {
-            $message = "New AI voice lead captured\n\n";
-            $message .= "Name: " . sanitize_text_field($data['name'] ?? 'N/A') . "\n";
-            $message .= "Email: " . sanitize_email($data['email'] ?? '') . "\n";
-            $message .= "Lead score: {$score}/100\n";
-            $headers = ['Content-Type: text/plain; charset=UTF-8'];
-        }
-
-        wp_mail($to, $subject, $message, $headers);
     }
 }

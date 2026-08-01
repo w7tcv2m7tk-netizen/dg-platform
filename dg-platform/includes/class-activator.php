@@ -14,6 +14,7 @@ class DG_Activator {
     public static function activate() {
         self::create_tables();
         self::migrate_legacy_contacts();
+        self::migrate_marketing_schema();
         DG_Permissions::register_capabilities();
         DG_Permissions::install_role_templates();
         DG_Site_Profile::maybe_apply_defaults();
@@ -528,5 +529,46 @@ class DG_Activator {
         }
 
         update_option('dg_contacts_migrated', true);
+    }
+
+    public static function migrate_marketing_schema() {
+        global $wpdb;
+        $orgs = $wpdb->prefix . 'dg_organisations';
+
+        if ($wpdb->get_var("SHOW TABLES LIKE '$orgs'") === $orgs) {
+            $cols = $wpdb->get_col("SHOW COLUMNS FROM $orgs", 0);
+            if (!in_array('legacy_table', $cols, true)) {
+                $wpdb->query("ALTER TABLE $orgs ADD legacy_table varchar(50) DEFAULT NULL");
+            }
+            if (!in_array('legacy_id', $cols, true)) {
+                $wpdb->query("ALTER TABLE $orgs ADD legacy_id bigint(20) DEFAULT NULL");
+            }
+            if ($wpdb->get_var("SHOW INDEX FROM $orgs WHERE Key_name = 'legacy'") === null) {
+                $wpdb->query("ALTER TABLE $orgs ADD KEY legacy (legacy_table, legacy_id)");
+            }
+        }
+
+        $clients_file = DG_PLATFORM_PATH . 'modules/marketing/includes/class-marketing-clients.php';
+        if (file_exists($clients_file)) {
+            require_once $clients_file;
+        }
+
+        if (class_exists('DG_Marketing_Clients')) {
+            $companies = DG_Marketing_Clients::companies_table();
+            if ($wpdb->get_var("SHOW TABLES LIKE '$companies'") === $companies) {
+                $rows = $wpdb->get_results("SELECT id FROM $companies");
+                foreach ($rows as $row) {
+                    DG_Marketing_Clients::sync_company((int) $row->id);
+                }
+            }
+        }
+
+        $ai_file = DG_PLATFORM_PATH . 'modules/marketing/includes/class-marketing-ai-visibility.php';
+        if (file_exists($ai_file)) {
+            require_once $ai_file;
+            if (class_exists('DG_Marketing_AI_Visibility')) {
+                DG_Marketing_AI_Visibility::ensure_table();
+            }
+        }
     }
 }
