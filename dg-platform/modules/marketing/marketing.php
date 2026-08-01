@@ -83,6 +83,8 @@ class DG_Module_Marketing {
             'class-marketing-clients.php',
             'class-marketing-import.php',
             'class-marketing-voice.php',
+            'class-marketing-dev-api.php',
+            'class-marketing-emails.php',
         ] as $file) {
             $path = $dir . $file;
             if (file_exists($path)) {
@@ -184,9 +186,8 @@ class DG_Module_Marketing {
                     <tr><td style="padding:12px 16px;border:1px solid #e0e0e0;font-weight:600;">AI Visibility</td><td style="padding:12px 16px;border:1px solid #e0e0e0;font-weight:700;">' . $audit_data['ai_score'] . '%</td></tr>
                     <tr><td style="padding:12px 16px;border:1px solid #e0e0e0;font-weight:600;">Website Performance</td><td style="padding:12px 16px;border:1px solid #e0e0e0;font-weight:700;">' . $audit_data['website_score'] . '%</td></tr>
                 </table>
-                <p style="margin:30px 0 20px 0;text-align:center;"><a href="' . $audit_url . '" style="background:#3B82F6;color:#fff;padding:12px 28px;border-radius:50px;text-decoration:none;font-weight:600;display:inline-block;">View Full Report →</a></p>
-                <p style="color:#333;font-size:16px;line-height:1.6;">I\'ll send you a breakdown of your top growth opportunities in my next email.</p>
-                <p style="color:#333;font-size:16px;line-height:1.6;margin-top:20px;">Ben Roe<br>DigitalGate</p>
+                <p style="margin:30px 0 20px 0;text-align:center;"><a href="' . $audit_url . '" style="background:#3B82F6;color:#fff;padding:14px 32px;border-radius:999px;text-decoration:none;font-weight:600;display:inline-block;">View Full Report</a></p>
+                <p style="color:#334155;font-size:16px;line-height:1.65;">I\'ll send you a breakdown of your top growth opportunities in my next email.</p>
                 '
             ],
             2 => [
@@ -202,7 +203,7 @@ class DG_Module_Marketing {
                     <li>The more consistent your presence, the higher your AI visibility</li>
                 </ul>
                 <p style="color:#333;font-size:16px;line-height:1.6;">Want to see how this compares to other agencies in your area? <a href="' . admin_url('admin.php?page=dg-platform-ai') . '" style="color:#3B82F6;">View the AI Visibility Dashboard →</a></p>
-                <p style="color:#333;font-size:16px;line-height:1.6;margin-top:20px;">Ben Roe<br>DigitalGate</p>
+
                 '
             ],
             3 => [
@@ -219,7 +220,7 @@ class DG_Module_Marketing {
                     <li>' . ($audit_data['google_score'] < 50 ? '❌ Google visibility needs improvement' : '✅ Your Google presence is strong') . '</li>
                 </ul>
                 <p style="margin:30px 0 20px 0;text-align:center;"><a href="' . $audit_url . '" style="background:#3B82F6;color:#fff;padding:12px 28px;border-radius:50px;text-decoration:none;font-weight:600;display:inline-block;">See Your Full Website Analysis →</a></p>
-                <p style="color:#333;font-size:16px;line-height:1.6;margin-top:20px;">Ben Roe<br>DigitalGate</p>
+
                 '
             ],
             4 => [
@@ -237,7 +238,7 @@ class DG_Module_Marketing {
                 . implode('', array_map(function($rec) { return '<li>✓ ' . $rec . '</li>'; }, array_slice($audit_data['recommendations'], 0, 3))) .
                 '</ul>
                 <p style="margin:30px 0 20px 0;text-align:center;"><a href="https://digitalgate.com.au/strategy-session" style="background:#3B82F6;color:#fff;padding:12px 28px;border-radius:50px;text-decoration:none;font-weight:600;display:inline-block;">Book Your Free Strategy Session →</a></p>
-                <p style="color:#333;font-size:16px;line-height:1.6;margin-top:20px;">Ben Roe<br>DigitalGate</p>
+
                 '
             ],
             5 => [
@@ -260,7 +261,7 @@ class DG_Module_Marketing {
                 </ul>
                 <p style="margin:30px 0 20px 0;text-align:center;"><a href="https://digitalgate.com.au/strategy-session" style="background:#3B82F6;color:#fff;padding:14px 36px;border-radius:50px;text-decoration:none;font-weight:600;font-size:16px;display:inline-block;">📅 Book Your Free Strategy Session</a></p>
                 <p style="color:#333;font-size:16px;line-height:1.6;">Looking forward to helping you grow,</p>
-                <p style="color:#333;font-size:16px;line-height:1.6;margin-top:20px;">Ben Roe<br>DigitalGate</p>
+
                 '
             ]
         ];
@@ -343,16 +344,17 @@ class DG_Module_Marketing {
         
         $to = $email_record->email;
         $subject = $email_record->email_subject;
-        $message = $this->wrap_automation_email_content($email_record->email_content);
-        
-        $from_email = 'hello@digitalgate.com.au';
-        $from_name = 'DigitalGate';
-        
-        $headers = [
-            'Content-Type: text/html; charset=UTF-8',
-            'From: ' . $from_name . ' <' . $from_email . '>',
-            'Reply-To: ' . $from_email
-        ];
+        $message = class_exists('DG_Marketing_Emails')
+            ? DG_Marketing_Emails::wrap($email_record->email_content)
+            : $this->wrap_automation_email_content($email_record->email_content);
+
+        $headers = class_exists('DG_Marketing_Emails')
+            ? DG_Marketing_Emails::mail_headers()
+            : [
+                'Content-Type: text/html; charset=UTF-8',
+                'From: Ben Roe | DigitalGate <hello@digitalgate.com.au>',
+                'Reply-To: hello@digitalgate.com.au',
+            ];
         
         $sent = wp_mail($to, $subject, $message, $headers);
         
@@ -374,18 +376,10 @@ class DG_Module_Marketing {
     }
     
     private function wrap_automation_email_content($content) {
-        return '<html><body>
-        <div style="max-width:600px;margin:0 auto;font-family:Arial,sans-serif;padding:20px;background:#f5f5f5;">
-            <div style="background:#ffffff;padding:30px;border-radius:12px;box-shadow:0 2px 10px rgba(0,0,0,0.05);">
-                ' . $content . '
-                <hr style="border:0;border-top:1px solid #eee;margin:30px 0 20px;">
-                <p style="font-size:12px;color:#999;text-align:center;line-height:1.6;">
-                    You\'re receiving this email because you requested an Agency Visibility Audit.<br>
-                    If you\'d like to stop receiving these emails, please <a href="https://digitalgate.com.au/unsubscribe" style="color:#3B82F6;">unsubscribe here</a>.
-                </p>
-            </div>
-        </div>
-        </body></html>';
+        if (class_exists('DG_Marketing_Emails')) {
+            return DG_Marketing_Emails::wrap($content);
+        }
+        return '<html><body><div style="max-width:600px;margin:0 auto;padding:20px;">' . $content . '</div></body></html>';
     }
     
     // ============================================================
@@ -593,41 +587,20 @@ class DG_Module_Marketing {
     // ============================================================
     
     private function send_audit_email($to, $name, $company, $audit_data, $audit_url) {
-        $subject = '🔍 Your AI Visibility Audit';
-        
-        $message = '<html><body>';
-        $message .= '<div style="max-width:600px;margin:0 auto;font-family:Arial,sans-serif;padding:20px;background:#f5f5f5;">';
-        $message .= '<div style="background:#ffffff;padding:30px;border-radius:12px;box-shadow:0 2px 10px rgba(0,0,0,0.05);">';
-        $message .= '<h1 style="color:#1a1a2e;font-size:24px;margin:0 0 10px 0;">🔍 Your AI Visibility Audit</h1>';
-        $message .= '<p style="color:#333;font-size:16px;line-height:1.6;margin-bottom:20px;">Hi ' . esc_html($name) . ',</p>';
-        $message .= '<p style="color:#333;font-size:16px;line-height:1.6;margin-bottom:20px;">Thank you for requesting a Visibility Audit for <strong>' . esc_html($company->company_name) . '</strong>.</p>';
-        $message .= '<p style="color:#333;font-size:16px;line-height:1.6;margin-bottom:20px;">Here are your key results:</p>';
-        $message .= '<table style="width:100%;border-collapse:collapse;margin:20px 0;background:#f9f9f9;border-radius:8px;overflow:hidden;">';
-        $message .= '<tr><td style="padding:12px 16px;border:1px solid #e0e0e0;font-weight:600;background:#f0f0f0;width:50%;">Overall Score</td><td style="padding:12px 16px;border:1px solid #e0e0e0;font-weight:700;background:#f0f0f0;width:50%;">' . $audit_data['overall_score'] . '%</td></tr>';
-        $message .= '<tr><td style="padding:12px 16px;border:1px solid #e0e0e0;font-weight:600;">Grade</td><td style="padding:12px 16px;border:1px solid #e0e0e0;font-weight:700;">' . $audit_data['grade'] . '</td></tr>';
-        $message .= '<tr><td style="padding:12px 16px;border:1px solid #e0e0e0;font-weight:600;">AI Visibility</td><td style="padding:12px 16px;border:1px solid #e0e0e0;font-weight:700;">' . $audit_data['ai_score'] . '%</td></tr>';
-        $message .= '<tr><td style="padding:12px 16px;border:1px solid #e0e0e0;font-weight:600;">Website Performance</td><td style="padding:12px 16px;border:1px solid #e0e0e0;font-weight:700;">' . $audit_data['website_score'] . '%</td></tr>';
-        $message .= '</table>';
-        $message .= '<p style="color:#333;font-size:16px;line-height:1.6;margin:10px 0 20px 0;"><strong>Status:</strong> ' . $audit_data['status'] . '</p>';
-        $message .= '<h3 style="color:#1a1a2e;font-size:18px;margin:20px 0 10px 0;">📋 Top Recommendations</h3><ul style="color:#333;font-size:15px;line-height:1.6;padding-left:20px;margin-bottom:20px;">';
-        foreach (array_slice($audit_data['recommendations'], 0, 4) as $rec) {
-            $message .= '<li style="margin:8px 0;">' . esc_html($rec) . '</li>';
+        $subject = 'Your Agency Visibility Audit Results';
+
+        $message = class_exists('DG_Marketing_Emails')
+            ? DG_Marketing_Emails::initial_audit_email($name, $company->company_name, $audit_data, $audit_url)
+            : '';
+
+        if ($message === '') {
+            $message = $this->wrap_automation_email_content('<p>Your audit is ready: <a href="' . esc_url($audit_url) . '">View report</a></p>');
         }
-        $message .= '</ul>';
-        $message .= '<p style="margin:30px 0 20px 0;text-align:center;"><a href="' . esc_url($audit_url) . '" style="background:#3B82F6;color:#fff;padding:14px 36px;border-radius:50px;text-decoration:none;font-weight:600;display:inline-block;font-size:16px;">📄 View Full Report</a></p>';
-        $message .= '<p style="font-size:12px;color:#999;margin-top:30px;border-top:1px solid #eee;padding-top:20px;text-align:center;">© ' . date('Y') . ' DigitalGate | This report is confidential</p>';
-        $message .= '</div>';
-        $message .= '</div></body></html>';
-        
-        $from_email = 'hello@digitalgate.com.au';
-        $from_name = 'DigitalGate';
-        
-        $headers = [
-            'Content-Type: text/html; charset=UTF-8',
-            'From: ' . $from_name . ' <' . $from_email . '>',
-            'Reply-To: ' . $from_email
-        ];
-        
+
+        $headers = class_exists('DG_Marketing_Emails')
+            ? DG_Marketing_Emails::mail_headers()
+            : ['Content-Type: text/html; charset=UTF-8'];
+
         wp_mail($to, $subject, $message, $headers);
     }
     

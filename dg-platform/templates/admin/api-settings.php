@@ -15,7 +15,14 @@
                 <th>Dev API Key</th>
                 <td>
                     <input type="text" readonly value="<?php echo esc_attr($dev_key); ?>" class="large-text code" onclick="this.select();">
-                    <p class="description">Send as <code>X-API-Key</code> header to <code><?php echo esc_html(rest_url(DG_REST_NAMESPACE . '/leads/summary')); ?></code></p>
+                    <p class="description">Send as <code>X-API-Key</code> header. Examples:</p>
+                    <ul style="margin:0 0 0 1em;color:#666;">
+                        <li>Roe Realty: <code><?php echo esc_html(rest_url(DG_REST_NAMESPACE . '/leads/summary')); ?></code></li>
+                        <li>DigitalGate: <code><?php echo esc_html(rest_url(DG_REST_NAMESPACE . '/marketing/summary')); ?></code></li>
+                    </ul>
+                    <?php if (class_exists('DG_Site_Profile')) : ?>
+                        <p class="description">This site: <strong><?php echo esc_html(DG_Site_Profile::label()); ?></strong></p>
+                    <?php endif; ?>
                 </td>
             </tr>
             <tr>

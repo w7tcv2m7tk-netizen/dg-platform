@@ -44,6 +44,9 @@ class DG_Dev_API {
         if (DG_Permissions::current_user_can('dg_re_view_leads')) {
             return true;
         }
+        if (DG_Permissions::current_user_can('dg_marketing_view_clients')) {
+            return true;
+        }
 
         $api_key = self::extract_key_from_request($request);
         $stored = self::get_key();
