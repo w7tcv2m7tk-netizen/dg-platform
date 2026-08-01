@@ -1,0 +1,2111 @@
+<?php
+/**
+ * Admin dark mode for WordPress dashboard.
+ * Description: Complete dark theme for the WordPress admin. Merges the original
+ *               "Dark Mode" and "Admin Dark Mode" snippets plus the standalone
+ *               "Find Light" diagnostic into one plugin. Adds real fixes: the
+ *               Fix Contrast / Fix Light tools now PERSIST their fixes (saved
+ *               per-user via AJAX and re-applied automatically on every page
+ *               load) instead of resetting the moment you refresh.
+ * @package DG_Platform
+ */
+
+if (!defined('ABSPATH')) {
+    exit;
+}
+
+class DG_Admin_Dark_Mode {
+
+    private static $instance = null;
+
+    // Per-user meta key that stores permanently-applied contrast/light fixes.
+    const FIXES_META_KEY = 'dg_admin_dark_fixes';
+
+    public static function get_instance() {
+        if (null === self::$instance) {
+            self::$instance = new self();
+        }
+        return self::$instance;
+    }
+
+    private function __construct() {
+        add_action('admin_bar_menu', array($this, 'add_toolbar_buttons'), 999);
+        add_action('admin_head', array($this, 'add_styles'));
+        add_action('admin_head', array($this, 'add_script'));
+        add_action('admin_footer', array($this, 'add_diagnostics_panel'));
+        add_action('wp_ajax_dg_toggle_dark_mode', array($this, 'ajax_toggle'));
+        add_action('wp_ajax_dg_save_fix',  array($this, 'ajax_save_fix'));
+        add_action('wp_ajax_dg_clear_fixes', array($this, 'ajax_clear_fixes'));
+    }
+
+    /**
+     * Reads this user's permanently-saved contrast/light fixes.
+     * Structure: array( 'contrast' => array( array('sel'=>.., 'color'=>..), .. ),
+     *                    'light'    => array( array('sel'=>..), .. ) )
+     */
+    private function get_saved_fixes() {
+        if (!is_user_logged_in()) return array('contrast' => array(), 'light' => array());
+        $raw = get_user_meta(get_current_user_id(), self::FIXES_META_KEY, true);
+        $data = json_decode($raw, true);
+        if (!is_array($data)) $data = array();
+        if (!isset($data['contrast']) || !is_array($data['contrast'])) $data['contrast'] = array();
+        if (!isset($data['light'])    || !is_array($data['light']))    $data['light']    = array();
+        return $data;
+    }
+
+    /**
+     * Validates/sanitizes a value that's meant to be used as a CSS selector.
+     * esc_html() is the wrong tool for this (it's for HTML text nodes, not
+     * CSS) and would let a malformed selector saved by the browser silently
+     * corrupt the rest of the generated stylesheet. This allows only the
+     * characters a tag/id/class/attribute selector can legitimately contain
+     * and rejects anything with braces/semicolons that could break out of
+     * the CSS rule.
+     */
+    private function sanitize_selector($sel) {
+        $sel = trim((string) $sel);
+        if ($sel === '') return '';
+        // Reject anything that could close the CSS rule early or inject more rules.
+        if (preg_match('/[{};]/', $sel)) return '';
+        // Allow letters, numbers, and the characters valid in tag/id/class/
+        // attribute selectors: . # - _ : [ ] = " ' > ~ + ( ) and whitespace.
+        if (!preg_match('/^[a-zA-Z0-9 \.\#\-_:\[\]="\'>~+()]+$/', $sel)) return '';
+        return $sel;
+    }
+
+    /**
+     * Renders the saved fixes as real CSS so they survive page loads without
+     * re-running the scanner — this is what actually makes "Fix Contrast" and
+     * "Fix Light" stick instead of resetting on refresh.
+     */
+    private function render_persisted_fix_css() {
+        $fixes = $this->get_saved_fixes();
+        if (empty($fixes['contrast']) && empty($fixes['light'])) return '';
+
+        $css = "\n/* ─── PERSISTED USER FIXES (saved via Fix Contrast / Fix Light) ─── */\n";
+
+        foreach ($fixes['contrast'] as $fix) {
+            if (empty($fix['sel']) || empty($fix['color'])) continue;
+            $sel = $this->sanitize_selector($fix['sel']);
+            if ($sel === '') continue;
+            $color = ($fix['color'] === '#ffffff') ? '#ffffff' : '#000000';
+            $css .= ".admin-dark-mode " . $sel . " { color: " . $color . " !important; }\n";
+        }
+
+        foreach ($fixes['light'] as $fix) {
+            if (empty($fix['sel'])) continue;
+            $sel = $this->sanitize_selector($fix['sel']);
+            if ($sel === '') continue;
+            $css .= ".admin-dark-mode " . $sel . " { background: #1c1c1e !important; background-color: #1c1c1e !important; }\n";
+        }
+
+        return $css;
+    }
+
+    public function add_toolbar_buttons($wp_admin_bar) {
+        if (!current_user_can('manage_options')) return;
+
+        $is_dark = $this->is_dark();
+        $dark_icon = $is_dark ? '☀️' : '🌙';
+        $dark_label = $is_dark ? 'Light Mode' : 'Dark Mode';
+
+        // Dark Mode Toggle Button
+        $wp_admin_bar->add_node(array(
+            'id'    => 'dg-dark-toggle',
+            'title' => '<span class="dg-toggle-icon">' . $dark_icon . '</span> ' . $dark_label,
+            'href'  => '#',
+            'meta'  => array(
+                'class' => 'dg-dark-toggle-btn',
+                'title' => 'Toggle Dark Mode'
+            )
+        ));
+
+        // Fix Contrast Button
+        $wp_admin_bar->add_node(array(
+            'id'    => 'dg-fix-contrast',
+            'title' => '🔍 Fix Contrast',
+            'href'  => '#',
+            'meta'  => array(
+                'class' => 'dg-fix-contrast-btn',
+                'title' => 'Find dark text on dark backgrounds and fix it'
+            )
+        ));
+
+        // Fix Light Button
+        $wp_admin_bar->add_node(array(
+            'id'    => 'dg-fix-light',
+            'title' => '🌓 Fix Light',
+            'href'  => '#',
+            'meta'  => array(
+                'class' => 'dg-fix-light-btn',
+                'title' => 'Find light backgrounds and make them dark'
+            )
+        ));
+    }
+
+    public function add_styles() { ?>
+<style id="dg-dark-mode-styles">
+
+/* ─── DARK MODE BASE ─────────────────────────────────────────────────────── */
+.admin-dark-mode,
+.admin-dark-mode #wpbody,
+.admin-dark-mode #wpcontent,
+.admin-dark-mode #wpwrap,
+.admin-dark-mode #wpbody-content,
+.admin-dark-mode #wpbody-content .wrap {
+    background: #1c1c1e !important;
+    color: #e6edf3 !important;
+}
+
+/* ─── ADMIN BAR ──────────────────────────────────────────────────────────── */
+.admin-dark-mode #wpadminbar,
+.admin-dark-mode #wpadminbar .quicklinks .menupop ul,
+.admin-dark-mode #wpadminbar .ab-top-menu > li > .ab-item,
+.admin-dark-mode #wpadminbar .ab-empty-item {
+    background: #232325 !important;
+    color: #e0d6cc !important;
+}
+.admin-dark-mode #wpadminbar * {
+    color: #e0d6cc !important;
+}
+.admin-dark-mode #wpadminbar .quicklinks .menupop ul li:hover,
+.admin-dark-mode #wpadminbar .ab-top-menu > li:hover > .ab-item,
+.admin-dark-mode #wpadminbar .ab-top-menu > li.hover > .ab-item,
+.admin-dark-mode #wpadminbar .ab-top-menu > li > .ab-item:focus,
+.admin-dark-mode #wpadminbar li:hover,
+.admin-dark-mode #wpadminbar li.hover {
+    background: #3a3a3c !important;
+    color: #fff !important;
+}
+.admin-dark-mode #wpadminbar .quicklinks .menupop ul {
+    border: 1px solid #3a3a3c !important;
+}
+.admin-dark-mode #wpadminbar .quicklinks .menupop ul li {
+    background: #2c2c2e !important;
+}
+.admin-dark-mode #wpadminbar .quicklinks .menupop ul li a {
+    color: #ccc !important;
+}
+.admin-dark-mode #wpadminbar .quicklinks .menupop ul li a:hover {
+    background: #3a3a3c !important;
+    color: #fff !important;
+}
+.admin-dark-mode #wpadminbar #wp-admin-bar-site-name > .ab-item::before,
+.admin-dark-mode #wpadminbar .ab-icon::before,
+.admin-dark-mode #wpadminbar .ab-item::before {
+    color: #B9A48A !important;
+}
+
+/* ─── SIDEBAR ────────────────────────────────────────────────────────────── */
+.admin-dark-mode #adminmenuback,
+.admin-dark-mode #adminmenuwrap,
+.admin-dark-mode #adminmenu,
+.admin-dark-mode #adminmenu li.menu-top,
+.admin-dark-mode #adminmenu li.opensub > a.menu-top,
+.admin-dark-mode #adminmenu li > a.menu-top {
+    background: #232325 !important;
+    border-color: #3a3a3c !important;
+}
+.admin-dark-mode #adminmenuwrap,
+.admin-dark-mode #adminmenuback {
+    border-right: 1px solid #3a3a3c !important;
+}
+.admin-dark-mode #adminmenu .wp-menu-name,
+.admin-dark-mode #adminmenu li.menu-top a {
+    color: #c8c8cc !important;
+}
+.admin-dark-mode #adminmenu li.menu-top:hover,
+.admin-dark-mode #adminmenu li.menu-top:hover > a,
+.admin-dark-mode #adminmenu li.opensub > a.menu-top {
+    background: #3a3a3c !important;
+    color: #fff !important;
+}
+.admin-dark-mode #adminmenu li.menu-top:hover .wp-menu-name,
+.admin-dark-mode #adminmenu li.opensub .wp-menu-name {
+    color: #fff !important;
+}
+.admin-dark-mode #adminmenu li.current,
+.admin-dark-mode #adminmenu li.wp-has-current-submenu {
+    background: #2c2c2e !important;
+    border-left: 3px solid #B9A48A !important;
+}
+.admin-dark-mode #adminmenu li.current a,
+.admin-dark-mode #adminmenu li.wp-has-current-submenu a {
+    color: #fff !important;
+}
+.admin-dark-mode #adminmenu .wp-menu-image::before,
+.admin-dark-mode #adminmenu .wp-menu-image img {
+    opacity: 0.75;
+}
+.admin-dark-mode #adminmenu li.current .wp-menu-image::before,
+.admin-dark-mode #adminmenu li:hover .wp-menu-image::before {
+    opacity: 1;
+}
+.admin-dark-mode #adminmenu .wp-submenu,
+.admin-dark-mode #adminmenu .wp-submenu-wrap {
+    background: #1c1c1e !important;
+    border: 1px solid #3a3a3c !important;
+}
+.admin-dark-mode #adminmenu .wp-submenu a,
+.admin-dark-mode #adminmenu .wp-submenu li a {
+    color: #aaa !important;
+}
+.admin-dark-mode #adminmenu .wp-submenu a:hover,
+.admin-dark-mode #adminmenu .wp-submenu li:hover a,
+.admin-dark-mode #adminmenu .wp-submenu li.current a {
+    background: #3a3a3c !important;
+    color: #fff !important;
+}
+.admin-dark-mode #collapse-button {
+    color: #888 !important;
+}
+.admin-dark-mode #collapse-button:hover {
+    color: #B9A48A !important;
+}
+.admin-dark-mode #adminmenu .update-plugins,
+.admin-dark-mode #adminmenu .awaiting-mod {
+    background: #B9A48A !important;
+    color: #1c1c1e !important;
+}
+
+/* ─── CONTENT AREA ───────────────────────────────────────────────────────── */
+.admin-dark-mode .wrap h1,
+.admin-dark-mode .wrap h2,
+.admin-dark-mode .wrap h3,
+.admin-dark-mode .wrap h4,
+.admin-dark-mode .wrap h5,
+.admin-dark-mode .wrap h1 a,
+.admin-dark-mode #titlediv #title,
+.admin-dark-mode .editor-post-title__input {
+    color: #e6edf3 !important;
+}
+.admin-dark-mode .wrap p,
+.admin-dark-mode .wrap label,
+.admin-dark-mode .description,
+.admin-dark-mode .wrap .description {
+    color: #aaa !important;
+}
+.admin-dark-mode a {
+    color: #B9A48A !important;
+}
+.admin-dark-mode a:hover {
+    color: #d4b896 !important;
+}
+
+/* ─── POST BOXES ────────────────────────────────────────────────────────── */
+.admin-dark-mode .postbox,
+.admin-dark-mode .postbox-container .postbox,
+.admin-dark-mode #poststuff .postbox {
+    background: #232325 !important;
+    border: 1px solid #3a3a3c !important;
+    border-radius: 6px !important;
+}
+.admin-dark-mode .postbox .postbox-header,
+.admin-dark-mode .postbox .hndle {
+    background: #2c2c2e !important;
+    border-bottom: 1px solid #3a3a3c !important;
+    color: #e6edf3 !important;
+    border-radius: 6px 6px 0 0 !important;
+}
+.admin-dark-mode .postbox .postbox-header h2,
+.admin-dark-mode .postbox .hndle span,
+.admin-dark-mode .postbox h2 {
+    color: #e6edf3 !important;
+}
+.admin-dark-mode .postbox .inside {
+    color: #ccc !important;
+}
+.admin-dark-mode .postbox .handlediv .dashicons {
+    color: #888 !important;
+}
+
+/* ─── TABLES ─────────────────────────────────────────────────────────────── */
+.admin-dark-mode .widefat,
+.admin-dark-mode .wp-list-table {
+    background: #232325 !important;
+    border: 1px solid #3a3a3c !important;
+    border-collapse: collapse;
+}
+.admin-dark-mode .widefat thead th,
+.admin-dark-mode .widefat tfoot th,
+.admin-dark-mode .wp-list-table thead th,
+.admin-dark-mode .wp-list-table tfoot th,
+.admin-dark-mode th.manage-column {
+    background: #2c2c2e !important;
+    color: #e6edf3 !important;
+    border-bottom: 1px solid #3a3a3c !important;
+}
+.admin-dark-mode th.manage-column a,
+.admin-dark-mode th.manage-column span {
+    color: #e6edf3 !important;
+}
+.admin-dark-mode .widefat td,
+.admin-dark-mode .wp-list-table td {
+    background: #1c1c1e !important;
+    color: #c8c8cc !important;
+    border-bottom: 1px solid #2c2c2e !important;
+}
+.admin-dark-mode .widefat tr:nth-child(even) td,
+.admin-dark-mode .wp-list-table tr:nth-child(even) td {
+    background: #232325 !important;
+}
+.admin-dark-mode .widefat tr:hover td,
+.admin-dark-mode .wp-list-table tr:hover td,
+.admin-dark-mode .widefat tbody tr:hover td {
+    background: #2c2c2e !important;
+    color: #fff !important;
+}
+.admin-dark-mode .row-actions {
+    color: #666 !important;
+}
+.admin-dark-mode .row-actions a {
+    color: #B9A48A !important;
+}
+.admin-dark-mode .row-actions .delete a,
+.admin-dark-mode .row-actions .trash a {
+    color: #dc3545 !important;
+}
+.admin-dark-mode .striped > tbody > :nth-child(odd),
+.admin-dark-mode ul.striped > :nth-child(odd),
+.admin-dark-mode .alternate {
+    background: #1c1c1e !important;
+}
+.admin-dark-mode .check-column input {
+    accent-color: #B9A48A;
+}
+
+/* ─── FORMS & INPUTS ─────────────────────────────────────────────────────── */
+.admin-dark-mode input[type="text"],
+.admin-dark-mode input[type="email"],
+.admin-dark-mode input[type="url"],
+.admin-dark-mode input[type="password"],
+.admin-dark-mode input[type="number"],
+.admin-dark-mode input[type="search"],
+.admin-dark-mode input[type="tel"],
+.admin-dark-mode input[type="date"],
+.admin-dark-mode select,
+.admin-dark-mode textarea,
+.admin-dark-mode .wp-editor-area {
+    background: #28282a !important;
+    border: 1px solid #4a4a4c !important;
+    color: #f0f0f0 !important;
+    border-radius: 4px;
+}
+.admin-dark-mode input[type="text"]:focus,
+.admin-dark-mode input[type="email"]:focus,
+.admin-dark-mode input[type="url"]:focus,
+.admin-dark-mode input[type="password"]:focus,
+.admin-dark-mode input[type="number"]:focus,
+.admin-dark-mode input[type="search"]:focus,
+.admin-dark-mode select:focus,
+.admin-dark-mode textarea:focus {
+    background: #232325 !important;
+    border-color: #B9A48A !important;
+    box-shadow: 0 0 0 1px #B9A48A !important;
+    outline: none !important;
+    color: #fff !important;
+}
+.admin-dark-mode input::placeholder,
+.admin-dark-mode textarea::placeholder,
+.admin-dark-mode select option:first-child {
+    color: #777 !important;
+    opacity: 1 !important;
+}
+.admin-dark-mode select {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath fill='%23888' d='M0 0l5 6 5-6z'/%3E%3C/svg%3E") !important;
+    background-repeat: no-repeat !important;
+    background-position: right 10px center !important;
+}
+
+/* ─── BUTTONS ────────────────────────────────────────────────────────────── */
+.admin-dark-mode .button,
+.admin-dark-mode .button-secondary {
+    background: #2c2c2e !important;
+    border: 1px solid #4a4a4c !important;
+    color: #e6edf3 !important;
+    box-shadow: none !important;
+    text-shadow: none !important;
+}
+.admin-dark-mode .button:hover,
+.admin-dark-mode .button-secondary:hover,
+.admin-dark-mode .button:focus,
+.admin-dark-mode .button-secondary:focus {
+    background: #3a3a3c !important;
+    border-color: #5a5a5c !important;
+    color: #fff !important;
+    box-shadow: none !important;
+}
+.admin-dark-mode .button-primary {
+    background: #B9A48A !important;
+    border-color: #B9A48A !important;
+    color: #1c1c1e !important;
+    font-weight: 600 !important;
+    box-shadow: none !important;
+    text-shadow: none !important;
+}
+.admin-dark-mode .button-primary:hover,
+.admin-dark-mode .button-primary:focus {
+    background: #a8947a !important;
+    border-color: #a8947a !important;
+    color: #1c1c1e !important;
+    box-shadow: none !important;
+}
+.admin-dark-mode .button-primary:active {
+    background: #967f68 !important;
+}
+.admin-dark-mode .submitdelete,
+.admin-dark-mode a.submitdelete {
+    color: #dc3545 !important;
+}
+.admin-dark-mode .submitdelete:hover {
+    color: #ff4d5e !important;
+}
+
+/* ─── NOTICES ────────────────────────────────────────────────────────────── */
+.admin-dark-mode .notice,
+.admin-dark-mode .updated,
+.admin-dark-mode .error,
+.admin-dark-mode div.updated,
+.admin-dark-mode div.error {
+    background: #232325 !important;
+    border-color: #3a3a3c !important;
+    color: #e6edf3 !important;
+}
+.admin-dark-mode .notice p,
+.admin-dark-mode .updated p,
+.admin-dark-mode .error p {
+    color: #e6edf3 !important;
+}
+.admin-dark-mode .notice-success,
+.admin-dark-mode div.updated { border-left-color: #28a745 !important; }
+.admin-dark-mode .notice-warning  { border-left-color: #ffc107 !important; }
+.admin-dark-mode .notice-error,
+.admin-dark-mode div.error { border-left-color: #dc3545 !important; }
+.admin-dark-mode .notice-info { border-left-color: #58a6ff !important; }
+.admin-dark-mode .notice-dismiss::before {
+    color: #888 !important;
+}
+.admin-dark-mode .notice-dismiss:hover::before {
+    color: #fff !important;
+}
+
+/* ─── NAV TABS ───────────────────────────────────────────────────────────── */
+.admin-dark-mode .nav-tab-wrapper,
+.admin-dark-mode h2.nav-tab-wrapper {
+    border-bottom-color: #3a3a3c !important;
+}
+.admin-dark-mode .nav-tab {
+    background: #232325 !important;
+    border: 1px solid #3a3a3c !important;
+    border-bottom: none !important;
+    color: #aaa !important;
+}
+.admin-dark-mode .nav-tab:hover {
+    background: #2c2c2e !important;
+    color: #fff !important;
+    border-color: #4a4a4c !important;
+}
+.admin-dark-mode .nav-tab-active,
+.admin-dark-mode .nav-tab-active:hover {
+    background: #1c1c1e !important;
+    color: #e6edf3 !important;
+    border-bottom-color: #1c1c1e !important;
+    border-top: 2px solid #B9A48A !important;
+}
+
+/* ─── CLASSIC EDITOR ─────────────────────────────────────────────────────── */
+.admin-dark-mode #wp-content-editor-tools,
+.admin-dark-mode .wp-editor-tabs {
+    background: #2c2c2e !important;
+    border-color: #3a3a3c !important;
+}
+.admin-dark-mode .wp-switch-editor {
+    background: #2c2c2e !important;
+    color: #aaa !important;
+    border-color: #3a3a3c !important;
+}
+.admin-dark-mode .wp-switch-editor:hover,
+.admin-dark-mode .wp-switch-editor.switch-tmce,
+.admin-dark-mode .wp-switch-editor.switch-html {
+    background: #3a3a3c !important;
+    color: #fff !important;
+}
+.admin-dark-mode .mce-toolbar .mce-btn,
+.admin-dark-mode .mce-toolbar .mce-btn button {
+    background: #2c2c2e !important;
+    color: #ccc !important;
+    border-color: #3a3a3c !important;
+}
+.admin-dark-mode .mce-toolbar .mce-btn:hover {
+    background: #3a3a3c !important;
+    color: #fff !important;
+}
+.admin-dark-mode .mce-menubar,
+.admin-dark-mode .mce-panel,
+.admin-dark-mode .mce-container,
+.admin-dark-mode .mce-container-body {
+    background: #2c2c2e !important;
+    border-color: #3a3a3c !important;
+}
+.admin-dark-mode .mce-edit-area,
+.admin-dark-mode .mce-edit-area iframe {
+    background: #1c1c1e !important;
+}
+
+/* ─── GUTENBERG / BLOCK EDITOR ───────────────────────────────────────────── */
+.admin-dark-mode.block-editor-page #wpbody,
+.admin-dark-mode.block-editor-page #wpbody-content {
+    background: #1c1c1e !important;
+}
+.admin-dark-mode .block-editor-writing-flow,
+.admin-dark-mode .editor-styles-wrapper,
+.admin-dark-mode .block-editor-block-list__layout,
+.admin-dark-mode .wp-block-post-content {
+    background: #1c1c1e !important;
+    color: #e6edf3 !important;
+}
+.admin-dark-mode .edit-post-header,
+.admin-dark-mode .editor-header,
+.admin-dark-mode .edit-post-header__toolbar,
+.admin-dark-mode .editor-header__toolbar {
+    background: #232325 !important;
+    border-bottom: 1px solid #3a3a3c !important;
+    color: #e6edf3 !important;
+}
+.admin-dark-mode .edit-post-header__settings,
+.admin-dark-mode .editor-header__settings {
+    background: #232325 !important;
+}
+.admin-dark-mode .edit-post-header .components-button,
+.admin-dark-mode .editor-header .components-button {
+    color: #e6edf3 !important;
+}
+.admin-dark-mode .edit-post-header .components-button:hover,
+.admin-dark-mode .editor-header .components-button:hover {
+    background: #3a3a3c !important;
+    color: #fff !important;
+}
+.admin-dark-mode .interface-complementary-area,
+.admin-dark-mode .edit-post-sidebar,
+.admin-dark-mode .editor-sidebar,
+.admin-dark-mode .components-panel {
+    background: #232325 !important;
+    border-left: 1px solid #3a3a3c !important;
+    color: #e6edf3 !important;
+}
+.admin-dark-mode .components-panel__header {
+    background: #2c2c2e !important;
+    border-bottom: 1px solid #3a3a3c !important;
+    color: #e6edf3 !important;
+}
+.admin-dark-mode .components-panel__body {
+    background: #232325 !important;
+    border-bottom: 1px solid #3a3a3c !important;
+}
+.admin-dark-mode .components-panel__body-title button {
+    color: #e6edf3 !important;
+}
+.admin-dark-mode .components-panel__body-toggle {
+    background: #232325 !important;
+    color: #e6edf3 !important;
+}
+.admin-dark-mode .components-panel__body-toggle:hover {
+    color: #B9A48A !important;
+}
+.admin-dark-mode .block-editor-inserter__menu,
+.admin-dark-mode .components-popover__content,
+.admin-dark-mode .components-dropdown-menu__menu {
+    background: #232325 !important;
+    border: 1px solid #3a3a3c !important;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.5) !important;
+    color: #e6edf3 !important;
+}
+.admin-dark-mode .components-dropdown-menu__menu-item,
+.admin-dark-mode .components-menu-item__button {
+    color: #ccc !important;
+}
+.admin-dark-mode .components-dropdown-menu__menu-item:hover,
+.admin-dark-mode .components-menu-item__button:hover {
+    background: #3a3a3c !important;
+    color: #fff !important;
+}
+.admin-dark-mode .block-editor-block-toolbar,
+.admin-dark-mode .components-toolbar-group,
+.admin-dark-mode .components-toolbar {
+    background: #2c2c2e !important;
+    border-color: #3a3a3c !important;
+}
+.admin-dark-mode .components-toolbar-button,
+.admin-dark-mode .components-toolbar-group .components-button {
+    color: #ccc !important;
+}
+.admin-dark-mode .components-toolbar-button:hover,
+.admin-dark-mode .components-toolbar-group .components-button:hover {
+    background: #3a3a3c !important;
+    color: #fff !important;
+}
+.admin-dark-mode .components-text-control__input,
+.admin-dark-mode .components-textarea-control__input,
+.admin-dark-mode .components-select-control__input,
+.admin-dark-mode .components-search-control__input,
+.admin-dark-mode .components-input-control__input {
+    background: #28282a !important;
+    border-color: #4a4a4c !important;
+    color: #f0f0f0 !important;
+}
+.admin-dark-mode .components-text-control__input:focus,
+.admin-dark-mode .components-textarea-control__input:focus,
+.admin-dark-mode .components-select-control__input:focus,
+.admin-dark-mode .components-input-control__input:focus {
+    border-color: #B9A48A !important;
+    box-shadow: 0 0 0 1px #B9A48A !important;
+}
+.admin-dark-mode .components-base-control__label,
+.admin-dark-mode .components-input-control__label {
+    color: #aaa !important;
+}
+.admin-dark-mode .components-form-toggle__input:checked + .components-form-toggle__track {
+    background: #B9A48A !important;
+}
+.admin-dark-mode .components-form-toggle__track {
+    background: #3a3a3c !important;
+}
+.admin-dark-mode .components-range-control__slider {
+    accent-color: #B9A48A;
+}
+.admin-dark-mode .components-color-picker,
+.admin-dark-mode .components-color-palette {
+    background: #232325 !important;
+    border-color: #3a3a3c !important;
+}
+.admin-dark-mode .edit-post-sidebar__panel-tabs,
+.admin-dark-mode .editor-sidebar__panel-tabs {
+    background: #2c2c2e !important;
+    border-bottom: 1px solid #3a3a3c !important;
+}
+.admin-dark-mode .edit-post-sidebar__panel-tab,
+.admin-dark-mode .editor-sidebar__panel-tab {
+    color: #aaa !important;
+}
+.admin-dark-mode .edit-post-sidebar__panel-tab.is-active,
+.admin-dark-mode .editor-sidebar__panel-tab.is-active {
+    color: #B9A48A !important;
+    border-bottom: 2px solid #B9A48A !important;
+}
+.admin-dark-mode .editor-post-publish-button,
+.admin-dark-mode .editor-post-publish-button__button {
+    background: #B9A48A !important;
+    border-color: #B9A48A !important;
+    color: #1c1c1e !important;
+}
+.admin-dark-mode .editor-post-publish-button:hover,
+.admin-dark-mode .editor-post-publish-button__button:hover {
+    background: #a8947a !important;
+}
+.admin-dark-mode .editor-post-title,
+.admin-dark-mode .editor-post-title__input,
+.admin-dark-mode .wp-block-post-title {
+    color: #e6edf3 !important;
+    caret-color: #B9A48A;
+}
+.admin-dark-mode .editor-styles-wrapper p,
+.admin-dark-mode .editor-styles-wrapper h1,
+.admin-dark-mode .editor-styles-wrapper h2,
+.admin-dark-mode .editor-styles-wrapper h3,
+.admin-dark-mode .editor-styles-wrapper h4 {
+    color: #e6edf3 !important;
+}
+.admin-dark-mode .components-notice {
+    background: #2c2c2e !important;
+    border-color: #3a3a3c !important;
+    color: #e6edf3 !important;
+}
+.admin-dark-mode .block-library-classic__toolbar {
+    background: #2c2c2e !important;
+    border-color: #3a3a3c !important;
+}
+
+/* ─── DASHBOARD WIDGETS ──────────────────────────────────────────────────── */
+.admin-dark-mode #dashboard-widgets .postbox {
+    background: #232325 !important;
+}
+.admin-dark-mode #dashboard-widgets h2,
+.admin-dark-mode #dashboard-widgets h3 {
+    color: #e6edf3 !important;
+    border-bottom-color: #3a3a3c !important;
+}
+.admin-dark-mode .dashboard-widget-control-form label {
+    color: #ccc !important;
+}
+.admin-dark-mode .activity-block {
+    border-bottom-color: #3a3a3c !important;
+}
+.admin-dark-mode .activity-block h3 {
+    color: #e6edf3 !important;
+}
+
+/* ─── MEDIA LIBRARY ──────────────────────────────────────────────────────── */
+.admin-dark-mode .media-frame,
+.admin-dark-mode .media-modal {
+    background: #1c1c1e !important;
+}
+.admin-dark-mode .media-frame-title,
+.admin-dark-mode .media-modal-close {
+    background: #2c2c2e !important;
+    color: #e6edf3 !important;
+    border-color: #3a3a3c !important;
+}
+.admin-dark-mode .media-sidebar,
+.admin-dark-mode .attachment-details {
+    background: #232325 !important;
+    border-color: #3a3a3c !important;
+}
+.admin-dark-mode .media-frame-content {
+    background: #1c1c1e !important;
+    border-color: #3a3a3c !important;
+}
+.admin-dark-mode .attachments-browser .attachments {
+    background: #1c1c1e !important;
+}
+.admin-dark-mode .attachment.details {
+    box-shadow: 0 0 0 3px #B9A48A !important;
+}
+.admin-dark-mode .media-frame-router,
+.admin-dark-mode .media-router,
+.admin-dark-mode .media-menu,
+.admin-dark-mode .media-frame-menu,
+.admin-dark-mode .media-frame-toolbar,
+.admin-dark-mode .media-toolbar,
+.admin-dark-mode .media-toolbar-primary,
+.admin-dark-mode .media-toolbar-secondary,
+.admin-dark-mode .upload-ui,
+.admin-dark-mode .upload-inline-status,
+.admin-dark-mode .media-frame-uploader,
+.admin-dark-mode #media-upload-header,
+.admin-dark-mode .media-frame .media-frame-menu-heading {
+    background: #232325 !important;
+    border-color: #3a3a3c !important;
+    color: #e6edf3 !important;
+}
+.admin-dark-mode .media-router .media-menu-item,
+.admin-dark-mode .media-menu .media-menu-item {
+    background: #232325 !important;
+    color: #aaa !important;
+    border-color: #3a3a3c !important;
+}
+.admin-dark-mode .media-router .media-menu-item:hover,
+.admin-dark-mode .media-menu .media-menu-item:hover {
+    background: #2c2c2e !important;
+    color: #fff !important;
+}
+.admin-dark-mode .media-router .active,
+.admin-dark-mode .media-menu .active,
+.admin-dark-mode .media-router .media-menu-item.active {
+    background: #1c1c1e !important;
+    color: #B9A48A !important;
+    border-bottom-color: #B9A48A !important;
+}
+.admin-dark-mode .uploader-inline,
+.admin-dark-mode .uploader-inline-content,
+.admin-dark-mode .drag-drop-area,
+.admin-dark-mode .uploader-window {
+    background: #1c1c1e !important;
+    border-color: #3a3a3c !important;
+    color: #888 !important;
+}
+.admin-dark-mode .media-search-input,
+.admin-dark-mode .media-search-input-label input,
+.admin-dark-mode #media-search-input {
+    background: #1c1c1e !important;
+    border-color: #3a3a3c !important;
+    color: #e6edf3 !important;
+}
+.admin-dark-mode .media-frame .filter-links,
+.admin-dark-mode .attachments-browser .media-toolbar {
+    background: #232325 !important;
+    border-color: #3a3a3c !important;
+}
+.admin-dark-mode .attachment-details .settings,
+.admin-dark-mode .media-sidebar .attachment-info,
+.admin-dark-mode .media-sidebar .attachment-details,
+.admin-dark-mode .media-sidebar .compat-meta,
+.admin-dark-mode .media-sidebar .attachment-actions {
+    background: #232325 !important;
+    color: #ccc !important;
+}
+.admin-dark-mode .media-sidebar label,
+.admin-dark-mode .media-sidebar .setting span {
+    color: #aaa !important;
+}
+.admin-dark-mode .media-sidebar input,
+.admin-dark-mode .media-sidebar textarea {
+    background: #1c1c1e !important;
+    border-color: #3a3a3c !important;
+    color: #e6edf3 !important;
+}
+
+/* ─── PLUGINS PAGE ───────────────────────────────────────────────────────── */
+.admin-dark-mode.plugins-php #wpbody-content,
+.admin-dark-mode.plugins-php #the-list,
+.admin-dark-mode.plugins-php table.plugins {
+    background: #1c1c1e !important;
+}
+.admin-dark-mode table.plugins th.check-column,
+.admin-dark-mode table.plugins td.check-column,
+.admin-dark-mode #the-list th.check-column,
+.admin-dark-mode #the-list td.check-column {
+    background: #1c1c1e !important;
+    border-color: #3a3a3c !important;
+}
+.admin-dark-mode .subsubsub a {
+    color: #aaa !important;
+}
+.admin-dark-mode .subsubsub a.current,
+.admin-dark-mode .subsubsub a:hover {
+    color: #B9A48A !important;
+}
+.admin-dark-mode table.plugins tr.active > td,
+.admin-dark-mode table.plugins tr.active > th,
+.admin-dark-mode #the-list tr.active > td,
+.admin-dark-mode #the-list tr.active > th {
+    background: #1c1c1e !important;
+    border-left: 4px solid #B9A48A !important;
+}
+.admin-dark-mode table.plugins tr.inactive > td,
+.admin-dark-mode table.plugins tr.inactive > th,
+.admin-dark-mode #the-list tr.inactive > td,
+.admin-dark-mode #the-list tr.inactive > th {
+    background: #232325 !important;
+    border-left: 4px solid #3a3a3c !important;
+}
+.admin-dark-mode table.plugins tr.active.selected > td,
+.admin-dark-mode table.plugins tr.inactive.selected > td {
+    background: #2c2c2e !important;
+}
+.admin-dark-mode table.plugins .plugin-title strong,
+.admin-dark-mode table.plugins td.column-description,
+.admin-dark-mode table.plugins td.column-description p {
+    color: #ccc !important;
+}
+.admin-dark-mode table.plugins .row-actions a { color: #B9A48A !important; }
+.admin-dark-mode table.plugins .row-actions .deactivate a,
+.admin-dark-mode table.plugins .row-actions .delete a { color: #dc3545 !important; }
+.admin-dark-mode tr.plugin-update-tr > td,
+.admin-dark-mode table.plugins tr.update > td {
+    background: #1a1200 !important;
+    border-color: #5a3a00 !important;
+}
+.admin-dark-mode .update-message { color: #ffc107 !important; }
+.admin-dark-mode .update-message p { color: #ffc107 !important; }
+.admin-dark-mode .wp-filter,
+.admin-dark-mode #plugin-search-input {
+    background: #232325 !important;
+    border-color: #3a3a3c !important;
+    color: #e6edf3 !important;
+}
+.admin-dark-mode .plugin-card {
+    background: #232325 !important;
+    border-color: #3a3a3c !important;
+}
+.admin-dark-mode .plugin-card .plugin-card-top { background: #232325 !important; }
+.admin-dark-mode .plugin-card .plugin-card-bottom {
+    background: #2c2c2e !important;
+    border-top-color: #3a3a3c !important;
+}
+.admin-dark-mode .plugin-card .name a,
+.admin-dark-mode .plugin-card .desc { color: #e6edf3 !important; }
+
+/* ─── OXYGEN BUILDER ─────────────────────────────────────────────────────── */
+.admin-dark-mode.toplevel_page_oxygen #wpbody,
+.admin-dark-mode.toplevel_page_oxygen #wpbody-content,
+.admin-dark-mode.oxygen_page_oxygen-settings #wpbody,
+.admin-dark-mode.oxygen_page_oxygen-settings #wpbody-content,
+.admin-dark-mode [class*="oxygen"] #wpbody-content,
+.admin-dark-mode [class*="oxygen_page"] #wpbody-content {
+    background: #1c1c1e !important;
+}
+.admin-dark-mode.toplevel_page_oxygen #wpbody-content > div,
+.admin-dark-mode.oxygen_page_oxygen-settings #wpbody-content > div,
+.admin-dark-mode [class*="oxygen_page"] #wpbody-content > div,
+.admin-dark-mode [class*="oxygen_page"] #wpbody-content .wrap {
+    background: #1c1c1e !important;
+    color: #e6edf3 !important;
+}
+.admin-dark-mode [class*="oxygen"] .nav-tab-wrapper,
+.admin-dark-mode [class*="oxygen"] h2.nav-tab-wrapper {
+    border-bottom-color: #3a3a3c !important;
+    background: transparent !important;
+}
+.admin-dark-mode [class*="oxygen"] .form-table,
+.admin-dark-mode [class*="oxygen_page"] .form-table {
+    background: #232325 !important;
+}
+.admin-dark-mode [class*="oxygen"] .form-table th,
+.admin-dark-mode [class*="oxygen_page"] .form-table th {
+    background: #232325 !important;
+    color: #aaa !important;
+}
+.admin-dark-mode [class*="oxygen"] .form-table td,
+.admin-dark-mode [class*="oxygen_page"] .form-table td {
+    background: #232325 !important;
+    color: #e6edf3 !important;
+    border-color: #3a3a3c !important;
+}
+.admin-dark-mode [class*="breakdance"] #wpbody-content,
+.admin-dark-mode [class*="breakdance"] #wpbody-content > div,
+.admin-dark-mode [class*="breakdance"] .wrap {
+    background: #1c1c1e !important;
+    color: #e6edf3 !important;
+}
+.admin-dark-mode [class*="breakdance"] .form-table th,
+.admin-dark-mode [class*="breakdance"] .form-table td {
+    background: #232325 !important;
+    color: #ccc !important;
+    border-color: #3a3a3c !important;
+}
+
+/* ─── FLUENT SNIPPETS ────────────────────────────────────────────────────── */
+.admin-dark-mode .fsnip_main-menu-items,
+.admin-dark-mode .fsnip_main-menu-items * {
+    background: #232325 !important;
+    border-color: #3a3a3c !important;
+    color: #e6edf3 !important;
+}
+.admin-dark-mode .box_body,
+.admin-dark-mode .box_body * {
+    background: #1c1c1e !important;
+    color: #e6edf3 !important;
+    border-color: #3a3a3c !important;
+}
+.admin-dark-mode .box_header {
+    background: #232325 !important;
+    border-color: #3a3a3c !important;
+    color: #e6edf3 !important;
+}
+.admin-dark-mode .run_selected,
+.admin-dark-mode .run_box,
+.admin-dark-mode .run_selected.run_box {
+    background: #232325 !important;
+    border-color: #3a3a3c !important;
+    color: #e6edf3 !important;
+}
+.admin-dark-mode .el-input__wrapper,
+.admin-dark-mode .el-select__wrapper,
+.admin-dark-mode .el-select__wrapper.is-filterable {
+    background: #28282a !important;
+    border-color: #4a4a4c !important;
+    box-shadow: 0 0 0 1px #4a4a4c !important;
+    color: #f0f0f0 !important;
+}
+.admin-dark-mode .el-input__wrapper:hover,
+.admin-dark-mode .el-select__wrapper:hover {
+    box-shadow: 0 0 0 1px #5a5a5c !important;
+}
+.admin-dark-mode .el-input__wrapper.is-focus,
+.admin-dark-mode .el-select__wrapper.is-focused {
+    box-shadow: 0 0 0 1px #B9A48A !important;
+    border-color: #B9A48A !important;
+}
+.admin-dark-mode .el-input__inner,
+.admin-dark-mode .el-select__input {
+    background: transparent !important;
+    color: #f0f0f0 !important;
+}
+.admin-dark-mode button[id^="el-collapse-head"],
+.admin-dark-mode [id^="el-collapse-head"] {
+    background: #232325 !important;
+    border-color: #3a3a3c !important;
+    color: #e6edf3 !important;
+}
+.admin-dark-mode [id^="el-collapse-content"] {
+    background: #1c1c1e !important;
+    color: #ccc !important;
+}
+.admin-dark-mode body.wp-admin.wp-core-ui {
+    background: #1c1c1e !important;
+}
+
+/* ─── DASHBOARD ACTIVITY PANEL ────────────────────────────────────────────── */
+.admin-dark-mode #dashboard_activity .inside,
+.admin-dark-mode #dashboard_activity ul,
+.admin-dark-mode #dashboard_activity li,
+.admin-dark-mode #activity-widget ul li,
+.admin-dark-mode .activity-block ul li,
+.admin-dark-mode #the-comment-list li,
+.admin-dark-mode #the-comment-list li[id^="comment-"] {
+    background: #232325 !important;
+    border-color: #3a3a3c !important;
+    color: #ccc !important;
+}
+.admin-dark-mode #the-comment-list li:nth-child(even),
+.admin-dark-mode #activity-widget ul li:nth-child(even) {
+    background: #1c1c1e !important;
+}
+.admin-dark-mode #dashboard_activity .subsubsub {
+    background: transparent !important;
+}
+.admin-dark-mode #dashboard_activity .subsubsub a {
+    color: #aaa !important;
+}
+.admin-dark-mode #dashboard_activity .subsubsub a.current {
+    color: #B9A48A !important;
+}
+
+/* ─── GOOGLE SITE KIT ────────────────────────────────────────────────────── */
+.admin-dark-mode [class*="googlesitekit-"] {
+    background: #232325 !important;
+    border-color: #3a3a3c !important;
+    color: #e6edf3 !important;
+}
+.admin-dark-mode [class*="googlesitekit-"] h3,
+.admin-dark-mode [class*="googlesitekit-"] h4,
+.admin-dark-mode [class*="googlesitekit-"] p,
+.admin-dark-mode [class*="googlesitekit-"] span {
+    color: #e6edf3 !important;
+}
+.admin-dark-mode #google_sitekit_dashboard_splash .inside,
+.admin-dark-mode #js-googlesitekit-dashboard-splash,
+.admin-dark-mode #js-googlesitekit-main-dashboard {
+    background: #1c1c1e !important;
+    color: #e6edf3 !important;
+}
+.admin-dark-mode .googlesitekit-chart-loading,
+.admin-dark-mode .googlesitekit-chart-loading__wrapper {
+    background: #232325 !important;
+}
+
+/* ─── GUTENBERG METABOXES ────────────────────────────────────────────────── */
+.admin-dark-mode .edit-post-meta-boxes-main,
+.admin-dark-mode .edit-post-layout__metaboxes,
+.admin-dark-mode #metaboxes,
+.admin-dark-mode #normal-sortables,
+.admin-dark-mode #advanced-sortables,
+.admin-dark-mode #side-sortables {
+    background: #1c1c1e !important;
+}
+.admin-dark-mode .edit-post-meta-boxes-main .postbox,
+.admin-dark-mode .edit-post-layout__metaboxes .postbox {
+    background: #232325 !important;
+    border-color: #3a3a3c !important;
+}
+.admin-dark-mode .interface-interface-skeleton__footer,
+.admin-dark-mode .edit-post-status-bar,
+.admin-dark-mode .editor-status-bar {
+    background: #232325 !important;
+    border-top: 1px solid #3a3a3c !important;
+    color: #aaa !important;
+}
+.admin-dark-mode .interface-interface-skeleton__footer *,
+.admin-dark-mode .editor-status-bar * {
+    color: #aaa !important;
+}
+.admin-dark-mode .block-editor-block-breadcrumb,
+.admin-dark-mode ul.block-editor-block-breadcrumb {
+    background: #2c2c2e !important;
+    border-color: #3a3a3c !important;
+}
+.admin-dark-mode .block-editor-block-breadcrumb li,
+.admin-dark-mode .block-editor-block-breadcrumb button {
+    color: #aaa !important;
+    background: transparent !important;
+}
+.admin-dark-mode .editor-document-bar,
+.admin-dark-mode div.editor-document-bar {
+    background: #232325 !important;
+    border-color: #3a3a3c !important;
+    color: #e6edf3 !important;
+}
+.admin-dark-mode .editor-document-bar * {
+    color: #e6edf3 !important;
+}
+.admin-dark-mode .editor-visual-editor,
+.admin-dark-mode .edit-post-visual-editor,
+.admin-dark-mode div.editor-visual-editor.edit-post-visual-editor {
+    background: #1c1c1e !important;
+}
+
+/* ─── BREAKDANCE LAUNCHER ────────────────────────────────────────────────── */
+.admin-dark-mode .breakdance-launcher,
+.admin-dark-mode div.breakdance-launcher {
+    background: #232325 !important;
+    border: 1px solid #3a3a3c !important;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.5) !important;
+}
+.admin-dark-mode .breakdance-launcher * {
+    color: #e6edf3 !important;
+}
+.admin-dark-mode .breakdance-launcher button,
+.admin-dark-mode .breakdance-launcher a {
+    background: #2c2c2e !important;
+    border-color: #4a4a4c !important;
+    color: #e6edf3 !important;
+}
+.admin-dark-mode .breakdance-launcher button:hover,
+.admin-dark-mode .breakdance-launcher a:hover {
+    background: #3a3a3c !important;
+    color: #fff !important;
+}
+
+/* ─── RANK MATH ──────────────────────────────────────────────────────────── */
+.admin-dark-mode .rank-math-toolbar-score,
+.admin-dark-mode .rank-math-toolbar-score.content-ai-score,
+.admin-dark-mode .rank-math-toolbar-score.ok-fk,
+.admin-dark-mode [class*="rank-math-toolbar"] {
+    background: #2c2c2e !important;
+    border-color: #3a3a3c !important;
+    color: #e6edf3 !important;
+}
+
+/* ─── SCROLLBAR ──────────────────────────────────────────────────────────── */
+.admin-dark-mode ::-webkit-scrollbar { width: 10px; height: 10px; }
+.admin-dark-mode ::-webkit-scrollbar-track { background: #1c1c1e; }
+.admin-dark-mode ::-webkit-scrollbar-thumb { background: #3a3a3c; border-radius: 5px; border: 2px solid #1c1c1e; }
+.admin-dark-mode ::-webkit-scrollbar-thumb:hover { background: #4a4a4c; }
+
+/* ─── SELECTION ──────────────────────────────────────────────────────────── */
+.admin-dark-mode ::selection {
+    background: #B9A48A;
+    color: #1c1c1e;
+}
+
+/* ─── MISC ───────────────────────────────────────────────────────────────── */
+.admin-dark-mode hr,
+.admin-dark-mode .wp-header-end {
+    border-color: #3a3a3c !important;
+}
+.admin-dark-mode #screen-meta,
+.admin-dark-mode #contextual-help-wrap,
+.admin-dark-mode #screen-options-wrap {
+    background: #232325 !important;
+    border-color: #3a3a3c !important;
+    color: #ccc !important;
+}
+.admin-dark-mode #screen-meta-links a,
+.admin-dark-mode .show-settings {
+    background: #2c2c2e !important;
+    border-color: #3a3a3c !important;
+    color: #aaa !important;
+}
+.admin-dark-mode .tablenav .tablenav-pages,
+.admin-dark-mode .tablenav .displaying-num,
+.admin-dark-mode .tablenav-pages a,
+.admin-dark-mode .tablenav-pages span {
+    color: #aaa !important;
+}
+.admin-dark-mode .tablenav-pages a:hover {
+    color: #B9A48A !important;
+}
+.admin-dark-mode .post-state,
+.admin-dark-mode .post-state a {
+    color: #888 !important;
+}
+.admin-dark-mode code,
+.admin-dark-mode pre {
+    background: #2c2c2e !important;
+    color: #B9A48A !important;
+    border-color: #3a3a3c !important;
+}
+.admin-dark-mode .wp-pointer .wp-pointer-content {
+    background: #232325 !important;
+    border-color: #3a3a3c !important;
+    color: #e6edf3 !important;
+}
+.admin-dark-mode a.screen-reader-shortcut:focus {
+    background: #232325 !important;
+    color: #B9A48A !important;
+    border-color: #B9A48A !important;
+}
+
+/* ─── CODEMIRROR ──────────────────────────────────────────────────────────── */
+.admin-dark-mode .CodeMirror,
+.admin-dark-mode .CodeMirror-scroll,
+.admin-dark-mode .CodeMirror-sizer {
+    background: #1a1a1c !important;
+    color: #e6edf3 !important;
+}
+.admin-dark-mode .CodeMirror-gutters {
+    background: #232325 !important;
+    border-right: 1px solid #3a3a3c !important;
+}
+.admin-dark-mode .CodeMirror-linenumber {
+    color: #555 !important;
+}
+.admin-dark-mode .CodeMirror-cursor {
+    border-left-color: #B9A48A !important;
+}
+.admin-dark-mode .CodeMirror-selected,
+.admin-dark-mode .CodeMirror-focused .CodeMirror-selected {
+    background: rgba(185,164,138,0.2) !important;
+}
+.admin-dark-mode .CodeMirror-activeline-background {
+    background: rgba(255,255,255,0.03) !important;
+}
+.admin-dark-mode .cm-keyword   { color: #c792ea !important; }
+.admin-dark-mode .cm-def       { color: #82aaff !important; }
+.admin-dark-mode .cm-variable  { color: #e6edf3 !important; }
+.admin-dark-mode .cm-string    { color: #c3e88d !important; }
+.admin-dark-mode .cm-number    { color: #f78c6c !important; }
+.admin-dark-mode .cm-comment   { color: #546e7a !important; font-style: italic; }
+.admin-dark-mode .cm-atom      { color: #f78c6c !important; }
+.admin-dark-mode .cm-operator  { color: #89ddff !important; }
+.admin-dark-mode .cm-tag       { color: #f07178 !important; }
+.admin-dark-mode .cm-attribute { color: #ffcb6b !important; }
+.admin-dark-mode .cm-property  { color: #B9A48A !important; }
+.admin-dark-mode .cm-builtin   { color: #82aaff !important; }
+.admin-dark-mode .CodeMirror-vscrollbar::-webkit-scrollbar,
+.admin-dark-mode .CodeMirror-hscrollbar::-webkit-scrollbar { width: 8px; height: 8px; }
+.admin-dark-mode .CodeMirror-vscrollbar::-webkit-scrollbar-track,
+.admin-dark-mode .CodeMirror-hscrollbar::-webkit-scrollbar-track { background: #1c1c1e; }
+.admin-dark-mode .CodeMirror-vscrollbar::-webkit-scrollbar-thumb,
+.admin-dark-mode .CodeMirror-hscrollbar::-webkit-scrollbar-thumb { background: #3a3a3c; border-radius: 4px; }
+
+/* ─── CONTRAST & LIGHT FIXER PANELS ────────────────────────────────────── */
+.dg-fixer-panel {
+    position: fixed;
+    top: 32px;
+    right: 0;
+    width: 420px;
+    max-height: 80vh;
+    overflow-y: auto;
+    background: #1c1c1e;
+    color: #e6edf3;
+    font: 12px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    z-index: 9999999;
+    padding: 16px 20px;
+    box-shadow: -4px 0 20px rgba(0,0,0,0.5);
+    display: none;
+}
+.dg-fixer-panel .panel-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+    border-bottom: 1px solid #3a3a3c;
+    padding-bottom: 10px;
+}
+.dg-fixer-panel .panel-header h3 {
+    margin: 0;
+    font-size: 14px;
+    font-weight: 700;
+}
+.dg-fixer-panel .panel-header .close-btn {
+    background: none;
+    border: none;
+    color: #888;
+    font-size: 18px;
+    cursor: pointer;
+}
+.dg-fixer-panel .panel-header .close-btn:hover {
+    color: #fff;
+}
+.dg-fixer-panel .fixer-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 12px;
+    margin-bottom: 4px;
+    background: #232325;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background 0.2s;
+    border-left: 3px solid transparent;
+}
+.dg-fixer-panel .fixer-item:hover {
+    background: #2c2c2e;
+}
+.dg-fixer-panel .fixer-item .element-info {
+    flex: 1;
+    font-size: 11px;
+    font-family: monospace;
+    color: #aaa;
+}
+.dg-fixer-panel .fixer-item .element-info .selector {
+    color: #ff6b6b;
+}
+.dg-fixer-panel .fixer-item .fix-btn {
+    background: #ff6b6b;
+    color: #1c1c1e;
+    border: none;
+    border-radius: 4px;
+    padding: 4px 12px;
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s;
+    white-space: nowrap;
+}
+.dg-fixer-panel .fixer-item .fix-btn:hover {
+    background: #ff8787;
+}
+.dg-fixer-panel .fixer-item .fix-btn.fixed {
+    background: #4CAF50;
+    cursor: default;
+}
+.dg-fixer-panel .no-results {
+    text-align: center;
+    padding: 20px 0;
+    color: #4CAF50;
+}
+.dg-fixer-panel .loading-text {
+    text-align: center;
+    padding: 20px 0;
+    color: #888;
+}
+.dg-fixer-panel .status-message {
+    text-align: center;
+    padding: 10px;
+    margin-top: 10px;
+    border-radius: 4px;
+    font-size: 12px;
+    display: none;
+}
+.dg-fixer-panel .status-message.success {
+    display: block;
+    background: rgba(76, 175, 80, 0.15);
+    color: #4CAF50;
+    border: 1px solid #4CAF50;
+}
+.dg-fixer-panel .status-message.error {
+    display: block;
+    background: rgba(255, 107, 107, 0.15);
+    color: #ff6b6b;
+    border: 1px solid #ff6b6b;
+}
+
+#dg-contrast-panel { border-left: 3px solid #ff6b6b; }
+#dg-contrast-panel .panel-header h3 { color: #ff6b6b; }
+
+#dg-light-panel { border-left: 3px solid #ffa94d; }
+#dg-light-panel .panel-header h3 { color: #ffa94d; }
+
+.dg-fixer-panel .dg-saved-fixes-row {
+    margin-top: 12px;
+    padding-top: 10px;
+    border-top: 1px solid #3a3a3c;
+    font-size: 11px;
+    color: #888;
+}
+.dg-fixer-panel .dg-clear-link {
+    background: none;
+    border: none;
+    color: #B9A48A;
+    font-size: 11px;
+    text-decoration: underline;
+    cursor: pointer;
+    padding: 0;
+}
+.dg-fixer-panel .dg-clear-link:hover { color: #d4b896; }
+
+/* ─── FOOTER ─────────────────────────────────────────────────────────────── */
+.admin-dark-mode #wpfooter a { color: #B9A48A !important; }
+.admin-dark-mode #wpfooter a:hover { color: #d4b896 !important; }
+
+/* ─── SEARCH ─────────────────────────────────────────────────────────────── */
+.admin-dark-mode .search-box input[type="search"],
+.admin-dark-mode #user-search-input,
+.admin-dark-mode #post-search-input {
+    background: #1c1c1e !important;
+    border-color: #3a3a3c !important;
+    color: #e6edf3 !important;
+}
+
+/* ─── DROPDOWN MENUS ─────────────────────────────────────────────────────── */
+.admin-dark-mode .dropdown-content {
+    background: #232325 !important;
+    border-color: #3a3a3c !important;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.4) !important;
+}
+
+/* ─── SCREEN READER SHORTCUT (skip nav) ─────────────────────────────────── */
+.admin-dark-mode a.screen-reader-shortcut:focus {
+    background: #232325 !important;
+    color: #B9A48A !important;
+    border-color: #B9A48A !important;
+}
+
+/* ─── FORM TABLE ROW STRIPING (settings pages) ──────────────────────────── */
+.admin-dark-mode .form-table th, .admin-dark-mode .form-table td { background: inherit !important; }
+.admin-dark-mode .form-table tr:nth-child(even), .admin-dark-mode tr:nth-child(even) { background: #1c1c1e !important; }
+
+/* ─── PLACEHOLDER TEXT (vendor prefixes) ────────────────────────────────── */
+.admin-dark-mode input::-webkit-input-placeholder,
+.admin-dark-mode textarea::-webkit-input-placeholder { color: #777 !important; opacity: 1 !important; }
+.admin-dark-mode input::-moz-placeholder,
+.admin-dark-mode textarea::-moz-placeholder { color: #777 !important; opacity: 1 !important; }
+.admin-dark-mode input:-ms-input-placeholder,
+.admin-dark-mode textarea:-ms-input-placeholder { color: #777 !important; opacity: 1 !important; }
+
+/* ─── POSTBOX LINKS & UPLOADER TEXT ──────────────────────────────────────── */
+.admin-dark-mode .postbox a:hover { color: #d4b896 !important; }
+.admin-dark-mode .uploader-inline .upload-ui .upload-instructions { color: #888 !important; }
+
+/* ─── GUTENBERG PUBLISH PANEL ────────────────────────────────────────────── */
+.admin-dark-mode .editor-layout__toggle-publish-panel *,
+.admin-dark-mode .editor-post-publish-panel *,
+.admin-dark-mode .entities-saved-states__panel { color: #e6edf3 !important; }
+.admin-dark-mode .editor-post-publish-panel__header,
+.admin-dark-mode .entities-saved-states__panel-header { background: #2c2c2e !important; border-bottom: 1px solid #3a3a3c !important; }
+.admin-dark-mode .editor-layout__toggle-entities-saved-states-panel * { color: #e6edf3 !important; }
+
+/* ─── ELEMENT UI — ADDITIONAL COMPONENT POLISH (buttons, tabs, tags, forms) ─ */
+.admin-dark-mode .el-button:hover, .admin-dark-mode .el-button:focus { background: #3a3a3c !important; border-color: #5a5a5c !important; color: #fff !important; }
+.admin-dark-mode .el-button--primary { background: #B9A48A !important; border-color: #B9A48A !important; color: #1c1c1e !important; }
+.admin-dark-mode .el-button--primary:hover { background: #a8947a !important; border-color: #a8947a !important; color: #1c1c1e !important; }
+.admin-dark-mode .el-button--danger { background: #dc3545 !important; border-color: #dc3545 !important; color: #fff !important; }
+.admin-dark-mode .el-button--text { background: transparent !important; color: #B9A48A !important; border-color: transparent !important; }
+.admin-dark-mode .el-input__prefix-inner, .admin-dark-mode .el-input__suffix-inner, .admin-dark-mode .el-input__icon { color: #777 !important; }
+.admin-dark-mode .el-input__inner:focus, .admin-dark-mode .el-textarea__inner:focus,
+.admin-dark-mode .el-input.is-focus .el-input__wrapper, .admin-dark-mode .el-input__wrapper.is-focus { border-color: #B9A48A !important; box-shadow: 0 0 0 1px #B9A48A !important; }
+.admin-dark-mode .el-select-dropdown__item { color: #ccc !important; background: transparent !important; }
+.admin-dark-mode .el-select-dropdown__item.hover, .admin-dark-mode .el-select-dropdown__item:hover { background: #3a3a3c !important; color: #fff !important; }
+.admin-dark-mode .el-select-dropdown__item.selected { color: #B9A48A !important; font-weight: 600; }
+.admin-dark-mode .el-tabs__item { color: #aaa !important; }
+.admin-dark-mode .el-tabs__item:hover { color: #e6edf3 !important; }
+.admin-dark-mode .el-tabs__item.is-active { color: #B9A48A !important; }
+.admin-dark-mode .el-tabs__active-bar { background: #B9A48A !important; }
+.admin-dark-mode .el-tabs__nav-wrap::after { background: #3a3a3c !important; }
+.admin-dark-mode .el-tabs__content, .admin-dark-mode .el-tab-pane { background: #1c1c1e !important; color: #e6edf3 !important; }
+.admin-dark-mode .el-switch.is-checked .el-switch__core { background: #B9A48A !important; border-color: #B9A48A !important; }
+.admin-dark-mode .el-checkbox.is-checked .el-checkbox__inner, .admin-dark-mode .el-checkbox__input.is-checked .el-checkbox__inner { background: #B9A48A !important; border-color: #B9A48A !important; }
+.admin-dark-mode .el-checkbox__label { color: #ccc !important; }
+.admin-dark-mode .el-radio.is-checked .el-radio__inner, .admin-dark-mode .el-radio__input.is-checked .el-radio__inner { background: #B9A48A !important; border-color: #B9A48A !important; }
+.admin-dark-mode .el-radio__label { color: #ccc !important; }
+.admin-dark-mode .el-dialog__header, .admin-dark-mode .el-dialog__body, .admin-dark-mode .el-dialog__footer { background: #232325 !important; color: #e6edf3 !important; border-color: #3a3a3c !important; }
+.admin-dark-mode .el-dialog__title { color: #e6edf3 !important; }
+.admin-dark-mode .el-dialog__headerbtn .el-dialog__close { color: #aaa !important; }
+.admin-dark-mode .el-dialog__headerbtn:hover .el-dialog__close { color: #fff !important; }
+.admin-dark-mode .el-pagination .el-pager li.is-active, .admin-dark-mode .el-pagination .el-pager li:hover { background: #2c2c2e !important; color: #B9A48A !important; }
+.admin-dark-mode .el-divider__text { background: #1c1c1e !important; color: #777 !important; }
+.admin-dark-mode .el-breadcrumb__item:last-child .el-breadcrumb__inner { color: #e6edf3 !important; }
+.admin-dark-mode .el-alert__title, .admin-dark-mode .el-alert__description { color: #e6edf3 !important; }
+.admin-dark-mode .el-form-item__error { color: #dc3545 !important; }
+.admin-dark-mode .el-table th, .admin-dark-mode .el-table__header th { background: #2c2c2e !important; color: #e6edf3 !important; }
+.admin-dark-mode .el-table td, .admin-dark-mode .el-table__body td { background: #232325 !important; color: #ccc !important; }
+.admin-dark-mode .el-table tr:hover td, .admin-dark-mode .el-table--enable-row-hover .el-table__body tr:hover > td { background: #2c2c2e !important; color: #fff !important; }
+.admin-dark-mode .el-table--striped .el-table__body tr.el-table__row--striped td { background: #1c1c1e !important; }
+.admin-dark-mode .el-menu-item, .admin-dark-mode .el-submenu__title { background: #232325 !important; color: #ccc !important; }
+.admin-dark-mode .el-menu-item:hover, .admin-dark-mode .el-submenu__title:hover { background: #2c2c2e !important; color: #fff !important; }
+.admin-dark-mode .el-menu-item.is-active { background: #2c2c2e !important; color: #B9A48A !important; border-left: 3px solid #B9A48A !important; }
+.admin-dark-mode .el-tag--success { background: rgba(40,167,69,0.15) !important; border-color: #28a745 !important; color: #28a745 !important; }
+.admin-dark-mode .el-tag--warning { background: rgba(255,193,7,0.15) !important; border-color: #ffc107 !important; color: #ffc107 !important; }
+.admin-dark-mode .el-tag--danger { background: rgba(220,53,69,0.15) !important; border-color: #dc3545 !important; color: #dc3545 !important; }
+.admin-dark-mode .el-tag--info { background: rgba(90,90,90,0.2) !important; border-color: #555 !important; color: #aaa !important; }
+
+/* ─── ADMIN CALENDAR / BOOKING DASHBOARD (FullCalendar) ─────────────────── */
+.admin-dark-mode .fc { background: #1c1c1e !important; color: #e6edf3 !important; }
+.admin-dark-mode .fc *, .admin-dark-mode .fc-theme-standard *, .admin-dark-mode .fc-theme-standard td, .admin-dark-mode .fc-theme-standard th { border-color: #3a3a3c !important; }
+.admin-dark-mode .fc-view, .admin-dark-mode .fc-view-harness, .admin-dark-mode .fc-view-harness-active { background: #1c1c1e !important; }
+.admin-dark-mode .fc-scrollgrid, .admin-dark-mode .fc-scrollgrid-section, .admin-dark-mode .fc-scrollgrid-section-body, .admin-dark-mode .fc-scrollgrid-section-header { background: #1c1c1e !important; }
+.admin-dark-mode .fc-header-toolbar { background: #232325 !important; }
+.admin-dark-mode .fc-toolbar-title { color: #e6edf3 !important; }
+.admin-dark-mode .fc-col-header-cell-cushion { color: #e6edf3 !important; text-decoration: none !important; }
+.admin-dark-mode .fc-day-today .fc-daygrid-day-number { color: #B9A48A !important; font-weight: 700; }
+.admin-dark-mode .fc-day-other .fc-daygrid-day-frame { background: #161618 !important; }
+.admin-dark-mode .fc .fc-button:hover, .admin-dark-mode .fc .fc-button-primary:hover { background: #3a3a3c !important; border-color: #5a5a5c !important; color: #fff !important; }
+.admin-dark-mode .fc .fc-button-primary:not(:disabled).fc-button-active, .admin-dark-mode .fc .fc-button-primary:not(:disabled):active { background: #B9A48A !important; border-color: #B9A48A !important; color: #1c1c1e !important; }
+.admin-dark-mode .fc .fc-button:disabled, .admin-dark-mode .fc .fc-today-button:disabled { background: #232325 !important; border-color: #3a3a3c !important; color: #555 !important; opacity: 1 !important; }
+.admin-dark-mode .fc-event-title, .admin-dark-mode .fc-event-time { color: #fff !important; }
+.admin-dark-mode .fc-daygrid-event-dot { border-color: #B9A48A !important; }
+.admin-dark-mode .fc-list-day-cushion, .admin-dark-mode .fc-list-day-cushion.fc-cell-shaded { background: #232325 !important; color: #e6edf3 !important; }
+.admin-dark-mode .fc-list-event td { background: #1c1c1e !important; color: #ccc !important; }
+.admin-dark-mode .fc-list-event:hover td { background: #2c2c2e !important; }
+.admin-dark-mode .fc-list-empty { background: #1c1c1e !important; color: #555 !important; }
+
+/* ─── BOOKING / ACCOMMODATION PAGES ──────────────────────────────────────── */
+.admin-dark-mode .dg-note-box p, .admin-dark-mode .dg-note-box strong { color: #a8c8e8 !important; }
+.admin-dark-mode #post-body input[type="hidden"] { background: transparent !important; }
+
+<?php
+        // ─── Persisted user fixes (from Fix Contrast / Fix Light) ───
+        echo $this->render_persisted_fix_css();
+        ?>
+</style>
+<?php }
+
+    public function add_script() {
+        $is_dark = $this->is_dark(); ?>
+<script id="dg-dark-mode-script">
+(function() {
+    var COOKIE = 'dg_admin_dark';
+    var CLASS  = 'admin-dark-mode';
+    var html   = document.documentElement;
+
+    // Apply immediately on page load
+    if (document.cookie.indexOf(COOKIE + '=1') > -1) {
+        html.classList.add(CLASS);
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        var isDark = html.classList.contains(CLASS);
+
+        // ===== DARK MODE TOGGLE =====
+        var toggleBtn = document.querySelector('.dg-dark-toggle-btn .ab-item');
+        if (toggleBtn) {
+            toggleBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                isDark = html.classList.toggle(CLASS);
+                updateToggleUI(isDark);
+
+                var expires = new Date();
+                expires.setFullYear(expires.getFullYear() + 1);
+                document.cookie = COOKIE + '=' + (isDark ? '1' : '0') + '; path=/; expires=' + expires.toUTCString();
+
+                var fd = new FormData();
+                fd.append('action', 'dg_toggle_dark_mode');
+                fd.append('is_dark', isDark ? '1' : '0');
+                fd.append('nonce', '<?php echo wp_create_nonce('dg_dark_mode'); ?>');
+                fetch('<?php echo admin_url('admin-ajax.php'); ?>', { method: 'POST', body: fd });
+            });
+        }
+
+        function updateToggleUI(dark) {
+            var btn = document.querySelector('.dg-dark-toggle-btn .ab-item');
+            if (!btn) return;
+            var icon = btn.querySelector('.dg-toggle-icon');
+            if (dark) {
+                if (icon) icon.textContent = '☀️';
+                btn.textContent = '';
+                if (icon) btn.appendChild(icon);
+                btn.appendChild(document.createTextNode(' Light Mode'));
+            } else {
+                if (icon) icon.textContent = '🌙';
+                btn.textContent = '';
+                if (icon) btn.appendChild(icon);
+                btn.appendChild(document.createTextNode(' Dark Mode'));
+            }
+        }
+
+        // ===== FIX CONTRAST =====
+        var contrastBtn = document.querySelector('.dg-fix-contrast-btn .ab-item');
+        if (contrastBtn) {
+            contrastBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                togglePanel('dg-contrast-panel', runContrastDiagnostic);
+            });
+        }
+
+        // ===== FIX LIGHT =====
+        var lightBtn = document.querySelector('.dg-fix-light-btn .ab-item');
+        if (lightBtn) {
+            lightBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                togglePanel('dg-light-panel', runLightDiagnostic);
+            });
+        }
+
+        function togglePanel(panelId, runFn) {
+            var panel = document.getElementById(panelId);
+            if (panel.style.display === 'block') {
+                panel.style.display = 'none';
+                return;
+            }
+            panel.style.display = 'block';
+            runFn(panelId);
+        }
+
+        // Scanned page text/selectors are attacker- and content-agnostic —
+        // they can contain quotes, angle brackets, etc. Without escaping,
+        // one offending character corrupts the rest of the generated HTML
+        // and silently breaks every "Fix" button after it. Always escape.
+        function escapeHtml(str) {
+            return String(str)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
+
+        // ===== CONTRAST DIAGNOSTIC =====
+        function runContrastDiagnostic(panelId) {
+            var panel = document.getElementById(panelId);
+            var list = document.getElementById('dg-contrast-list');
+
+            list.innerHTML = '<div class="loading-text">🔍 Scanning for contrast issues...</div>';
+
+            setTimeout(function() {
+                var results = [];
+                var els = document.querySelectorAll('*');
+
+                for (var i = 0; i < els.length; i++) {
+                    try {
+                        var el = els[i];
+                        var style = window.getComputedStyle(el);
+                        var bg = style.backgroundColor;
+                        var color = style.color;
+
+                        if (!bg || bg === 'transparent' || bg === 'rgba(0, 0, 0, 0)') continue;
+
+                        var bgM = bg.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/);
+                        var colM = color.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/);
+                        if (!bgM || !colM) continue;
+
+                        var br = +bgM[1], bgG = +bgM[2], bb = +bgM[3];
+                        var cr = +colM[1], cg = +colM[2], cb = +colM[3];
+
+                        var bgBright = (br*299 + bgG*587 + bb*114) / 1000;
+                        var textBright = (cr*299 + cg*587 + cb*114) / 1000;
+                        var contrast = Math.abs(bgBright - textBright);
+
+                        var w = el.offsetWidth, h = el.offsetHeight;
+                        if (w < 30 || h < 10) continue;
+
+                        if (contrast < 60 && bgBright < 100 && textBright < 100) {
+                            var id = el.id ? '#' + el.id : '';
+                            var cls = el.className && typeof el.className === 'string'
+                                ? '.' + el.className.trim().split(/\s+/).slice(0,2).join('.') : '';
+                            var sel = el.tagName.toLowerCase() + (id || cls);
+
+                            var textSample = el.textContent.trim().substring(0, 30);
+                            if (textSample.length > 0) {
+                                results.push({
+                                    sel: sel,
+                                    bg: bg,
+                                    color: color,
+                                    bgBright: Math.round(bgBright),
+                                    textBright: Math.round(textBright),
+                                    contrast: Math.round(contrast),
+                                    text: textSample,
+                                    element: el
+                                });
+                            }
+                        }
+                    } catch(e) {}
+                }
+
+                results.sort(function(a,b){ return a.contrast - b.contrast; });
+                results = results.slice(0, 25);
+
+                if (!results.length) {
+                    list.innerHTML = '<div class="no-results">✅ No contrast issues found! All text is readable.</div>';
+                    return;
+                }
+
+                try {
+                    list.innerHTML = results.map(function(r) {
+                        var sel = escapeHtml(r.sel), bg = escapeHtml(r.bg), color = escapeHtml(r.color), text = escapeHtml(r.text);
+                        return '<div class="fixer-item" data-sel="' + sel + '" data-bg="' + bg + '" data-color="' + color + '" data-text="' + text + '">'
+                            + '<div class="element-info">'
+                            + '<div><span class="selector">' + sel + '</span></div>'
+                            + '<div style="font-size:10px;color:#666;margin-top:2px;">'
+                            + 'Contrast: <span style="color:#ff6b6b;font-weight:700;">' + r.contrast + '</span> | '
+                            + 'BG: ' + r.bgBright + ' | Text: ' + r.textBright
+                            + ' | "' + text.substring(0, 20) + (text.length > 20 ? '...' : '') + '"'
+                            + '</div>'
+                            + '</div>'
+                            + '<button class="fix-btn fix-contrast-btn" data-sel="' + sel + '" data-bg="' + bg + '" data-color="' + color + '">Fix Contrast</button>'
+                            + '</div>';
+                    }).join('');
+
+                    addContrastFixListeners();
+                } catch (renderErr) {
+                    console.error('DG Dark Mode: contrast render failed', renderErr);
+                    list.innerHTML = '<div class="no-results" style="color:#ff6b6b;">⚠️ Scan found issues but rendering failed: ' + escapeHtml(renderErr.message) + '</div>';
+                }
+            }, 300);
+        }
+
+        function addContrastFixListeners() {
+            document.querySelectorAll('.fix-contrast-btn').forEach(function(btn) {
+                btn.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    var sel = this.dataset.sel;
+                    var bg = this.dataset.bg;
+                    fixContrast(sel, bg, this);
+                });
+            });
+        }
+
+        // Persists one fix (contrast or light) so it survives page reloads
+        // instead of only applying for the current view.
+        function saveFix(fixType, selector, color) {
+            var fd = new FormData();
+            fd.append('action', 'dg_save_fix');
+            fd.append('nonce', '<?php echo wp_create_nonce('dg_dark_mode'); ?>');
+            fd.append('fix_type', fixType);
+            fd.append('selector', selector);
+            if (color) fd.append('color', color);
+            fetch('<?php echo admin_url('admin-ajax.php'); ?>', { method: 'POST', body: fd });
+        }
+
+        function fixContrast(selector, bgColor, btn) {
+            var statusMsg = document.getElementById('dg-contrast-status');
+            statusMsg.className = 'status-message';
+            statusMsg.textContent = 'Applying fix...';
+            statusMsg.style.display = 'block';
+
+            var bg = bgColor.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/);
+            if (!bg) return;
+            var br = +bg[1], bgG = +bg[2], bb = +bg[3];
+            var bgBright = (br*299 + bgG*587 + bb*114) / 1000;
+
+            var isDarkBg = bgBright < 128;
+            var newColor = isDarkBg ? '#ffffff' : '#000000';
+
+            try {
+                var elements = document.querySelectorAll(selector);
+                if (elements.length === 0) {
+                    statusMsg.className = 'status-message error';
+                    statusMsg.textContent = 'No elements found with selector: ' + selector;
+                    return;
+                }
+
+                var count = 0;
+                elements.forEach(function(el) {
+                    var currentColor = window.getComputedStyle(el).color;
+                    var colM = currentColor.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/);
+                    if (colM) {
+                        var cr = +colM[1], cg = +colM[2], cb = +colM[3];
+                        var textBright = (cr*299 + cg*587 + cb*114) / 1000;
+                        var contrast = Math.abs(bgBright - textBright);
+                        if (contrast < 60) {
+                            el.style.color = newColor + ' !important';
+                            count++;
+                        }
+                    }
+                });
+
+                statusMsg.className = 'status-message success';
+                statusMsg.textContent = '✅ Fixed ' + count + ' element(s). Contrast improved! Saved — this will stay fixed on future page loads.';
+
+                if (count > 0) saveFix('contrast', selector, newColor);
+
+                if (btn) {
+                    btn.textContent = '✅ Fixed';
+                    btn.classList.add('fixed');
+                    btn.disabled = true;
+                }
+
+            } catch(e) {
+                statusMsg.className = 'status-message error';
+                statusMsg.textContent = 'Error: ' + e.message;
+            }
+        }
+
+        // ===== LIGHT DIAGNOSTIC =====
+        function runLightDiagnostic(panelId) {
+            var panel = document.getElementById(panelId);
+            var list = document.getElementById('dg-light-list');
+
+            list.innerHTML = '<div class="loading-text">🌓 Scanning for light backgrounds...</div>';
+
+            setTimeout(function() {
+                var results = [];
+                var els = document.querySelectorAll('*');
+
+                for (var i = 0; i < els.length; i++) {
+                    try {
+                        var el = els[i];
+                        var style = window.getComputedStyle(el);
+                        var bg = style.backgroundColor;
+
+                        if (!bg || bg === 'transparent' || bg === 'rgba(0, 0, 0, 0)') continue;
+
+                        var bgM = bg.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/);
+                        if (!bgM) continue;
+
+                        var br = +bgM[1], bgG = +bgM[2], bb = +bgM[3];
+                        var bgBright = (br*299 + bgG*587 + bb*114) / 1000;
+
+                        var w = el.offsetWidth, h = el.offsetHeight;
+                        if (w < 40 || h < 20) continue;
+
+                        // Find light backgrounds (brightness > 150)
+                        if (bgBright > 150) {
+                            var id = el.id ? '#' + el.id : '';
+                            var cls = el.className && typeof el.className === 'string'
+                                ? '.' + el.className.trim().split(/\s+/).slice(0,2).join('.') : '';
+                            var sel = el.tagName.toLowerCase() + (id || cls);
+
+                            // Check if it's already dark
+                            var isAlreadyDark = el.classList.contains('admin-dark-mode') || 
+                                                el.closest('.admin-dark-mode') !== null;
+
+                            results.push({
+                                sel: sel,
+                                bg: bg,
+                                bgBright: Math.round(bgBright),
+                                w: w,
+                                h: h,
+                                isAlreadyDark: isAlreadyDark,
+                                element: el
+                            });
+                        }
+                    } catch(e) {}
+                }
+
+                // Sort by brightness (brightest first)
+                results.sort(function(a,b){ return b.bgBright - a.bgBright; });
+                // Dedupe by selector
+                var seen = {};
+                var unique = [];
+                results.forEach(function(r) {
+                    if (!seen[r.sel] && !r.isAlreadyDark) {
+                        seen[r.sel] = true;
+                        unique.push(r);
+                    }
+                });
+                unique = unique.slice(0, 25);
+
+                if (!unique.length) {
+                    list.innerHTML = '<div class="no-results">✅ No light backgrounds found! Everything is dark.</div>';
+                    return;
+                }
+
+                try {
+                    list.innerHTML = unique.map(function(r) {
+                        var sel = escapeHtml(r.sel), bg = escapeHtml(r.bg);
+                        return '<div class="fixer-item" data-sel="' + sel + '" data-bg="' + bg + '">'
+                            + '<div class="element-info">'
+                            + '<div><span class="selector" style="color:#ffa94d;">' + sel + '</span></div>'
+                            + '<div style="font-size:10px;color:#666;margin-top:2px;">'
+                            + 'Brightness: <span style="color:#ffa94d;font-weight:700;">' + r.bgBright + '</span> | '
+                            + 'Size: ' + r.w + 'x' + r.h
+                            + '</div>'
+                            + '</div>'
+                            + '<button class="fix-btn fix-light-btn" data-sel="' + sel + '" data-bg="' + bg + '">Fix Light</button>'
+                            + '</div>';
+                    }).join('');
+
+                    addLightFixListeners();
+                } catch (renderErr) {
+                    console.error('DG Dark Mode: light render failed', renderErr);
+                    list.innerHTML = '<div class="no-results" style="color:#ffa94d;">⚠️ Scan found issues but rendering failed: ' + escapeHtml(renderErr.message) + '</div>';
+                }
+            }, 300);
+        }
+
+        function addLightFixListeners() {
+            document.querySelectorAll('.fix-light-btn').forEach(function(btn) {
+                btn.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    var sel = this.dataset.sel;
+                    var bg = this.dataset.bg;
+                    fixLight(sel, bg, this);
+                });
+            });
+        }
+
+        function fixLight(selector, bgColor, btn) {
+            var statusMsg = document.getElementById('dg-light-status');
+            statusMsg.className = 'status-message';
+            statusMsg.textContent = 'Applying fix...';
+            statusMsg.style.display = 'block';
+
+            try {
+                var elements = document.querySelectorAll(selector);
+                if (elements.length === 0) {
+                    statusMsg.className = 'status-message error';
+                    statusMsg.textContent = 'No elements found with selector: ' + selector;
+                    return;
+                }
+
+                var count = 0;
+                elements.forEach(function(el) {
+                    // Skip if it's already dark
+                    var currentBg = window.getComputedStyle(el).backgroundColor;
+                    if (currentBg) {
+                        var m = currentBg.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/);
+                        if (m) {
+                            var br = +m[1], bgG = +m[2], bb = +m[3];
+                            var brightness = (br*299 + bgG*587 + bb*114) / 1000;
+                            if (brightness > 150) {
+                                el.style.backgroundColor = '#1c1c1e !important';
+                                el.style.background = '#1c1c1e !important';
+                                count++;
+                            }
+                        }
+                    }
+                });
+
+                statusMsg.className = 'status-message success';
+                statusMsg.textContent = '✅ Fixed ' + count + ' element(s). Background darkened! Saved — this will stay fixed on future page loads.';
+
+                if (count > 0) saveFix('light', selector, null);
+
+                if (btn) {
+                    btn.textContent = '✅ Fixed';
+                    btn.classList.add('fixed');
+                    btn.disabled = true;
+                }
+
+            } catch(e) {
+                statusMsg.className = 'status-message error';
+                statusMsg.textContent = 'Error: ' + e.message;
+            }
+        }
+
+        // ===== CLEAR SAVED FIXES =====
+        function clearSavedFixes(fixType, statusElId) {
+            var fd = new FormData();
+            fd.append('action', 'dg_clear_fixes');
+            fd.append('nonce', '<?php echo wp_create_nonce('dg_dark_mode'); ?>');
+            fd.append('fix_type', fixType);
+            fetch('<?php echo admin_url('admin-ajax.php'); ?>', { method: 'POST', body: fd }).then(function() {
+                var statusMsg = document.getElementById(statusElId);
+                if (statusMsg) {
+                    statusMsg.className = 'status-message success';
+                    statusMsg.textContent = '✅ Cleared saved fixes. Reload the page to see the change.';
+                }
+            });
+        }
+        var clearContrastBtn = document.getElementById('dg-clear-contrast-fixes');
+        if (clearContrastBtn) clearContrastBtn.addEventListener('click', function() {
+            clearSavedFixes('contrast', 'dg-contrast-status');
+        });
+        var clearLightBtn = document.getElementById('dg-clear-light-fixes');
+        if (clearLightBtn) clearLightBtn.addEventListener('click', function() {
+            clearSavedFixes('light', 'dg-light-status');
+        });
+
+        // ===== CLOSE BUTTONS =====
+        document.querySelectorAll('.dg-fixer-panel .close-btn').forEach(function(btn) {
+            btn.addEventListener('click', function() {
+                var panel = this.closest('.dg-fixer-panel');
+                if (panel) panel.style.display = 'none';
+            });
+        });
+
+        updateToggleUI(isDark);
+    });
+})();
+</script>
+<?php }
+
+    public function add_diagnostics_panel() {
+        if (!current_user_can('manage_options')) return;
+        ?>
+<?php $saved = $this->get_saved_fixes(); ?>
+<!-- Contrast Fixer Panel -->
+<div id="dg-contrast-panel" class="dg-fixer-panel">
+    <div class="panel-header">
+        <h3>🔍 Fix Contrast</h3>
+        <button class="close-btn">✕</button>
+    </div>
+    <div id="dg-contrast-list">
+        <div class="loading-text">Click "Fix Contrast" to scan for dark text on dark backgrounds.</div>
+    </div>
+    <div id="dg-contrast-status" class="status-message"></div>
+    <div class="dg-saved-fixes-row">
+        <?php echo count($saved['contrast']); ?> fix(es) currently saved &mdash;
+        <button type="button" id="dg-clear-contrast-fixes" class="dg-clear-link">clear saved fixes</button>
+    </div>
+</div>
+
+<!-- Light Fixer Panel -->
+<div id="dg-light-panel" class="dg-fixer-panel">
+    <div class="panel-header">
+        <h3>🌓 Fix Light</h3>
+        <button class="close-btn">✕</button>
+    </div>
+    <div id="dg-light-list">
+        <div class="loading-text">Click "Fix Light" to scan for light backgrounds that need to be darkened.</div>
+    </div>
+    <div id="dg-light-status" class="status-message"></div>
+    <div class="dg-saved-fixes-row">
+        <?php echo count($saved['light']); ?> fix(es) currently saved &mdash;
+        <button type="button" id="dg-clear-light-fixes" class="dg-clear-link">clear saved fixes</button>
+    </div>
+</div>
+
+<style>
+/* Admin bar button styles */
+#wpadminbar .dg-dark-toggle-btn .ab-item,
+#wpadminbar .dg-fix-contrast-btn .ab-item,
+#wpadminbar .dg-fix-light-btn .ab-item {
+    display: flex !important;
+    align-items: center !important;
+    gap: 4px !important;
+}
+#wpadminbar .dg-dark-toggle-btn .ab-item .dg-toggle-icon {
+    font-size: 14px;
+}
+#wpadminbar .dg-fix-contrast-btn .ab-item {
+    color: #ff6b6b !important;
+}
+#wpadminbar .dg-fix-contrast-btn .ab-item:hover {
+    color: #ff8787 !important;
+}
+#wpadminbar .dg-fix-light-btn .ab-item {
+    color: #ffa94d !important;
+}
+#wpadminbar .dg-fix-light-btn .ab-item:hover {
+    color: #ffc078 !important;
+}
+</style>
+<?php }
+
+    public function ajax_toggle() {
+        check_ajax_referer('dg_dark_mode', 'nonce');
+        if (!is_user_logged_in()) wp_send_json_error();
+        $is_dark = !empty($_POST['is_dark']) && $_POST['is_dark'] === '1';
+        update_user_meta(get_current_user_id(), 'dg_admin_dark_mode', $is_dark ? '1' : '0');
+        wp_send_json_success();
+    }
+
+    /**
+     * Called by the Fix Contrast / Fix Light tools once a fix has been
+     * applied in the browser. Saves the CSS selector (and, for contrast
+     * fixes, the resolved text colour) so it can be re-applied as real CSS
+     * on every future page load — this is what makes the fixes stick.
+     */
+    public function ajax_save_fix() {
+        check_ajax_referer('dg_dark_mode', 'nonce');
+        if (!is_user_logged_in() || !current_user_can('manage_options')) wp_send_json_error();
+
+        $type = isset($_POST['fix_type']) ? sanitize_text_field(wp_unslash($_POST['fix_type'])) : '';
+        $sel  = isset($_POST['selector']) ? sanitize_text_field(wp_unslash($_POST['selector'])) : '';
+        $sel  = $this->sanitize_selector($sel);
+        if (!in_array($type, array('contrast', 'light'), true) || $sel === '') {
+            wp_send_json_error('Invalid fix data');
+        }
+
+        $fixes = $this->get_saved_fixes();
+
+        // Avoid duplicate entries for the same selector.
+        foreach ($fixes[$type] as $existing) {
+            if (isset($existing['sel']) && $existing['sel'] === $sel) {
+                wp_send_json_success(array('already_saved' => true));
+            }
+        }
+
+        $entry = array('sel' => $sel);
+        if ($type === 'contrast') {
+            $color = isset($_POST['color']) ? sanitize_text_field(wp_unslash($_POST['color'])) : '#ffffff';
+            $entry['color'] = ($color === '#000000') ? '#000000' : '#ffffff';
+        }
+
+        $fixes[$type][] = $entry;
+        update_user_meta(get_current_user_id(), self::FIXES_META_KEY, wp_json_encode($fixes));
+        wp_send_json_success();
+    }
+
+    /**
+     * Clears saved fixes of a given type (or everything) for this user.
+     */
+    public function ajax_clear_fixes() {
+        check_ajax_referer('dg_dark_mode', 'nonce');
+        if (!is_user_logged_in() || !current_user_can('manage_options')) wp_send_json_error();
+
+        $type = isset($_POST['fix_type']) ? sanitize_text_field(wp_unslash($_POST['fix_type'])) : 'all';
+        $fixes = $this->get_saved_fixes();
+
+        if ($type === 'contrast' || $type === 'all') $fixes['contrast'] = array();
+        if ($type === 'light'    || $type === 'all') $fixes['light']    = array();
+
+        update_user_meta(get_current_user_id(), self::FIXES_META_KEY, wp_json_encode($fixes));
+        wp_send_json_success();
+    }
+
+    private function is_dark() {
+        if (isset($_COOKIE['dg_admin_dark'])) {
+            return $_COOKIE['dg_admin_dark'] === '1';
+        }
+        if (is_user_logged_in()) {
+            return get_user_meta(get_current_user_id(), 'dg_admin_dark_mode', true) === '1';
+        }
+        return false;
+    }
+}
+
+DG_Admin_Dark_Mode::get_instance();

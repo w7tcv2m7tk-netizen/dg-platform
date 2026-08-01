@@ -41,6 +41,9 @@ class DG_Platform {
 
     public function init() {
         DG_Automation::schedule_cron();
+        if (class_exists('DG_Admin_Dark_Mode')) {
+            DG_Admin_Dark_Mode::get_instance();
+        }
         $this->registry->load_active_modules($this);
     }
 
@@ -343,7 +346,7 @@ class DG_Platform {
         if (!check_admin_referer('dg_api_settings') || !DG_Permissions::current_user_can('dg_manage_api_keys')) {
             wp_die('Unauthorized');
         }
-        $keys = ['pagespeed', 'openai', 'gemini', 'twilio_sid', 'twilio_token', 'twilio_from', 'rankmath', 'gsc', 'gbp', 'fluentcrm', 'stripe_secret'];
+        $keys = ['pagespeed', 'openai', 'gemini', 'twilio_sid', 'twilio_token', 'twilio_from', 'gsc', 'gbp', 'stripe_secret'];
         foreach ($keys as $key) {
             if (isset($_POST[$key])) {
                 DG_Integrations::save_api_key($key, sanitize_text_field(wp_unslash($_POST[$key])));

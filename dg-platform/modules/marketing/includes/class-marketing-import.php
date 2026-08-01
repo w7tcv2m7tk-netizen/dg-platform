@@ -129,28 +129,18 @@ class DG_Marketing_Import {
             $company_name = $email;
         }
 
-        $table = DG_Marketing_Clients::companies_table();
-        $existing = $wpdb->get_row($wpdb->prepare("SELECT id FROM $table WHERE email = %s", $email));
-        $is_update = (bool) $existing;
+        $existing = class_exists('DG_Organisations') ? DG_Organisations::get_by_email($email) : null;
+        $company_id = DG_Marketing_Clients::upsert_lead_company([
+            'company_name' => $company_name,
+            'name' => $company_name,
+            'email' => $email,
+            'phone' => $phone,
+            'source' => 'csv_import',
+            'status' => 'lead',
+        ]);
 
-        if ($existing) {
-            $company_id = (int) $existing->id;
-            $wpdb->update($table, [
-                'company_name' => $company_name,
-                'phone' => $phone,
-                'source' => 'csv_import',
-                'status' => 'lead',
-            ], ['id' => $company_id]);
-        } else {
-            $wpdb->insert($table, [
-                'company_name' => $company_name,
-                'email' => $email,
-                'phone' => $phone,
-                'source' => 'csv_import',
-                'status' => 'lead',
-                'created_at' => current_time('mysql'),
-            ]);
-            $company_id = (int) $wpdb->insert_id;
+        if (!$company_id) {
+            return new WP_Error('import_failed', 'Could not save client.');
         }
 
         $contacts = DG_Marketing_Clients::contacts_table();
@@ -179,7 +169,7 @@ class DG_Marketing_Import {
 
         DG_Marketing_Clients::sync_company($company_id);
 
-        return $is_update ? 'updated' : 'created';
+        return $existing ? 'updated' : 'created';
     }
 
     public static function render_admin_page() {

@@ -1,6 +1,6 @@
 <?php
 /**
- * Agency client sync — legacy companies table ↔ core CRM.
+ * Agency clients — core organisations table is primary; legacy companies mirror for FKs.
  *
  * @package DG_Platform
  */
@@ -11,6 +11,12 @@ if (!defined('ABSPATH')) {
 
 class DG_Marketing_Clients {
 
+    public static function primary_table() {
+        global $wpdb;
+        return $wpdb->prefix . 'dg_organisations';
+    }
+
+    /** Legacy table — audits/voice logs FK here. */
     public static function companies_table() {
         global $wpdb;
         return $wpdb->prefix . 'dg_platform_companies';
@@ -21,7 +27,57 @@ class DG_Marketing_Clients {
         return $wpdb->prefix . 'dg_platform_contacts';
     }
 
-    public static function get($company_id) {
+    public static function marketing_sources() {
+        return apply_filters('dg_marketing_client_sources', [
+            'marketing', 'manual', 'voice_agent', 'webhook_audit', 'audit', 'csv_import',
+            'import', 'website', 'agency_audit', 'free_audit',
+        ]);
+    }
+
+    public static function shape_client($org) {
+        if (!$org) {
+            return null;
+        }
+        $company_id = self::get_company_id((int) $org->id);
+        return (object) [
+            'id' => $company_id ?: (int) $org->id,
+            'org_id' => (int) $org->id,
+            'company_name' => $org->name,
+            'email' => $org->email ?? '',
+            'phone' => $org->phone ?? '',
+            'website' => $org->website ?? '',
+            'industry' => $org->industry ?? '',
+            'suburb' => $org->suburb ?? '',
+            'state' => $org->state ?? '',
+            'status' => $org->status ?: 'lead',
+            'source' => $org->source ?? 'marketing',
+            'notes' => $org->notes ?? '',
+            'created_at' => $org->created_at ?? '',
+            'updated_at' => $org->updated_at ?? ($org->created_at ?? ''),
+        ];
+    }
+
+    public static function get_org_row($client_id) {
+        global $wpdb;
+        $orgs = self::primary_table();
+        $org = $wpdb->get_row($wpdb->prepare("SELECT * FROM $orgs WHERE id = %d", (int) $client_id));
+        if ($org) {
+            return $org;
+        }
+        if ($wpdb->get_var("SHOW COLUMNS FROM $orgs LIKE 'legacy_id'")) {
+            return $wpdb->get_row($wpdb->prepare(
+                "SELECT * FROM $orgs WHERE legacy_table = 'dg_platform_companies' AND legacy_id = %d LIMIT 1",
+                (int) $client_id
+            ));
+        }
+        $company = self::get_legacy_company($client_id);
+        if ($company && !empty($company->email)) {
+            return $wpdb->get_row($wpdb->prepare("SELECT * FROM $orgs WHERE email = %s LIMIT 1", $company->email));
+        }
+        return null;
+    }
+
+    public static function get_legacy_company($company_id) {
         global $wpdb;
         return $wpdb->get_row($wpdb->prepare(
             'SELECT * FROM ' . self::companies_table() . ' WHERE id = %d',
@@ -29,37 +85,23 @@ class DG_Marketing_Clients {
         ));
     }
 
+    public static function get($client_id) {
+        $org = self::get_org_row($client_id);
+        if ($org) {
+            return self::shape_client($org);
+        }
+        $legacy = self::get_legacy_company($client_id);
+        return $legacy ?: null;
+    }
+
     public static function get_org_id($company_id) {
-        global $wpdb;
-        $company = self::get($company_id);
-        if (!$company) {
-            return 0;
-        }
-        $orgs = $wpdb->prefix . 'dg_organisations';
-        if ($wpdb->get_var("SHOW COLUMNS FROM $orgs LIKE 'legacy_id'")) {
-            $org_id = $wpdb->get_var($wpdb->prepare(
-                "SELECT id FROM $orgs WHERE legacy_table = 'dg_platform_companies' AND legacy_id = %d LIMIT 1",
-                (int) $company_id
-            ));
-            if ($org_id) {
-                return (int) $org_id;
-            }
-        }
-        if (!empty($company->email)) {
-            $org_id = $wpdb->get_var($wpdb->prepare(
-                "SELECT id FROM $orgs WHERE email = %s LIMIT 1",
-                $company->email
-            ));
-            if ($org_id) {
-                return (int) $org_id;
-            }
-        }
-        return (int) self::sync_company($company_id);
+        $org = self::get_org_row($company_id);
+        return $org ? (int) $org->id : 0;
     }
 
     public static function get_company_id($org_id) {
         global $wpdb;
-        $orgs = $wpdb->prefix . 'dg_organisations';
+        $orgs = self::primary_table();
         $org = $wpdb->get_row($wpdb->prepare("SELECT * FROM $orgs WHERE id = %d", (int) $org_id));
         if (!$org) {
             return 0;
@@ -76,12 +118,59 @@ class DG_Marketing_Clients {
                 return (int) $id;
             }
         }
+        if (class_exists('DG_Organisations')) {
+            DG_Organisations::sync_to_legacy_company((int) $org_id);
+            return (int) (DG_Organisations::get_legacy_company_id((int) $org_id) ?: 0);
+        }
         return 0;
     }
 
     public static function list_clients($args = []) {
         global $wpdb;
+        $orgs = self::primary_table();
+        $limit = isset($args['limit']) ? (int) $args['limit'] : 100;
+        $offset = isset($args['offset']) ? (int) $args['offset'] : 0;
+
+        if ($wpdb->get_var("SHOW TABLES LIKE '$orgs'") !== $orgs) {
+            return self::list_legacy_clients($args);
+        }
+
+        $where = ['1=1'];
+        $params = [];
+        $sources = self::marketing_sources();
+        $placeholders = implode(',', array_fill(0, count($sources), '%s'));
+        $where[] = "(source IN ($placeholders) OR legacy_table = 'dg_platform_companies')";
+        foreach ($sources as $source) {
+            $params[] = $source;
+        }
+
+        if (!empty($args['status'])) {
+            $where[] = 'status = %s';
+            $params[] = $args['status'];
+        }
+        if (!empty($args['source'])) {
+            $where[] = 'source = %s';
+            $params[] = $args['source'];
+        }
+
+        $params[] = $limit;
+        $params[] = $offset;
+        $sql = "SELECT * FROM $orgs WHERE " . implode(' AND ', $where) . ' ORDER BY created_at DESC LIMIT %d OFFSET %d';
+        $rows = $wpdb->get_results($wpdb->prepare($sql, $params));
+
+        if (!$rows) {
+            return self::list_legacy_clients($args);
+        }
+
+        return array_map([__CLASS__, 'shape_client'], $rows);
+    }
+
+    private static function list_legacy_clients($args = []) {
+        global $wpdb;
         $table = self::companies_table();
+        if ($wpdb->get_var("SHOW TABLES LIKE '$table'") !== $table) {
+            return [];
+        }
         $limit = isset($args['limit']) ? (int) $args['limit'] : 100;
         $where = '1=1';
         if (!empty($args['status'])) {
@@ -90,19 +179,146 @@ class DG_Marketing_Clients {
         return $wpdb->get_results("SELECT * FROM $table WHERE $where ORDER BY created_at DESC LIMIT $limit");
     }
 
+    public static function create($data) {
+        if (!class_exists('DG_Organisations')) {
+            return self::create_legacy_only($data);
+        }
+
+        $org_id = DG_Organisations::create([
+            'name' => sanitize_text_field($data['company_name'] ?? ''),
+            'email' => sanitize_email($data['email'] ?? ''),
+            'phone' => sanitize_text_field($data['phone'] ?? ''),
+            'website' => esc_url_raw($data['website'] ?? ''),
+            'industry' => sanitize_text_field($data['industry'] ?? ''),
+            'suburb' => sanitize_text_field($data['suburb'] ?? ''),
+            'state' => sanitize_text_field($data['state'] ?? ''),
+            'status' => sanitize_text_field($data['status'] ?? 'lead'),
+            'source' => sanitize_text_field($data['source'] ?? 'manual'),
+            'notes' => sanitize_textarea_field($data['notes'] ?? ''),
+        ]);
+
+        $company_id = self::get_company_id($org_id);
+        if ($company_id) {
+            self::link_org_legacy($org_id, $company_id);
+        }
+        return $company_id ?: $org_id;
+    }
+
+    public static function update($client_id, $data) {
+        $org_id = self::get_org_id($client_id) ?: (int) $client_id;
+        $fields = [
+            'name' => sanitize_text_field($data['company_name'] ?? ''),
+            'email' => sanitize_email($data['email'] ?? ''),
+            'phone' => sanitize_text_field($data['phone'] ?? ''),
+            'website' => esc_url_raw($data['website'] ?? ''),
+            'suburb' => sanitize_text_field($data['suburb'] ?? ''),
+            'state' => sanitize_text_field($data['state'] ?? ''),
+            'status' => sanitize_text_field($data['status'] ?? 'active'),
+            'notes' => sanitize_textarea_field($data['notes'] ?? ''),
+        ];
+
+        if (class_exists('DG_Organisations')) {
+            DG_Organisations::update($org_id, $fields);
+            return self::get_company_id($org_id) ?: $client_id;
+        }
+
+        global $wpdb;
+        $legacy = [
+            'company_name' => $fields['name'],
+            'email' => $fields['email'],
+            'phone' => $fields['phone'],
+            'website' => $fields['website'],
+            'suburb' => $fields['suburb'],
+            'state' => $fields['state'],
+            'status' => $fields['status'],
+            'notes' => $fields['notes'],
+        ];
+        $wpdb->update(self::companies_table(), $legacy, ['id' => (int) $client_id]);
+        self::sync_company((int) $client_id);
+        return (int) $client_id;
+    }
+
+    public static function update_status($client_id, $status) {
+        $client = self::get($client_id);
+        if (!$client) {
+            return false;
+        }
+        self::update($client_id, [
+            'company_name' => $client->company_name,
+            'email' => $client->email,
+            'phone' => $client->phone ?? '',
+            'website' => $client->website ?? '',
+            'suburb' => $client->suburb ?? '',
+            'state' => $client->state ?? '',
+            'status' => $status,
+            'notes' => $client->notes ?? '',
+        ]);
+        return true;
+    }
+
+    public static function delete($client_id) {
+        global $wpdb;
+        $company_id = self::get_company_id(self::get_org_id($client_id) ?: $client_id) ?: (int) $client_id;
+        $org_id = self::get_org_id($company_id);
+
+        if ($org_id && class_exists('DG_Organisations')) {
+            $wpdb->delete(self::primary_table(), ['id' => $org_id]);
+        }
+        $wpdb->delete(self::companies_table(), ['id' => $company_id]);
+        $wpdb->delete(self::contacts_table(), ['company_id' => $company_id]);
+        $wpdb->delete($wpdb->prefix . 'dg_platform_notes', ['company_id' => $company_id]);
+        return true;
+    }
+
+    private static function create_legacy_only($data) {
+        global $wpdb;
+        $wpdb->insert(self::companies_table(), [
+            'company_name' => sanitize_text_field($data['company_name'] ?? ''),
+            'email' => sanitize_email($data['email'] ?? ''),
+            'phone' => sanitize_text_field($data['phone'] ?? ''),
+            'website' => esc_url_raw($data['website'] ?? ''),
+            'suburb' => sanitize_text_field($data['suburb'] ?? ''),
+            'state' => sanitize_text_field($data['state'] ?? ''),
+            'status' => sanitize_text_field($data['status'] ?? 'lead'),
+            'source' => sanitize_text_field($data['source'] ?? 'manual'),
+            'notes' => sanitize_textarea_field($data['notes'] ?? ''),
+            'created_at' => current_time('mysql'),
+        ]);
+        $id = (int) $wpdb->insert_id;
+        self::sync_company($id);
+        return $id;
+    }
+
+    private static function link_org_legacy($org_id, $company_id) {
+        global $wpdb;
+        $orgs = self::primary_table();
+        if ($wpdb->get_var("SHOW COLUMNS FROM $orgs LIKE 'legacy_id'")) {
+            $wpdb->update($orgs, [
+                'legacy_table' => 'dg_platform_companies',
+                'legacy_id' => (int) $company_id,
+            ], ['id' => (int) $org_id]);
+        }
+    }
+
     public static function sync_company($company_id) {
         global $wpdb;
 
-        $company = self::get($company_id);
+        $company = self::get_legacy_company($company_id);
         if (!$company) {
             return false;
         }
 
-        $orgs_table = $wpdb->prefix . 'dg_organisations';
+        $orgs_table = self::primary_table();
         $contacts_table = $wpdb->prefix . 'dg_contacts';
         $org_id = null;
 
-        if (!empty($company->email)) {
+        if ($wpdb->get_var("SHOW COLUMNS FROM $orgs_table LIKE 'legacy_id'")) {
+            $org_id = $wpdb->get_var($wpdb->prepare(
+                "SELECT id FROM $orgs_table WHERE legacy_table = 'dg_platform_companies' AND legacy_id = %d LIMIT 1",
+                (int) $company_id
+            ));
+        }
+        if (!$org_id && !empty($company->email)) {
             $org_id = $wpdb->get_var($wpdb->prepare(
                 "SELECT id FROM $orgs_table WHERE email = %s LIMIT 1",
                 $company->email
@@ -120,21 +336,17 @@ class DG_Marketing_Clients {
             'status' => $company->status ?: 'active',
             'source' => $company->source ?: 'marketing',
             'notes' => $company->notes,
-        ];
-
-        $legacy_link = [
             'legacy_table' => 'dg_platform_companies',
             'legacy_id' => (int) $company_id,
         ];
-        if ($wpdb->get_var("SHOW COLUMNS FROM $orgs_table LIKE 'legacy_id'")) {
-            $org_data = array_merge($org_data, $legacy_link);
-        }
 
         if ($org_id) {
             $wpdb->update($orgs_table, $org_data, ['id' => (int) $org_id]);
         } else {
+            unset($org_data['legacy_table'], $org_data['legacy_id']);
             $wpdb->insert($orgs_table, $org_data);
             $org_id = (int) $wpdb->insert_id;
+            self::link_org_legacy($org_id, (int) $company_id);
         }
 
         $platform_contacts = $wpdb->get_results($wpdb->prepare(
@@ -205,39 +417,35 @@ class DG_Marketing_Clients {
 
     public static function upsert_lead_company($data) {
         global $wpdb;
-        $table = self::companies_table();
         $email = sanitize_email($data['email'] ?? '');
         if ($email === '') {
             return 0;
         }
 
-        $existing = $wpdb->get_row($wpdb->prepare("SELECT id FROM $table WHERE email = %s", $email));
-        if ($existing) {
-            $company_id = (int) $existing->id;
-            $wpdb->update($table, [
-                'company_name' => sanitize_text_field($data['company_name'] ?? $data['business_name'] ?? ''),
-                'phone' => sanitize_text_field($data['phone'] ?? ''),
-                'website' => esc_url_raw($data['website'] ?? $data['website_url'] ?? ''),
-                'suburb' => sanitize_text_field($data['suburb'] ?? $data['agency_location'] ?? ''),
-                'source' => sanitize_text_field($data['source'] ?? 'voice_agent'),
-                'status' => sanitize_text_field($data['status'] ?? 'lead'),
-            ], ['id' => $company_id]);
-        } else {
-            $name = sanitize_text_field($data['company_name'] ?? $data['business_name'] ?? '');
-            if ($name === '' && !empty($data['name'])) {
-                $name = sanitize_text_field($data['name']) . ' Agency';
+        $existing_org = class_exists('DG_Organisations') ? DG_Organisations::get_by_email($email) : null;
+        $org_payload = [
+            'name' => sanitize_text_field($data['company_name'] ?? $data['business_name'] ?? ''),
+            'email' => $email,
+            'phone' => sanitize_text_field($data['phone'] ?? ''),
+            'website' => esc_url_raw($data['website'] ?? $data['website_url'] ?? ''),
+            'suburb' => sanitize_text_field($data['suburb'] ?? $data['agency_location'] ?? ''),
+            'source' => sanitize_text_field($data['source'] ?? 'voice_agent'),
+            'status' => sanitize_text_field($data['status'] ?? 'lead'),
+        ];
+        if ($org_payload['name'] === '' && !empty($data['name'])) {
+            $org_payload['name'] = sanitize_text_field($data['name']) . ' Agency';
+        }
+        if ($org_payload['name'] === '') {
+            $org_payload['name'] = 'Unknown Agency';
+        }
+
+        if ($existing_org) {
+            if (class_exists('DG_Organisations')) {
+                DG_Organisations::update((int) $existing_org->id, $org_payload);
             }
-            $wpdb->insert($table, [
-                'company_name' => $name ?: 'Unknown Agency',
-                'email' => $email,
-                'phone' => sanitize_text_field($data['phone'] ?? ''),
-                'website' => esc_url_raw($data['website'] ?? $data['website_url'] ?? ''),
-                'suburb' => sanitize_text_field($data['suburb'] ?? $data['agency_location'] ?? ''),
-                'source' => sanitize_text_field($data['source'] ?? 'voice_agent'),
-                'status' => sanitize_text_field($data['status'] ?? 'lead'),
-                'created_at' => current_time('mysql'),
-            ]);
-            $company_id = (int) $wpdb->insert_id;
+            $company_id = self::get_company_id((int) $existing_org->id);
+        } else {
+            $company_id = self::create(array_merge($org_payload, ['company_name' => $org_payload['name']]));
         }
 
         if (!empty($data['name'])) {
@@ -263,7 +471,7 @@ class DG_Marketing_Clients {
         }
 
         self::sync_company($company_id);
-        return $company_id;
+        return (int) $company_id;
     }
 
     public static function split_name($full_name) {

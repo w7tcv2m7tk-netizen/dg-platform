@@ -158,34 +158,20 @@ class DG_Marketing_Dev_API {
     }
 
     public static function list_clients($request) {
-        global $wpdb;
-        $table = $wpdb->prefix . 'dg_platform_companies';
-        if ($wpdb->get_var("SHOW TABLES LIKE '$table'") !== $table) {
-            return rest_ensure_response(['total_returned' => 0, 'clients' => []]);
-        }
-
         $limit = (int) ($request->get_param('limit') ?: 25);
         $offset = (int) ($request->get_param('offset') ?: 0);
         $status = sanitize_text_field($request->get_param('status') ?: '');
         $source = sanitize_text_field($request->get_param('source') ?: '');
 
-        $where = ['1=1'];
-        $params = [];
+        $args = ['limit' => $limit, 'offset' => $offset];
         if ($status !== '') {
-            $where[] = 'status = %s';
-            $params[] = $status;
+            $args['status'] = $status;
         }
         if ($source !== '') {
-            $where[] = 'source = %s';
-            $params[] = $source;
+            $args['source'] = $source;
         }
-        $params[] = $limit;
-        $params[] = $offset;
 
-        $sql = "SELECT * FROM $table WHERE " . implode(' AND ', $where)
-            . " ORDER BY created_at DESC LIMIT %d OFFSET %d";
-        $rows = $wpdb->get_results($wpdb->prepare($sql, $params));
-
+        $rows = DG_Marketing_Clients::list_clients($args);
         return rest_ensure_response([
             'total_returned' => count($rows),
             'clients' => array_map([__CLASS__, 'format_client'], $rows),
@@ -195,26 +181,29 @@ class DG_Marketing_Dev_API {
     public static function get_client($request) {
         global $wpdb;
         $id = (int) $request['id'];
-        $table = $wpdb->prefix . 'dg_platform_companies';
-        $client = $wpdb->get_row($wpdb->prepare("SELECT * FROM $table WHERE id = %d", $id));
+        $client = DG_Marketing_Clients::get($id);
         if (!$client) {
             return new WP_Error('not_found', 'Client not found.', ['status' => 404]);
         }
 
+        $company_id = (int) $client->id;
         $contacts = $wpdb->get_results($wpdb->prepare(
             "SELECT * FROM {$wpdb->prefix}dg_platform_contacts WHERE company_id = %d",
-            $id
+            $company_id
         ));
         $notes = $wpdb->get_results($wpdb->prepare(
             "SELECT * FROM {$wpdb->prefix}dg_platform_notes WHERE company_id = %d ORDER BY created_at DESC LIMIT 20",
-            $id
+            $company_id
         ));
         $audits = $wpdb->get_results($wpdb->prepare(
             "SELECT * FROM {$wpdb->prefix}dg_platform_audits WHERE company_id = %d ORDER BY audit_date DESC LIMIT 10",
-            $id
+            $company_id
         ));
 
         $formatted = self::format_client($client, true);
+        if (!empty($client->org_id)) {
+            $formatted['org_id'] = (int) $client->org_id;
+        }
         $formatted['contacts'] = array_map([__CLASS__, 'format_contact'], $contacts);
         $formatted['notes'] = array_map(function ($note) {
             return [

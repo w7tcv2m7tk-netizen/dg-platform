@@ -1,7 +1,7 @@
 <?php
 /**
  * Marketing Module - DigitalGate agency CRM, audits, voice agent
- * Version: 10.2.0
+ * Version: 10.3.0
  */
 
 if (!defined('ABSPATH')) exit;
@@ -61,21 +61,7 @@ class DG_Module_Marketing {
         add_action('admin_post_dg_marketing_save_email_templates', [__CLASS__, 'handle_save_email_templates']);
         
         add_action('rest_api_init', [$this, 'register_rest_routes']);
-        
-        // ============================================================
-        // AUTOMATION CRON JOB
-        // ============================================================
-        add_action('dg_process_audit_emails', [$this, 'process_audit_emails']);
-        
-        // ============================================================
-        // AUTOMATION ADMIN MENU
-        // ============================================================
         add_action('admin_menu', [$this, 'register_automation_menu'], 30);
-        
-        // ============================================================
-        // CREATE AUTOMATION TABLE ON INIT
-        // ============================================================
-        add_action('init', [$this, 'create_automation_table']);
         add_filter('dg_platform_dashboard_widgets', [$this, 'dashboard_widgets']);
     }
 
@@ -115,6 +101,7 @@ class DG_Module_Marketing {
             'class-marketing-admin-notifications.php',
             'class-marketing-admin-views.php',
             'class-marketing-ai-visibility.php',
+            'class-marketing-audit-followups.php',
             'class-marketing-import.php',
             'class-marketing-voice.php',
             'class-marketing-dev-api.php',
@@ -137,54 +124,13 @@ class DG_Module_Marketing {
             wp_die('Unauthorized');
         }
     }
-    
-    // ============================================================
-    // CREATE AUTOMATION TABLE
-    // ============================================================
-    
-    public function create_automation_table() {
-        global $wpdb;
-        $charset_collate = $wpdb->get_charset_collate();
-        $table = $wpdb->prefix . 'dg_automation_audit_emails';
-        
-        if ($wpdb->get_var("SHOW TABLES LIKE '$table'") != $table) {
-            $sql = "CREATE TABLE IF NOT EXISTS $table (
-                id bigint(20) NOT NULL AUTO_INCREMENT,
-                company_id bigint(20) NOT NULL,
-                contact_id bigint(20) DEFAULT NULL,
-                email varchar(255) NOT NULL,
-                email_number int(11) NOT NULL,
-                email_subject varchar(255) NOT NULL,
-                email_content longtext NOT NULL,
-                status varchar(20) DEFAULT 'pending',
-                sent_at datetime DEFAULT NULL,
-                created_at datetime DEFAULT CURRENT_TIMESTAMP,
-                PRIMARY KEY (id),
-                KEY company_id (company_id),
-                KEY email (email)
-            ) $charset_collate;";
-            
-            require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
-            dbDelta($sql);
-        }
-    }
-    
-    // ============================================================
-    // REST ROUTES
-    // ============================================================
-    
+
     public function register_rest_routes() {
         if (class_exists('DG_Marketing_Voice')) {
             DG_Marketing_Voice::register_routes();
         }
     }
-    
-    // Voice agent webhook — see DG_Marketing_Voice
-    
-    // ============================================================
-    // HELPER: FORMAT WEBSITE URL
-    // ============================================================
-    
+
     private function format_website_url($url) {
         $url = trim($url);
         if (empty($url)) return '';
@@ -194,228 +140,10 @@ class DG_Module_Marketing {
         }
         return $url;
     }
-    
-    // ============================================================
-    // EMAIL TEMPLATES FOR AUTOMATION
-    // ============================================================
-    
-    private function get_audit_email_templates($company_name, $full_name, $audit_data, $audit_url) {
-        $h2 = 'color:#FFFFFF;font-size:22px;font-weight:700;margin:0 0 16px;letter-spacing:-0.02em;';
-        $p = 'color:#E2E8F0;font-size:16px;line-height:1.65;margin:0 0 16px;';
-        $ul = 'color:#E2E8F0;font-size:15px;line-height:1.8;padding-left:20px;margin:0 0 16px;';
-        $link = 'color:#60A5FA;text-decoration:none;';
-        $cta = 'background:#3B82F6;color:#fff;padding:14px 32px;border-radius:50px;text-decoration:none;font-weight:600;display:inline-block;';
 
-        $templates = [
-            1 => [
-                'subject' => 'Your Agency Visibility Audit Results Are In',
-                'content' => '
-                <h2 style="' . $h2 . '">Hi ' . esc_html($full_name) . ',</h2>
-                <p style="' . $p . '">Your Agency Visibility Audit for <strong style="color:#60A5FA;">' . esc_html($company_name) . '</strong> is ready.</p>
-                <p style="' . $p . '">Here are your key results:</p>
-                ' . (class_exists('DG_Marketing_Emails') ? DG_Marketing_Emails::score_table([
-                    'Overall Score' => $audit_data['overall_score'] . '%',
-                    'Grade' => $audit_data['grade'],
-                    'AI Visibility' => $audit_data['ai_score'] . '%',
-                    'Website Performance' => $audit_data['website_score'] . '%',
-                ]) : '') . '
-                <p style="margin:30px 0 20px 0;text-align:center;"><a href="' . esc_url($audit_url) . '" style="' . $cta . '">View Full Report</a></p>
-                <p style="' . $p . '">I\'ll send you a breakdown of your top growth opportunities in my next email.</p>
-                '
-            ],
-            2 => [
-                'subject' => 'Your AI Visibility Breakdown & What It Means',
-                'content' => '
-                <h2 style="' . $h2 . '">Hi ' . esc_html($full_name) . ',</h2>
-                <p style="' . $p . '">Let\'s break down your AI Visibility score for <strong style="color:#60A5FA;">' . esc_html($company_name) . '</strong>.</p>
-                <p style="' . $p . '">Your AI Visibility score is <strong style="color:#FFFFFF;">' . $audit_data['ai_score'] . '%</strong> ' . ($audit_data['ai_score'] < 50 ? '— this means AI systems like ChatGPT and Google AI Mode are not currently recommending your agency.' : '— this is a solid foundation, but there\'s room to grow.') . '</p>
-                <p style="' . $p . '">Here\'s how AI visibility works:</p>
-                <ul style="' . $ul . '">
-                    <li>AI systems scan the web for consistent, trusted information</li>
-                    <li>They look for authority signals, reviews, and local citations</li>
-                    <li>The more consistent your presence, the higher your AI visibility</li>
-                </ul>
-                <p style="' . $p . '">Want to see how this compares to other agencies in your area? <a href="' . esc_url(admin_url('admin.php?page=dg-platform-ai')) . '" style="' . $link . '">View the AI Visibility Dashboard →</a></p>
-                '
-            ],
-            3 => [
-                'subject' => 'Your Website Performance & Lead Generation Potential',
-                'content' => '
-                <h2 style="' . $h2 . '">Hi ' . esc_html($full_name) . ',</h2>
-                <p style="' . $p . '">Let\'s talk about your website performance and lead potential for <strong style="color:#60A5FA;">' . esc_html($company_name) . '</strong>.</p>
-                <p style="' . $p . '">Your website scored <strong style="color:#FFFFFF;">' . $audit_data['website_score'] . '%</strong> on Google PageSpeed ' . ($audit_data['website_score'] < 50 ? '— which is below average. This means potential vendors are likely leaving your site before enquiring.' : '— which is above average, giving you a good foundation.') . '</p>
-                <p style="' . $p . '"><strong style="color:#FFFFFF;">Your Lead Potential Score:</strong> ' . $audit_data['vendor_lead_score'] . '%</p>
-                <p style="' . $p . '">Based on our analysis, here\'s what\'s holding back your lead generation:</p>
-                <ul style="' . $ul . '">
-                    <li>' . ($audit_data['website_score'] < 50 ? '❌ Slow loading times are hurting conversions' : '✅ Your website speed is good') . '</li>
-                    <li>' . ($audit_data['vendor_lead_score'] < 50 ? '❌ Limited content targeting vendors' : '✅ You have good vendor-focused content') . '</li>
-                    <li>' . ($audit_data['google_score'] < 50 ? '❌ Google visibility needs improvement' : '✅ Your Google presence is strong') . '</li>
-                </ul>
-                <p style="margin:30px 0 20px 0;text-align:center;"><a href="' . esc_url($audit_url) . '" style="' . $cta . '">See Your Full Website Analysis →</a></p>
-                '
-            ],
-            4 => [
-                'subject' => 'Action Plan: 3 Steps to Improve Your Agency Visibility',
-                'content' => '
-                <h2 style="' . $h2 . '">Hi ' . esc_html($full_name) . ',</h2>
-                <p style="' . $p . '">Based on your audit for <strong style="color:#60A5FA;">' . esc_html($company_name) . '</strong>, here are the <strong style="color:#FFFFFF;">3 most impactful actions</strong> you can take right now:</p>
-                <ol style="' . $ul . '">
-                    <li><strong style="color:#FFFFFF;">Build local authority content</strong> — Create suburb-specific landing pages with detailed market insights</li>
-                    <li><strong style="color:#FFFFFF;">Improve your Google Business Profile</strong> — Add photos, posts, and respond to all reviews</li>
-                    <li><strong style="color:#FFFFFF;">Optimize for AI search</strong> — Structure your content to answer common vendor questions</li>
-                </ol>
-                <p style="' . $p . '">Here\'s a more detailed breakdown of your growth opportunities:</p>
-                <ul style="' . $ul . '">'
-                . implode('', array_map(function($rec) { return '<li>✓ ' . esc_html($rec) . '</li>'; }, array_slice($audit_data['recommendations'], 0, 3))) .
-                '</ul>
-                <p style="margin:30px 0 20px 0;text-align:center;"><a href="https://digitalgate.com.au/strategy-session" style="' . $cta . '">Book Your Free Strategy Session →</a></p>
-                '
-            ],
-            5 => [
-                'subject' => 'Final Step: Let\'s Build Your Growth Plan',
-                'content' => '
-                <h2 style="' . $h2 . '">Hi ' . esc_html($full_name) . ',</h2>
-                <p style="' . $p . '">This is the final email in your Agency Visibility Audit series for <strong style="color:#60A5FA;">' . esc_html($company_name) . '</strong>.</p>
-                <p style="' . $p . '">Here\'s what we\'ve covered so far:</p>
-                <ul style="' . $ul . '">
-                    <li>✅ Your AI visibility score and breakdown</li>
-                    <li>✅ Your website performance and lead potential</li>
-                    <li>✅ 3 key actions to improve your visibility</li>
-                </ul>
-                <p style="' . $p . '"><strong style="color:#FFFFFF;">Now it\'s time to take the next step.</strong></p>
-                <p style="' . $p . '">I\'d like to offer you a <strong style="color:#FFFFFF;">free 30-minute strategy session</strong> where we\'ll:</p>
-                <ul style="' . $ul . '">
-                    <li>Walk through your audit results in detail</li>
-                    <li>Identify your highest-value opportunities</li>
-                    <li>Build a custom growth plan for your agency</li>
-                </ul>
-                <p style="margin:30px 0 20px 0;text-align:center;"><a href="https://digitalgate.com.au/strategy-session" style="' . $cta . ' font-size:16px;padding:14px 36px;">📅 Book Your Free Strategy Session</a></p>
-                <p style="color:#E2E8F0;font-size:16px;line-height:1.65;margin:16px 0 0;">Looking forward to helping you grow,</p>
-                <p style="color:#E2E8F0;font-size:16px;line-height:1.65;margin:8px 0 0;"><strong style="color:#FFFFFF;">Ben Roe</strong><br><span style="color:#94A3B8;font-size:14px;">DigitalGate · Licensed QLD Real Estate Agent</span></p>
-                '
-            ]
-        ];
-        
-        return $templates;
-    }
-    
-    // ============================================================
-    // SCHEDULE 5-EMAIL AUTOMATION SEQUENCE
-    // ============================================================
-    
-    private function schedule_audit_emails($company_id, $contact_id, $email, $full_name, $company_name, $audit_data, $audit_url) {
-        global $wpdb;
-        $table = $wpdb->prefix . 'dg_automation_audit_emails';
-        
-        $templates = $this->get_audit_email_templates($company_name, $full_name, $audit_data, $audit_url);
-        $schedule = [0, 24, 48, 72, 96];
-        
-        foreach ($schedule as $index => $hours) {
-            $email_number = $index + 1;
-            $template = $templates[$email_number];
-            
-            $sent_at = $hours === 0 
-                ? current_time('mysql') 
-                : date('Y-m-d H:i:s', strtotime('+' . $hours . ' hours'));
-            
-            $wpdb->insert($table, [
-                'company_id' => $company_id,
-                'contact_id' => $contact_id,
-                'email' => $email,
-                'email_number' => $email_number,
-                'email_subject' => $template['subject'],
-                'email_content' => $template['content'],
-                'status' => 'pending',
-                'sent_at' => $sent_at,
-                'created_at' => current_time('mysql')
-            ]);
-        }
-        
-        $this->wpdb->insert($this->wpdb->prefix . 'dg_platform_notes', [
-            'company_id' => $company_id,
-            'content' => "📧 5-email automation sequence scheduled for {$full_name} ({$email})",
-            'type' => 'automation',
-            'created_at' => current_time('mysql')
-        ]);
-    }
-    
-    // ============================================================
-    // PROCESS PENDING AUTOMATION EMAILS
-    // ============================================================
-    
-    public function process_audit_emails() {
-        global $wpdb;
-        $table = $wpdb->prefix . 'dg_automation_audit_emails';
-        
-        if ($wpdb->get_var("SHOW TABLES LIKE '$table'") != $table) {
-            return;
-        }
-        
-        $pending_emails = $wpdb->get_results(
-            "SELECT * FROM {$table} 
-             WHERE status = 'pending' 
-             AND sent_at <= NOW() 
-             ORDER BY email_number ASC 
-             LIMIT 10"
-        );
-        
-        if (empty($pending_emails)) {
-            return;
-        }
-        
-        foreach ($pending_emails as $email_record) {
-            $this->send_automation_email($email_record);
-        }
-    }
-    
-    private function send_automation_email($email_record) {
-        global $wpdb;
-        $table = $wpdb->prefix . 'dg_automation_audit_emails';
-        
-        $to = $email_record->email;
-        $subject = $email_record->email_subject;
-        $message = class_exists('DG_Marketing_Emails')
-            ? DG_Marketing_Emails::wrap($email_record->email_content)
-            : $this->wrap_automation_email_content($email_record->email_content);
-
-        $headers = class_exists('DG_Marketing_Emails')
-            ? DG_Marketing_Emails::mail_headers()
-            : [
-                'Content-Type: text/html; charset=UTF-8',
-                'From: Ben Roe | DigitalGate <hello@digitalgate.com.au>',
-                'Reply-To: hello@digitalgate.com.au',
-            ];
-        
-        $sent = wp_mail($to, $subject, $message, $headers);
-        
-        $status = $sent ? 'sent' : 'failed';
-        $wpdb->update(
-            $table,
-            ['status' => $status],
-            ['id' => $email_record->id]
-        );
-        
-        if ($sent) {
-            $this->wpdb->insert($this->wpdb->prefix . 'dg_platform_notes', [
-                'company_id' => $email_record->company_id,
-                'content' => "📧 Email #{$email_record->email_number} sent: " . $email_record->email_subject,
-                'type' => 'automation',
-                'created_at' => current_time('mysql')
-            ]);
-        }
-    }
-    
-    private function wrap_automation_email_content($content) {
-        if (class_exists('DG_Marketing_Emails')) {
-            return DG_Marketing_Emails::wrap($content);
-        }
-        return '<html><body><div style="max-width:600px;margin:0 auto;padding:20px;">' . $content . '</div></body></html>';
-    }
-    
     // ============================================================
     // AGENCY AUDIT WEBHOOK
     // ============================================================
-    
     public function handle_audit_webhook($request) {
         global $wpdb;
 
@@ -612,6 +340,7 @@ class DG_Module_Marketing {
         DG_Marketing_Clients::sync_company($company_id);
         do_action('dg_marketing_audit_created', $company_id, $full_name, $email, $phone, $agency_name, [
             'website' => $agency_website,
+            'contact_id' => $contact_id,
             'audit_data' => $audit_data,
             'audit_url' => $audit_url,
         ]);
@@ -627,17 +356,6 @@ class DG_Module_Marketing {
                 'grade' => $grade,
             ]);
         }
-        
-        // Schedule 5-email automation sequence
-        $this->schedule_audit_emails(
-            $company_id,
-            $contact_id,
-            $email,
-            $full_name,
-            $agency_name,
-            $audit_data,
-            $audit_url
-        );
         
         return new WP_REST_Response([
             'success' => true,
@@ -1273,22 +991,12 @@ class DG_Module_Marketing {
     }
     
     public function render_automation_dashboard() {
-        global $wpdb;
-        $table = $wpdb->prefix . 'dg_automation_audit_emails';
-        
-        if ($wpdb->get_var("SHOW TABLES LIKE '$table'") != $table) {
-            echo '<div class="wrap"><h1>📧 Email Automation</h1><div class="notice notice-warning"><p>No automation data yet. Submit a test audit to get started.</p></div></div>';
-            return;
-        }
-        
-        $stats = [
-            'total' => $wpdb->get_var("SELECT COUNT(*) FROM {$table}"),
-            'sent' => $wpdb->get_var("SELECT COUNT(*) FROM {$table} WHERE status = 'sent'"),
-            'pending' => $wpdb->get_var("SELECT COUNT(*) FROM {$table} WHERE status = 'pending'"),
-            'failed' => $wpdb->get_var("SELECT COUNT(*) FROM {$table} WHERE status = 'failed'"),
-        ];
-        
-        $recent = $wpdb->get_results("SELECT * FROM {$table} ORDER BY created_at DESC LIMIT 20");
+        $stats = class_exists('DG_Marketing_Audit_Followups')
+            ? DG_Marketing_Audit_Followups::queue_stats()
+            : ['total' => 0, 'sent' => 0, 'pending' => 0, 'failed' => 0];
+        $recent = class_exists('DG_Marketing_Audit_Followups')
+            ? DG_Marketing_Audit_Followups::recent_queue(20)
+            : [];
         ?>
         <div class="wrap">
             <h1>📧 Agency Audit Automation</h1>
@@ -1385,12 +1093,8 @@ class DG_Module_Marketing {
             wp_redirect(admin_url('admin.php?page=dg-platform-clients&error=missing_fields'));
             exit;
         }
-        
-        $this->wpdb->insert($this->wpdb->prefix . 'dg_platform_companies', $data);
-        $company_id = (int) $this->wpdb->insert_id;
-        if ($company_id && class_exists('DG_Marketing_Clients')) {
-            DG_Marketing_Clients::sync_company($company_id);
-        }
+
+        DG_Marketing_Clients::create($data);
         wp_redirect(admin_url('admin.php?page=dg-platform-clients&added=1'));
         exit;
     }
@@ -1422,15 +1126,8 @@ class DG_Module_Marketing {
             wp_redirect(admin_url('admin.php?page=dg-platform-clients&error=missing_fields'));
             exit;
         }
-        
-        $this->wpdb->update(
-            $this->wpdb->prefix . 'dg_platform_companies',
-            $data,
-            ['id' => $client_id]
-        );
-        if (class_exists('DG_Marketing_Clients')) {
-            DG_Marketing_Clients::sync_company($client_id);
-        }
+
+        DG_Marketing_Clients::update($client_id, $data);
         wp_redirect(admin_url('admin.php?page=dg-platform-clients&edited=1'));
         exit;
     }
@@ -1443,9 +1140,7 @@ class DG_Module_Marketing {
         
         $client_id = intval($_GET['client_id']);
         if ($client_id) {
-            $this->wpdb->delete($this->wpdb->prefix . 'dg_platform_companies', ['id' => $client_id]);
-            $this->wpdb->delete($this->wpdb->prefix . 'dg_platform_contacts', ['company_id' => $client_id]);
-            $this->wpdb->delete($this->wpdb->prefix . 'dg_platform_notes', ['company_id' => $client_id]);
+            DG_Marketing_Clients::delete($client_id);
         }
         wp_redirect(admin_url('admin.php?page=dg-platform-clients&deleted=1'));
         exit;
@@ -1617,10 +1312,7 @@ class DG_Module_Marketing {
         $this->require_manage_audits();
         
         $company_id = intval($_POST['company_id']);
-        $company = $this->wpdb->get_row($this->wpdb->prepare(
-            "SELECT * FROM {$this->wpdb->prefix}dg_platform_companies WHERE id = %d",
-            $company_id
-        ));
+        $company = DG_Marketing_Clients::get($company_id);
         
         if (!$company) {
             wp_redirect(admin_url('admin.php?page=dg-platform-audits&error=1'));
@@ -1843,7 +1535,10 @@ class DG_Module_Marketing {
     public function render_audits() {
         global $wpdb;
         $audits = $wpdb->get_results("SELECT a.*, c.company_name FROM {$wpdb->prefix}dg_platform_audits a LEFT JOIN {$wpdb->prefix}dg_platform_companies c ON a.company_id = c.id ORDER BY a.audit_date DESC LIMIT 50");
-        $clients = $wpdb->get_results("SELECT id, company_name FROM {$wpdb->prefix}dg_platform_companies ORDER BY company_name");
+        $client_options = DG_Marketing_Clients::list_clients(['limit' => 500]);
+        $clients = array_map(function ($c) {
+            return (object) ['id' => $c->id, 'company_name' => $c->company_name];
+        }, $client_options);
         ?>
         <div class="wrap">
             <h1>🔍 Visibility Audits</h1>
@@ -1951,7 +1646,7 @@ class DG_Module_Marketing {
     
     private function render_client_list() {
         global $wpdb;
-        $clients = $wpdb->get_results("SELECT * FROM {$wpdb->prefix}dg_platform_companies ORDER BY created_at DESC");
+        $clients = DG_Marketing_Clients::list_clients(['limit' => 500]);
         foreach ($clients as $client) {
             $client->contact_count = $wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM {$wpdb->prefix}dg_platform_contacts WHERE company_id = %d", $client->id));
             $client->note_count = $wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM {$wpdb->prefix}dg_platform_notes WHERE company_id = %d", $client->id));
@@ -1991,7 +1686,7 @@ class DG_Module_Marketing {
     
     private function render_client_view($client_id) {
         global $wpdb;
-        $client = $wpdb->get_row($wpdb->prepare("SELECT * FROM {$wpdb->prefix}dg_platform_companies WHERE id = %d", $client_id));
+        $client = DG_Marketing_Clients::get($client_id);
         if (!$client) { echo '<div class="wrap"><div class="notice notice-error"><p>Client not found.</p></div></div>'; return; }
         $contacts = $wpdb->get_results($wpdb->prepare("SELECT * FROM {$wpdb->prefix}dg_platform_contacts WHERE company_id = %d ORDER BY is_primary DESC, created_at DESC", $client_id));
         $notes = $wpdb->get_results($wpdb->prepare("SELECT * FROM {$wpdb->prefix}dg_platform_notes WHERE company_id = %d ORDER BY created_at DESC", $client_id));
@@ -2152,7 +1847,7 @@ class DG_Module_Marketing {
     
     private function render_client_edit($client_id) {
         global $wpdb;
-        $client = $wpdb->get_row($wpdb->prepare("SELECT * FROM {$wpdb->prefix}dg_platform_companies WHERE id = %d", $client_id));
+        $client = DG_Marketing_Clients::get($client_id);
         if (!$client) { echo '<div class="wrap"><div class="notice notice-error"><p>Client not found.</p></div></div>'; return; }
         ?>
         <div class="wrap">
@@ -2179,24 +1874,6 @@ class DG_Module_Marketing {
         <?php
     }
 }
-
-// ============================================================
-// CRON JOB SETUP
-// ============================================================
-
-add_filter('cron_schedules', function($schedules) {
-    $schedules['every_15_minutes'] = [
-        'interval' => 900,
-        'display' => __('Every 15 Minutes')
-    ];
-    return $schedules;
-});
-
-add_action('init', function() {
-    if (!wp_next_scheduled('dg_process_audit_emails')) {
-        wp_schedule_event(time(), 'every_15_minutes', 'dg_process_audit_emails');
-    }
-});
 
 // ============================================================
 // REGISTER MODULE

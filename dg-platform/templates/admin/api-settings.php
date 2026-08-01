@@ -79,11 +79,9 @@
                 <tr><th>Google PageSpeed API Key</th><td><input type="text" name="pagespeed" value="<?php echo esc_attr(DG_Integrations::get_api_key('pagespeed')); ?>" class="regular-text"></td></tr>
                 <tr><th>OpenAI API Key</th><td><input type="text" name="openai" value="<?php echo esc_attr(DG_Integrations::get_api_key('openai')); ?>" class="regular-text"></td></tr>
                 <tr><th>Google Gemini API Key</th><td><input type="text" name="gemini" value="<?php echo esc_attr(DG_Integrations::get_api_key('gemini')); ?>" class="regular-text"></td></tr>
-                <tr><th colspan="2"><h3>Marketing Integrations</h3></th></tr>
-                <tr><th>Rank Math API Key</th><td><input type="text" name="rankmath" value="<?php echo esc_attr(DG_Integrations::get_api_key('rankmath')); ?>" class="regular-text"></td></tr>
+                <tr><th colspan="2"><h3>Google Integrations</h3></th></tr>
                 <tr><th>Google Search Console</th><td><input type="text" name="gsc" value="<?php echo esc_attr(DG_Integrations::get_api_key('gsc')); ?>" class="regular-text"></td></tr>
                 <tr><th>Google Business Profile</th><td><input type="text" name="gbp" value="<?php echo esc_attr(DG_Integrations::get_api_key('gbp')); ?>" class="regular-text"></td></tr>
-                <tr><th>FluentCRM API Key</th><td><input type="text" name="fluentcrm" value="<?php echo esc_attr(DG_Integrations::get_api_key('fluentcrm')); ?>" class="regular-text"></td></tr>
                 <tr><th colspan="2"><h3>Communication & Payments</h3></th></tr>
                 <tr><th>Twilio SID</th><td><input type="text" name="twilio_sid" value="<?php echo esc_attr(DG_Integrations::get_api_key('twilio_sid')); ?>" class="regular-text"></td></tr>
                 <tr><th>Twilio Token</th><td><input type="text" name="twilio_token" value="<?php echo esc_attr(DG_Integrations::get_api_key('twilio_token')); ?>" class="regular-text"></td></tr>

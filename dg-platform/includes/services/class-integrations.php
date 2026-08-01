@@ -20,10 +20,8 @@ class DG_Integrations {
             'twilio_token' => 'dg_twilio_token',
             'twilio_from' => 'dg_twilio_from',
             'stripe_secret' => 'dg_stripe_secret_key',
-            'rankmath' => 'dg_rankmath_api_key',
             'gsc' => 'dg_gsc_credentials',
             'gbp' => 'dg_gbp_credentials',
-            'fluentcrm' => 'dg_fluentcrm_api_key',
         ];
         $option = $keys[$service] ?? 'dg_' . $service . '_api_key';
         return get_option($option, '');
@@ -72,14 +70,6 @@ class DG_Integrations {
         return true;
     }
 
-    public static function get_seo_score($url) {
-        $key = self::get_api_key('rankmath');
-        if (!$key) {
-            return ['available' => false, 'message' => 'Rank Math integration not configured.'];
-        }
-        return apply_filters('dg_integrations_seo_score', ['available' => true, 'score' => null, 'url' => $url]);
-    }
-
     public static function get_gsc_data($site_url) {
         if (!self::get_api_key('gsc')) {
             return ['available' => false, 'message' => 'Google Search Console not configured.'];
@@ -94,27 +84,14 @@ class DG_Integrations {
         return apply_filters('dg_integrations_gbp_data', ['available' => true, 'location_id' => $location_id]);
     }
 
-    public static function sync_fluentcrm_contact($contact_id) {
-        if (!self::get_api_key('fluentcrm') || !function_exists('FluentCrmApi')) {
-            return false;
-        }
-        $contact = DG_Contacts::get($contact_id);
-        if (!$contact) {
-            return false;
-        }
-        return apply_filters('dg_integrations_fluentcrm_sync', true, $contact);
-    }
-
     public static function get_integration_status() {
         return [
             'pagespeed' => (bool) self::get_api_key('pagespeed'),
             'openai' => (bool) self::get_api_key('openai'),
             'gemini' => (bool) self::get_api_key('gemini'),
             'twilio' => (bool) (self::get_api_key('twilio_sid') && self::get_api_key('twilio_token')),
-            'rankmath' => (bool) (self::get_api_key('rankmath') && apply_filters('dg_integrations_rankmath_active', false)),
             'gsc' => (bool) (self::get_api_key('gsc') && apply_filters('dg_integrations_gsc_active', false)),
             'gbp' => (bool) (self::get_api_key('gbp') && apply_filters('dg_integrations_gbp_active', false)),
-            'fluentcrm' => (bool) (self::get_api_key('fluentcrm') && function_exists('FluentCrmApi')),
             'stripe' => (bool) self::get_api_key('stripe_secret'),
         ];
     }

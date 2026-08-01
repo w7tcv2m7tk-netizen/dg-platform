@@ -12,7 +12,7 @@ if (!defined('ABSPATH')) {
 class DG_Marketing_Pipeline_Reports {
 
     public static function companies_table() {
-        return DG_Marketing_Clients::companies_table();
+        return DG_Marketing_Clients::primary_table();
     }
 
     public static function status_counts() {

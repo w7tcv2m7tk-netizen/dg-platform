@@ -129,8 +129,17 @@ class DG_Organisations {
         ];
         if ($existing) {
             $wpdb->update($legacy, $row, ['id' => $existing]);
+            $legacy_id = (int) $existing;
         } else {
             $wpdb->insert($legacy, $row);
+            $legacy_id = (int) $wpdb->insert_id;
+        }
+
+        if (!empty($legacy_id) && $wpdb->get_var('SHOW COLUMNS FROM ' . self::table() . " LIKE 'legacy_id'")) {
+            $wpdb->update(self::table(), [
+                'legacy_table' => 'dg_platform_companies',
+                'legacy_id' => $legacy_id,
+            ], ['id' => (int) $org_id]);
         }
     }
 
