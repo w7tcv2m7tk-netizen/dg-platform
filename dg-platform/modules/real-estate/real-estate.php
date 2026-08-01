@@ -55,6 +55,8 @@ class DG_Module_RealEstate {
         add_action('wp_ajax_nopriv_roe_crm_get_available_slots', [$this, 'get_available_slots_callback']);
         add_action('wp_ajax_roe_crm_create_booking', [$this, 'create_booking_callback']);
         add_action('wp_ajax_nopriv_roe_crm_create_booking', [$this, 'create_booking_callback']);
+        add_action('wp_ajax_dg_re_form_nonces', [$this, 'form_nonces_callback']);
+        add_action('wp_ajax_nopriv_dg_re_form_nonces', [$this, 'form_nonces_callback']);
         
         // Shortcodes
         add_shortcode('roe_properties', [$this, 'properties_shortcode']);
@@ -459,6 +461,25 @@ class DG_Module_RealEstate {
             DG_PLATFORM_VERSION
         );
         wp_enqueue_style('roe-frontend');
+
+        wp_register_script(
+            'roe-frontend',
+            DG_PLATFORM_URL . 'assets/js/roe-frontend.js',
+            [],
+            DG_PLATFORM_VERSION,
+            true
+        );
+        wp_localize_script('roe-frontend', 'dgReForms', [
+            'ajaxUrl' => admin_url('admin-ajax.php'),
+        ]);
+        wp_enqueue_script('roe-frontend');
+    }
+
+    public function form_nonces_callback() {
+        if (!class_exists('DG_RE_Form_Security')) {
+            wp_send_json_error(['message' => 'Unavailable.'], 500);
+        }
+        DG_RE_Form_Security::send_nonce_response();
     }
     
     // ... (rest of the module code remains the same - all the methods below here are unchanged)

@@ -14,6 +14,9 @@ if (!defined('ABSPATH')) {
 }
 
 function roe_crm_booking_form_shortcode($atts = []) {
+    if (!defined('DONOTCACHEPAGE')) {
+        define('DONOTCACHEPAGE', true);
+    }
     $atts = shortcode_atts([
         'service' => '',
         'title' => '',
@@ -155,9 +158,12 @@ function roe_crm_booking_form_shortcode($atts = []) {
                 return;
             }
             slotsEl.innerHTML = '<div class="roe-slot-empty">Loading...</div>';
+            const slotNonce = (window.dgReForms && window.dgReForms.getNonce)
+                ? await window.dgReForms.getNonce('booking_slots', slotsNonce)
+                : slotsNonce;
             const body = new URLSearchParams();
             body.append('action', 'roe_crm_get_available_slots');
-            body.append('dg_re_nonce', slotsNonce);
+            body.append('dg_re_nonce', slotNonce);
             body.append('service_id', meta.id);
             body.append('date', date);
             const res = await fetch(ajaxUrl, { method: 'POST', body: body.toString() });
@@ -202,9 +208,12 @@ function roe_crm_booking_form_shortcode($atts = []) {
             submitBtn.disabled = true;
             showStatus('Booking...', true);
             const honeypot = form.querySelector('[name="website"]');
+            const bookNonce = (window.dgReForms && window.dgReForms.getNonce)
+                ? await window.dgReForms.getNonce('create_booking', ajaxNonce)
+                : ajaxNonce;
             const body = new URLSearchParams();
             body.append('action', 'roe_crm_create_booking');
-            body.append('dg_re_nonce', ajaxNonce);
+            body.append('dg_re_nonce', bookNonce);
             body.append('name', document.getElementById('roeBookingName').value.trim());
             body.append('email', document.getElementById('roeBookingEmail').value.trim());
             body.append('phone', document.getElementById('roeBookingPhone').value.trim());

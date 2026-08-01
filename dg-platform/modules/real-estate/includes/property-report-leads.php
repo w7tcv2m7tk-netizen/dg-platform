@@ -138,6 +138,9 @@ function dg_re_store_property_report_lead($lead) {
 }
 
 function roe_crm_property_report_form_shortcode() {
+    if (!defined('DONOTCACHEPAGE')) {
+        define('DONOTCACHEPAGE', true);
+    }
     $ajax_url = admin_url('admin-ajax.php');
     $nonce = class_exists('DG_RE_Form_Security') ? DG_RE_Form_Security::nonce_field('property_report') : '';
     ob_start();
@@ -224,9 +227,13 @@ function roe_crm_property_report_form_shortcode() {
             submitBtn.disabled = true;
             showStatus('Sending...', 'loading');
 
+            const nonce = (window.dgReForms && window.dgReForms.getNonce)
+                ? await window.dgReForms.getNonce('property_report', ajaxNonce)
+                : ajaxNonce;
+
             const payload = new URLSearchParams();
             payload.append('action', 'roe_realty_save_lead');
-            payload.append('dg_re_nonce', ajaxNonce);
+            payload.append('dg_re_nonce', nonce);
             payload.append('fullName', fullName);
             payload.append('email', email);
             payload.append('phone', phone);

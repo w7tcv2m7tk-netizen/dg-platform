@@ -14,6 +14,19 @@ class DG_RE_Form_Security {
     const RATE_WINDOW = 3600;
     const RATE_MAX = 15;
 
+    public static function nonce_bundle() {
+        return [
+            'property_report' => self::nonce_field('property_report'),
+            'create_booking' => self::nonce_field('create_booking'),
+            'booking_slots' => self::nonce_field('booking_slots'),
+        ];
+    }
+
+    public static function send_nonce_response() {
+        nocache_headers();
+        wp_send_json_success(self::nonce_bundle());
+    }
+
     public static function nonce_field($action) {
         return wp_create_nonce('dg_re_' . $action);
     }
