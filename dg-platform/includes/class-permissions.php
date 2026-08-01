@@ -55,6 +55,7 @@ class DG_Permissions {
             'dg_marketing_manage_ai',
             'dg_marketing_view_voice',
             'dg_marketing_manage_voice',
+            'dg_marketing_import_contacts',
         ];
 
         $real_estate = [
@@ -132,6 +133,7 @@ class DG_Permissions {
             'dg_marketing_manage_ai' => true,
             'dg_marketing_view_voice' => true,
             'dg_marketing_manage_voice' => true,
+            'dg_marketing_import_contacts' => true,
         ]);
     }
 

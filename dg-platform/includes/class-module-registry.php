@@ -40,7 +40,7 @@ class DG_Module_Registry {
                 'name' => 'Digital Marketing',
                 'icon' => '📊',
                 'description' => 'Agency clients, AI Visibility, Voice Agent, Audits',
-                'version' => '10.0.0',
+                'version' => '10.1.0',
                 'class' => 'DG_Module_Marketing',
                 'file' => 'marketing/marketing.php',
                 'is_core' => false,

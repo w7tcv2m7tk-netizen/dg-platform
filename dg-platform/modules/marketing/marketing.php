@@ -1,7 +1,7 @@
 <?php
 /**
- * Marketing Module - Complete with 5-Email Automation
- * Version: 9.2.0
+ * Marketing Module - DigitalGate agency CRM, audits, voice agent
+ * Version: 10.1.0
  */
 
 if (!defined('ABSPATH')) exit;
@@ -29,6 +29,7 @@ class DG_Module_Marketing {
         global $wpdb;
         $this->core = $core;
         $this->wpdb = $wpdb;
+        $this->load_includes();
         
         $this->pagespeed_api_key = get_option('dg_pagespeed_api_key', '');
         $this->openai_api_key = get_option('dg_openai_api_key', '');
@@ -55,6 +56,7 @@ class DG_Module_Marketing {
         add_action('admin_post_dg_marketing_delete_note', [$this, 'handle_delete_note']);
         add_action('admin_post_dg_marketing_generate_audit', [$this, 'handle_generate_audit']);
         add_action('admin_post_dg_marketing_delete_audit', [$this, 'handle_delete_audit']);
+        add_action('admin_post_dg_marketing_import_csv', ['DG_Marketing_Import', 'handle_upload']);
         
         add_action('rest_api_init', [$this, 'register_rest_routes']);
         
@@ -72,6 +74,33 @@ class DG_Module_Marketing {
         // CREATE AUTOMATION TABLE ON INIT
         // ============================================================
         add_action('init', [$this, 'create_automation_table']);
+    }
+
+    private function load_includes() {
+        $dir = __DIR__ . '/includes/';
+        foreach ([
+            'class-marketing-permissions.php',
+            'class-marketing-clients.php',
+            'class-marketing-import.php',
+            'class-marketing-voice.php',
+        ] as $file) {
+            $path = $dir . $file;
+            if (file_exists($path)) {
+                require_once $path;
+            }
+        }
+    }
+
+    private function require_manage_clients() {
+        if (!DG_Marketing_Permissions::can_manage_clients() && !current_user_can('manage_options')) {
+            wp_die('Unauthorized');
+        }
+    }
+
+    private function require_manage_audits() {
+        if (!DG_Marketing_Permissions::can_manage_audits() && !current_user_can('manage_options')) {
+            wp_die('Unauthorized');
+        }
     }
     
     // ============================================================
@@ -110,12 +139,10 @@ class DG_Module_Marketing {
     // ============================================================
     
     public function register_rest_routes() {
-        register_rest_route('digitalgate/v1', '/voice-agent', [
-            'methods' => ['POST'],
-            'callback' => [$this, 'voice_agent_webhook'],
-            'permission_callback' => '__return_true'
-        ]);
-        
+        if (class_exists('DG_Marketing_Voice')) {
+            DG_Marketing_Voice::register_routes();
+        }
+
         register_rest_route('dg/v1', '/audit-webhook', [
             'methods' => 'POST',
             'callback' => [$this, 'handle_audit_webhook'],
@@ -123,79 +150,7 @@ class DG_Module_Marketing {
         ]);
     }
     
-    // ============================================================
-    // VOICE AGENT WEBHOOK
-    // ============================================================
-    
-    public function voice_agent_webhook($request) {
-        $data = $request->get_json_params();
-        if (!$data) {
-            $body = $request->get_body();
-            $data = json_decode($body, true);
-        }
-        
-        if (empty($data['email'])) {
-            return new WP_REST_Response(['success' => false, 'message' => 'Email required'], 400);
-        }
-        
-        $company = $this->wpdb->get_row($this->wpdb->prepare(
-            "SELECT id FROM {$this->wpdb->prefix}dg_platform_companies WHERE email = %s",
-            $data['email']
-        ));
-        
-        if (!$company) {
-            $this->wpdb->insert($this->wpdb->prefix . 'dg_platform_companies', [
-                'company_name' => sanitize_text_field($data['business_name'] ?? $data['name'] . ' Agency'),
-                'email' => sanitize_email($data['email']),
-                'phone' => sanitize_text_field($data['phone'] ?? ''),
-                'suburb' => sanitize_text_field($data['agency_location'] ?? ''),
-                'source' => 'voice_agent',
-                'status' => 'lead',
-                'created_at' => current_time('mysql')
-            ]);
-            $company_id = $this->wpdb->insert_id;
-        } else {
-            $company_id = $company->id;
-        }
-        
-        $score = 0;
-        if (!empty($data['business_name'])) $score += 10;
-        if (!empty($data['website_url'])) $score += 10;
-        if (!empty($data['service_interest'])) $score += 15;
-        if (!empty($data['budget_range'])) $score += 15;
-        if (!empty($data['agency_size'])) $score += 10;
-        
-        $summary = strtolower($data['ai_call_summary'] ?? '');
-        $keywords = ['growth', 'increase', 'more', 'better', 'expand', 'scale'];
-        foreach ($keywords as $keyword) {
-            if (strpos($summary, $keyword) !== false) {
-                $score += 20;
-                break;
-            }
-        }
-        $score = min($score, 100);
-        $qualified = $score >= 50;
-        $quality = $score >= 70 ? 'hot' : ($score >= 50 ? 'warm' : 'cold');
-        
-        $this->wpdb->insert($this->wpdb->prefix . 'dg_platform_voice_logs', [
-            'company_id' => $company_id,
-            'call_summary' => sanitize_textarea_field($data['ai_call_summary'] ?? ''),
-            'call_transcript' => sanitize_textarea_field($data['ai_transcript'] ?? ''),
-            'lead_score' => $score,
-            'is_qualified' => $qualified ? 1 : 0,
-            'lead_quality' => $quality,
-            'call_data' => json_encode($data),
-            'created_at' => current_time('mysql')
-        ]);
-        
-        return new WP_REST_Response([
-            'success' => true,
-            'company_id' => $company_id,
-            'lead_score' => $score,
-            'is_qualified' => $qualified,
-            'lead_quality' => $quality
-        ], 200);
-    }
+    // Voice agent webhook — see DG_Marketing_Voice
     
     // ============================================================
     // HELPER: FORMAT WEBSITE URL
@@ -1233,16 +1188,18 @@ class DG_Module_Marketing {
     // ============================================================
     
     public function register_menus() {
-        add_submenu_page('dg-platform', 'Agency Clients', '🤝 Agency Clients', 'manage_options', 'dg-platform-clients', [$this, 'render_clients']);
-        add_submenu_page('dg-platform', 'Voice Agent', '🎙️ Voice Agent', 'manage_options', 'dg-platform-voice', [$this, 'render_voice']);
-        add_submenu_page('dg-platform', 'Visibility Audits', '🔍 Audits', 'manage_options', 'dg-platform-audits', [$this, 'render_audits']);
-        add_submenu_page('dg-platform', 'AI Visibility', '🤖 AI Visibility', 'manage_options', 'dg-platform-ai', [$this, 'render_ai']);
+        add_submenu_page('dg-platform', 'Agency Clients', '🤝 Agency Clients', DG_Marketing_Permissions::menu_cap_clients(), 'dg-platform-clients', [$this, 'render_clients']);
+        add_submenu_page('dg-platform', 'Import Contacts', '📥 Import Contacts', DG_Marketing_Permissions::menu_cap_import(), 'dg-marketing-import', ['DG_Marketing_Import', 'render_admin_page']);
+        add_submenu_page('dg-platform', 'Voice Agent', '🎙️ Voice Agent', DG_Marketing_Permissions::menu_cap_voice(), 'dg-platform-voice', [$this, 'render_voice']);
+        add_submenu_page('dg-platform', 'Visibility Audits', '🔍 Audits', DG_Marketing_Permissions::menu_cap_audits(), 'dg-platform-audits', [$this, 'render_audits']);
+        add_submenu_page('dg-platform', 'AI Visibility', '🤖 AI Visibility', DG_Marketing_Permissions::menu_cap_ai(), 'dg-platform-ai', [$this, 'render_ai']);
     }
     
     public function quick_actions() {
         echo '<a href="' . admin_url('admin.php?page=dg-platform-clients') . '" class="button">🤝 Clients</a>';
         echo '<a href="' . admin_url('admin.php?page=dg-platform-voice') . '" class="button">🎙️ Voice</a>';
         echo '<a href="' . admin_url('admin.php?page=dg-platform-audits') . '" class="button">🔍 Audits</a>';
+        echo '<a href="' . admin_url('admin.php?page=dg-marketing-import') . '" class="button">📥 Import</a>';
     }
     
     // ============================================================
@@ -1254,7 +1211,7 @@ class DG_Module_Marketing {
             'dg-platform',
             'Email Automation',
             '📧 Automation',
-            'manage_options',
+            DG_Marketing_Permissions::menu_cap_clients(),
             'dg-platform-automation',
             [$this, 'render_automation_dashboard']
         );
@@ -1355,9 +1312,7 @@ class DG_Module_Marketing {
         if (!wp_verify_nonce($_POST['_wpnonce'], 'dg_marketing_add_client')) {
             wp_die('Invalid nonce');
         }
-        if (!current_user_can('manage_options')) {
-            wp_die('Unauthorized');
-        }
+        $this->require_manage_clients();
         
         $data = [
             'company_name' => sanitize_text_field($_POST['company_name']),
@@ -1377,6 +1332,10 @@ class DG_Module_Marketing {
         }
         
         $this->wpdb->insert($this->wpdb->prefix . 'dg_platform_companies', $data);
+        $company_id = (int) $this->wpdb->insert_id;
+        if ($company_id && class_exists('DG_Marketing_Clients')) {
+            DG_Marketing_Clients::sync_company($company_id);
+        }
         wp_redirect(admin_url('admin.php?page=dg-platform-clients&added=1'));
         exit;
     }
@@ -1385,9 +1344,7 @@ class DG_Module_Marketing {
         if (!wp_verify_nonce($_POST['_wpnonce'], 'dg_marketing_edit_client')) {
             wp_die('Invalid nonce');
         }
-        if (!current_user_can('manage_options')) {
-            wp_die('Unauthorized');
-        }
+        $this->require_manage_clients();
         
         $client_id = intval($_POST['client_id']);
         if (!$client_id) {
@@ -1416,6 +1373,9 @@ class DG_Module_Marketing {
             $data,
             ['id' => $client_id]
         );
+        if (class_exists('DG_Marketing_Clients')) {
+            DG_Marketing_Clients::sync_company($client_id);
+        }
         wp_redirect(admin_url('admin.php?page=dg-platform-clients&edited=1'));
         exit;
     }
@@ -1424,9 +1384,7 @@ class DG_Module_Marketing {
         if (!wp_verify_nonce($_GET['_wpnonce'], 'dg_marketing_delete_client')) {
             wp_die('Invalid nonce');
         }
-        if (!current_user_can('manage_options')) {
-            wp_die('Unauthorized');
-        }
+        $this->require_manage_clients();
         
         $client_id = intval($_GET['client_id']);
         if ($client_id) {
@@ -1446,9 +1404,7 @@ class DG_Module_Marketing {
         if (!wp_verify_nonce($_POST['_wpnonce'], 'dg_marketing_add_contact')) {
             wp_die('Invalid nonce');
         }
-        if (!current_user_can('manage_options')) {
-            wp_die('Unauthorized');
-        }
+        $this->require_manage_clients();
         
         $data = [
             'company_id' => intval($_POST['company_id']),
@@ -1468,6 +1424,9 @@ class DG_Module_Marketing {
         }
         
         $this->wpdb->insert($this->wpdb->prefix . 'dg_platform_contacts', $data);
+        if (class_exists('DG_Marketing_Clients')) {
+            DG_Marketing_Clients::sync_company((int) $data['company_id']);
+        }
         wp_redirect(admin_url('admin.php?page=dg-platform-clients&tab=contacts&client_id=' . $data['company_id'] . '&added=1'));
         exit;
     }
@@ -1476,9 +1435,7 @@ class DG_Module_Marketing {
         if (!wp_verify_nonce($_POST['_wpnonce'], 'dg_marketing_edit_contact')) {
             wp_die('Invalid nonce');
         }
-        if (!current_user_can('manage_options')) {
-            wp_die('Unauthorized');
-        }
+        $this->require_manage_clients();
         
         $contact_id = intval($_POST['contact_id']);
         if (!$contact_id) {
@@ -1516,9 +1473,7 @@ class DG_Module_Marketing {
         if (!wp_verify_nonce($_GET['_wpnonce'], 'dg_marketing_delete_contact')) {
             wp_die('Invalid nonce');
         }
-        if (!current_user_can('manage_options')) {
-            wp_die('Unauthorized');
-        }
+        $this->require_manage_clients();
         
         $contact_id = intval($_GET['contact_id']);
         $company_id = intval($_GET['company_id']);
@@ -1537,9 +1492,7 @@ class DG_Module_Marketing {
         if (!wp_verify_nonce($_POST['_wpnonce'], 'dg_marketing_add_note')) {
             wp_die('Invalid nonce');
         }
-        if (!current_user_can('manage_options')) {
-            wp_die('Unauthorized');
-        }
+        $this->require_manage_clients();
         
         $company_id = intval($_POST['company_id']);
         $content = sanitize_textarea_field($_POST['content']);
@@ -1563,9 +1516,7 @@ class DG_Module_Marketing {
         if (!wp_verify_nonce($_POST['_wpnonce'], 'dg_marketing_edit_note')) {
             wp_die('Invalid nonce');
         }
-        if (!current_user_can('manage_options')) {
-            wp_die('Unauthorized');
-        }
+        $this->require_manage_clients();
         
         $note_id = intval($_POST['note_id']);
         $content = sanitize_textarea_field($_POST['content']);
@@ -1589,9 +1540,7 @@ class DG_Module_Marketing {
         if (!wp_verify_nonce($_GET['_wpnonce'], 'dg_marketing_delete_note')) {
             wp_die('Invalid nonce');
         }
-        if (!current_user_can('manage_options')) {
-            wp_die('Unauthorized');
-        }
+        $this->require_manage_clients();
         
         $note_id = intval($_GET['note_id']);
         $company_id = intval($_GET['company_id']);
@@ -1610,9 +1559,7 @@ class DG_Module_Marketing {
         if (!wp_verify_nonce($_POST['_wpnonce'], 'dg_marketing_generate_audit')) {
             wp_die('Invalid nonce');
         }
-        if (!current_user_can('manage_options')) {
-            wp_die('Unauthorized');
-        }
+        $this->require_manage_audits();
         
         $company_id = intval($_POST['company_id']);
         $company = $this->wpdb->get_row($this->wpdb->prepare(
@@ -1706,9 +1653,7 @@ class DG_Module_Marketing {
         if (!wp_verify_nonce($_GET['_wpnonce'], 'dg_marketing_delete_audit')) {
             wp_die('Invalid nonce');
         }
-        if (!current_user_can('manage_options')) {
-            wp_die('Unauthorized');
-        }
+        $this->require_manage_audits();
         
         $audit_id = intval($_GET['audit_id']);
         if ($audit_id) {

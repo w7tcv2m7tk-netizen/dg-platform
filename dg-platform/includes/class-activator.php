@@ -16,9 +16,10 @@ class DG_Activator {
         self::migrate_legacy_contacts();
         DG_Permissions::register_capabilities();
         DG_Permissions::install_role_templates();
+        DG_Site_Profile::maybe_apply_defaults();
 
         if (!get_option('dg_platform_active_modules')) {
-            update_option('dg_platform_active_modules', ['core', 'marketing']);
+            update_option('dg_platform_active_modules', DG_Site_Profile::recommended_modules());
         }
 
         if (!file_exists(DG_MODULES_PATH)) {
