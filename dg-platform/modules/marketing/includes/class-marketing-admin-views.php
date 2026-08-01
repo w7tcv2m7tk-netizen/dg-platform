@@ -21,18 +21,18 @@ class DG_Marketing_Admin_Views {
         ?>
         <div class="wrap dg-platform-wrap">
             <h1>📊 DigitalGate CRM</h1>
-            <p style="color:#64748B;">Agency clients, AI visibility audits, voice leads, and automation.</p>
-            <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin:20px 0;">
+            <p class="dg-muted-subtle">Agency clients, AI visibility audits, voice leads, and automation.</p>
+            <div class="dg-stats-grid dg-stats-grid-4">
                 <?php self::stat_card('Agency Clients', $conversion['total'], '#3B82F6'); ?>
                 <?php self::stat_card('New (30d)', $activity['new_clients'], '#34D399'); ?>
                 <?php self::stat_card('Audits (30d)', $activity['audits'], '#8B5CF6'); ?>
                 <?php self::stat_card('Voice Leads (30d)', $activity['voice_leads'], '#F59E0B'); ?>
             </div>
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px;">
+            <div class="dg-two-col-grid">
                 <div class="dg-panel">
                     <h2>Pipeline conversion</h2>
                     <p><strong><?php echo esc_html($conversion['rate']); ?>%</strong> lead → engaged/client</p>
-                    <p style="color:#64748B;">Avg AI visibility (90d): <strong><?php echo esc_html($averages['ai_avg']); ?>%</strong> · Scans: <?php echo (int) $averages['scans']; ?></p>
+                    <p class="dg-muted-subtle">Avg AI visibility (90d): <strong><?php echo esc_html($averages['ai_avg']); ?>%</strong> · Scans: <?php echo (int) $averages['scans']; ?></p>
                 </div>
                 <div class="dg-panel">
                     <h2>Quick actions</h2>
@@ -58,7 +58,7 @@ class DG_Marketing_Admin_Views {
         ?>
         <div class="wrap dg-platform-wrap">
             <h1>📈 Pipeline Reports</h1>
-            <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin:20px 0;">
+            <div class="dg-stats-grid dg-stats-grid-4">
                 <?php self::stat_card('Audits this month', DG_Marketing_Pipeline_Reports::audits_this_month(), '#3B82F6'); ?>
                 <?php self::stat_card('Voice this month', DG_Marketing_Pipeline_Reports::voice_leads_this_month(), '#F59E0B'); ?>
                 <?php self::stat_card('Automation sent (7d)', $activity['automation_sent'], '#34D399'); ?>
@@ -90,14 +90,14 @@ class DG_Marketing_Admin_Views {
         <div class="wrap dg-platform-wrap">
             <h1>🗂️ Client Pipeline</h1>
             <?php if (!empty($_GET['updated'])) : ?><div class="notice notice-success"><p>Stage updated.</p></div><?php endif; ?>
-            <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;">
+            <div class="dg-kanban-grid">
             <?php foreach ($board as $status => $column) : ?>
-                <div class="dg-panel" style="min-height:200px;">
+                <div class="dg-panel" style="min-height:200px;margin-top:0;">
                     <h3><?php echo esc_html($column['label']); ?> (<?php echo count($column['clients']); ?>)</h3>
                     <?php foreach ($column['clients'] as $client) : ?>
-                        <div style="background:#F8FAFC;border:1px solid #E2E8F0;border-radius:8px;padding:10px;margin-bottom:8px;">
+                        <div class="dg-kanban-card">
                             <strong><?php echo esc_html($client->company_name); ?></strong><br>
-                            <span style="font-size:12px;color:#64748B;"><?php echo esc_html($client->email); ?></span><br>
+                            <span class="dg-kanban-card-meta"><?php echo esc_html($client->email); ?></span><br>
                             <a href="<?php echo esc_url(admin_url('admin.php?page=dg-platform-clients&client_id=' . $client->id . '&tab=view')); ?>">View</a>
                             <?php foreach (DG_Marketing_Client_Pipeline::stages() as $key => $label) :
                                 if ($key === ($client->status ?: 'lead')) continue; ?>
@@ -124,7 +124,7 @@ class DG_Marketing_Admin_Views {
         ?>
         <div class="wrap dg-platform-wrap">
             <h1>✉️ Email Templates</h1>
-            <p style="color:#64748B;">Placeholders: <?php echo esc_html(DG_Marketing_Email_Templates::placeholders_help()); ?></p>
+            <p class="dg-muted-subtle">Placeholders: <?php echo esc_html(DG_Marketing_Email_Templates::placeholders_help()); ?></p>
             <form method="post">
                 <?php wp_nonce_field('dg_marketing_email_templates'); ?>
                 <?php foreach ($templates as $key => $template) : ?>
@@ -173,7 +173,7 @@ class DG_Marketing_Admin_Views {
             }
             echo '</ul>';
         } else {
-            echo '<p style="color:#64748B;">No documents yet.</p>';
+            echo '<p class="dg-muted-subtle">No documents yet.</p>';
         }
         ?>
         <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>" style="margin-top:16px;">
@@ -189,9 +189,9 @@ class DG_Marketing_Admin_Views {
     }
 
     private static function stat_card($label, $value, $color) {
-        echo '<div class="dg-panel" style="border-left:4px solid ' . esc_attr($color) . ';">';
-        echo '<div style="font-size:28px;font-weight:700;">' . esc_html((string) $value) . '</div>';
-        echo '<div style="color:#64748B;">' . esc_html($label) . '</div></div>';
+        echo '<div class="dg-stat-card" style="border-left-color:' . esc_attr($color) . ';">';
+        echo '<div class="dg-stat-value">' . esc_html((string) $value) . '</div>';
+        echo '<div class="dg-stat-label">' . esc_html($label) . '</div></div>';
     }
 
     private static function render_status_table($statuses) {

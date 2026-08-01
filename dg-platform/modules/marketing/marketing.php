@@ -1,7 +1,7 @@
 <?php
 /**
  * Marketing Module - DigitalGate agency CRM, audits, voice agent
- * Version: 10.3.0
+ * Version: 10.3.1
  */
 
 if (!defined('ABSPATH')) exit;
@@ -1000,30 +1000,30 @@ class DG_Module_Marketing {
         ?>
         <div class="wrap">
             <h1>📧 Agency Audit Automation</h1>
-            <p style="color:#94A3B8;">Track the 5-email automation sequence sent after each audit request.</p>
-            
-            <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin:20px 0;">
-                <div style="background:#fff;padding:20px;border-radius:12px;border-left:4px solid #3B82F6;box-shadow:0 1px 3px rgba(0,0,0,0.05);">
-                    <div style="font-size:28px;font-weight:700;color:#1C2B2A;"><?php echo $stats['total']; ?></div>
-                    <div style="color:#666;">Total Emails</div>
+            <p class="dg-muted-subtle">Track the 5-email automation sequence sent after each audit request.</p>
+
+            <div class="dg-stats-grid dg-stats-grid-4">
+                <div class="dg-stat-card" style="border-left-color:#3B82F6;">
+                    <div class="dg-stat-value"><?php echo $stats['total']; ?></div>
+                    <div class="dg-stat-label">Total Emails</div>
                 </div>
-                <div style="background:#fff;padding:20px;border-radius:12px;border-left:4px solid #34D399;box-shadow:0 1px 3px rgba(0,0,0,0.05);">
-                    <div style="font-size:28px;font-weight:700;color:#1C2B2A;"><?php echo $stats['sent']; ?></div>
-                    <div style="color:#666;">Sent</div>
+                <div class="dg-stat-card" style="border-left-color:#34D399;">
+                    <div class="dg-stat-value"><?php echo $stats['sent']; ?></div>
+                    <div class="dg-stat-label">Sent</div>
                 </div>
-                <div style="background:#fff;padding:20px;border-radius:12px;border-left:4px solid #FBBF24;box-shadow:0 1px 3px rgba(0,0,0,0.05);">
-                    <div style="font-size:28px;font-weight:700;color:#1C2B2A;"><?php echo $stats['pending']; ?></div>
-                    <div style="color:#666;">Pending</div>
+                <div class="dg-stat-card" style="border-left-color:#FBBF24;">
+                    <div class="dg-stat-value"><?php echo $stats['pending']; ?></div>
+                    <div class="dg-stat-label">Pending</div>
                 </div>
-                <div style="background:#fff;padding:20px;border-radius:12px;border-left:4px solid #F87171;box-shadow:0 1px 3px rgba(0,0,0,0.05);">
-                    <div style="font-size:28px;font-weight:700;color:#1C2B2A;"><?php echo $stats['failed']; ?></div>
-                    <div style="color:#666;">Failed</div>
+                <div class="dg-stat-card" style="border-left-color:#F87171;">
+                    <div class="dg-stat-value"><?php echo $stats['failed']; ?></div>
+                    <div class="dg-stat-label">Failed</div>
                 </div>
             </div>
-            
-            <div style="background:#fff;padding:16px 20px;border-radius:12px;border:1px solid #ddd;margin-bottom:20px;">
+
+            <div class="dg-panel-inset" style="margin-bottom:20px;">
                 <h3 style="margin:0 0 8px 0;">📋 Email Sequence</h3>
-                <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px;font-size:13px;">
+                <div class="dg-sequence-grid">
                     <div><strong>#1</strong> Immediate: Audit Results</div>
                     <div><strong>#2</strong> 24h: AI Visibility Breakdown</div>
                     <div><strong>#3</strong> 48h: Website Performance</div>
@@ -1059,7 +1059,7 @@ class DG_Module_Marketing {
                             <td><?php echo date('M j, Y H:i', strtotime($email->sent_at)); ?></td>
                         </tr>
                     <?php endforeach; else : ?>
-                        <tr><td colspan="6" style="text-align:center;padding:30px;color:#999;">No automation emails yet. Submit an audit to start the sequence.</td></tr>
+                        <tr><td colspan="6" class="dg-empty-row">No automation emails yet. Submit an audit to start the sequence.</td></tr>
                     <?php endif; ?>
                 </tbody>
             </table>
@@ -1433,27 +1433,27 @@ class DG_Module_Marketing {
             'avg_score' => round($wpdb->get_var("SELECT AVG(lead_score) FROM {$wpdb->prefix}dg_platform_voice_logs"), 2)
         ];
         ?>
-        <div class="wrap">
+        <div class="wrap dg-platform-wrap">
             <h1>🎙️ Voice Agent</h1>
-            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin:20px 0;">
-                <div style="background:#fff;padding:20px;border-radius:12px;border-left:4px solid #1565C0;">
-                    <div style="font-size:28px;font-weight:700;color:#1C2B2A;"><?php echo $stats['total']; ?></div>
-                    <div style="color:#666;">Total Calls</div>
+            <div class="dg-stats-grid" style="grid-template-columns:repeat(3,1fr);">
+                <div class="dg-stat-card" style="border-left-color:#1565C0;">
+                    <div class="dg-stat-value"><?php echo $stats['total']; ?></div>
+                    <div class="dg-stat-label">Total Calls</div>
                 </div>
-                <div style="background:#fff;padding:20px;border-radius:12px;border-left:4px solid #2E7D32;">
-                    <div style="font-size:28px;font-weight:700;color:#1C2B2A;"><?php echo $stats['qualified']; ?></div>
-                    <div style="color:#666;">Qualified</div>
+                <div class="dg-stat-card" style="border-left-color:#2E7D32;">
+                    <div class="dg-stat-value"><?php echo $stats['qualified']; ?></div>
+                    <div class="dg-stat-label">Qualified</div>
                 </div>
-                <div style="background:#fff;padding:20px;border-radius:12px;border-left:4px solid #F57C00;">
-                    <div style="font-size:28px;font-weight:700;color:#1C2B2A;"><?php echo $stats['avg_score']; ?>%</div>
-                    <div style="color:#666;">Avg Score</div>
+                <div class="dg-stat-card" style="border-left-color:#F57C00;">
+                    <div class="dg-stat-value"><?php echo $stats['avg_score']; ?>%</div>
+                    <div class="dg-stat-label">Avg Score</div>
                 </div>
             </div>
-            <div style="background:#fff;padding:20px;border:1px solid #ddd;border-radius:12px;margin:20px 0;">
+            <div class="dg-panel">
                 <h2>📡 Webhook URL</h2>
-                <code style="display:block;background:#f5f5f5;padding:15px;border-radius:4px;margin:10px 0;word-break:break-all;"><?php echo home_url('/wp-json/digitalgate/v1/voice-agent'); ?></code>
+                <code class="dg-code-block"><?php echo home_url('/wp-json/digitalgate/v1/voice-agent'); ?></code>
                 <h3>Test Webhook</h3>
-                <button id="dg-test-webhook" class="button button-primary" style="font-size:16px;padding:10px 20px;">🚀 Send Test Lead</button>
+                <button id="dg-test-webhook" class="button button-primary">🚀 Send Test Lead</button>
                 <div id="dg-test-result" style="margin-top:15px;display:none;padding:15px;border-radius:4px;"></div>
             </div>
             <h2>Recent Calls</h2>
@@ -1540,11 +1540,11 @@ class DG_Module_Marketing {
             return (object) ['id' => $c->id, 'company_name' => $c->company_name];
         }, $client_options);
         ?>
-        <div class="wrap">
+        <div class="wrap dg-platform-wrap">
             <h1>🔍 Visibility Audits</h1>
             <?php if (isset($_GET['generated'])) : ?><div class="notice notice-success"><p>✅ Audit generated successfully!</p></div><?php endif; ?>
             <?php if (isset($_GET['deleted'])) : ?><div class="notice notice-success"><p>✅ Audit deleted successfully!</p></div><?php endif; ?>
-            <div style="background:#fff;padding:20px;border:1px solid #ddd;border-radius:12px;margin:20px 0;">
+            <div class="dg-panel">
                 <h2>Generate New Audit</h2>
                 <p>Select a client to generate a comprehensive Digital Visibility Audit report.</p>
                 <?php if (empty($this->pagespeed_api_key) && empty($this->openai_api_key) && empty($this->gemini_api_key)) : ?>
@@ -1593,13 +1593,13 @@ class DG_Module_Marketing {
         ?>
         <div class="wrap dg-platform-wrap">
             <h1>🤖 AI Visibility Dashboard</h1>
-            <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin:20px 0;">
-                <div class="dg-panel"><div style="font-size:24px;font-weight:700;"><?php echo esc_html($averages['ai_avg'] ?? 0); ?>%</div><div>Avg AI score (90d)</div></div>
-                <div class="dg-panel"><div style="font-size:24px;font-weight:700;"><?php echo esc_html($averages['google_avg'] ?? 0); ?>%</div><div>Avg Google score</div></div>
-                <div class="dg-panel"><div style="font-size:24px;font-weight:700;"><?php echo esc_html($averages['web_avg'] ?? 0); ?>%</div><div>Avg website score</div></div>
-                <div class="dg-panel"><div style="font-size:24px;font-weight:700;"><?php echo (int) ($averages['scans'] ?? 0); ?></div><div>Scans recorded</div></div>
+            <div class="dg-stats-grid dg-stats-grid-4">
+                <div class="dg-panel"><div class="dg-stat-value"><?php echo esc_html($averages['ai_avg'] ?? 0); ?>%</div><div class="dg-stat-label">Avg AI score (90d)</div></div>
+                <div class="dg-panel"><div class="dg-stat-value"><?php echo esc_html($averages['google_avg'] ?? 0); ?>%</div><div class="dg-stat-label">Avg Google score</div></div>
+                <div class="dg-panel"><div class="dg-stat-value"><?php echo esc_html($averages['web_avg'] ?? 0); ?>%</div><div class="dg-stat-label">Avg website score</div></div>
+                <div class="dg-panel"><div class="dg-stat-value"><?php echo (int) ($averages['scans'] ?? 0); ?></div><div class="dg-stat-label">Scans recorded</div></div>
             </div>
-            <p style="color:#64748B;">Tracks ChatGPT, Gemini, and PageSpeed results from agency audits over time.</p>
+            <p class="dg-muted-subtle">Tracks ChatGPT, Gemini, and PageSpeed results from agency audits over time.</p>
             <div style="margin:10px 0 20px;display:flex;gap:12px;flex-wrap:wrap;">
                 <a href="<?php echo esc_url(admin_url('admin.php?page=dg-platform-audits')); ?>" class="button button-primary">Run audit</a>
                 <a href="<?php echo esc_url(admin_url('admin.php?page=dg-marketing-pipeline-reports')); ?>" class="button">Pipeline reports</a>
@@ -1697,8 +1697,8 @@ class DG_Module_Marketing {
             <h1>👁️ Client: <?php echo esc_html($client->company_name); ?></h1>
             <a href="<?php echo admin_url('admin.php?page=dg-platform-clients'); ?>" class="button" style="margin-bottom:20px;">← Back to Clients</a>
             <a href="<?php echo admin_url('admin.php?page=dg-platform-clients&action=edit&client_id=' . $client_id); ?>" class="button button-primary" style="margin-bottom:20px;">✏️ Edit Client</a>
-            <div style="background:#fff;padding:15px 20px;border:1px solid #ddd;border-radius:8px;margin:10px 0 20px;">
-                <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;">
+            <div class="dg-panel-inset">
+                <div class="dg-info-grid">
                     <div><strong>Email:</strong> <?php echo esc_html($client->email); ?></div>
                     <div><strong>Phone:</strong> <?php echo esc_html($client->phone); ?></div>
                     <div><strong>Website:</strong> <?php echo esc_html($client->website); ?></div>
@@ -1713,7 +1713,7 @@ class DG_Module_Marketing {
                 <a href="<?php echo admin_url('admin.php?page=dg-platform-clients&client_id=' . $client_id . '&tab=audits'); ?>" class="nav-tab <?php echo $active_tab === 'audits' ? 'nav-tab-active' : ''; ?>">🔍 Audits (<?php echo count($audits); ?>)</a>
                 <a href="<?php echo admin_url('admin.php?page=dg-platform-clients&client_id=' . $client_id . '&tab=documents'); ?>" class="nav-tab <?php echo $active_tab === 'documents' ? 'nav-tab-active' : ''; ?>">📎 Documents</a>
             </h2>
-            <div style="background:#fff;padding:20px;border:1px solid #ddd;border-radius:8px;margin:20px 0;">
+            <div class="dg-panel">
                 <?php
                 switch ($active_tab) {
                     case 'contacts': $this->render_contacts_tab($client_id, $contacts); break;
@@ -1730,10 +1730,10 @@ class DG_Module_Marketing {
     
     private function render_overview_tab($client_id, $client, $contacts, $notes, $audits) {
         ?>
-        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:20px;">
-            <div style="background:#f9f9f9;padding:20px;border-radius:8px;text-align:center;"><div style="font-size:28px;font-weight:700;color:#3B82F6;"><?php echo count($contacts); ?></div><div style="color:#666;">Contacts</div></div>
-            <div style="background:#f9f9f9;padding:20px;border-radius:8px;text-align:center;"><div style="font-size:28px;font-weight:700;color:#8B5CF6;"><?php echo count($notes); ?></div><div style="color:#666;">Notes</div></div>
-            <div style="background:#f9f9f9;padding:20px;border-radius:8px;text-align:center;"><div style="font-size:28px;font-weight:700;color:#34D399;"><?php echo count($audits); ?></div><div style="color:#666;">Audits</div></div>
+        <div class="dg-mini-stats">
+            <div class="dg-mini-stat"><div class="dg-mini-stat-value" style="color:#3B82F6;"><?php echo count($contacts); ?></div><div class="dg-stat-label">Contacts</div></div>
+            <div class="dg-mini-stat"><div class="dg-mini-stat-value" style="color:#8B5CF6;"><?php echo count($notes); ?></div><div class="dg-stat-label">Notes</div></div>
+            <div class="dg-mini-stat"><div class="dg-mini-stat-value" style="color:#34D399;"><?php echo count($audits); ?></div><div class="dg-stat-label">Audits</div></div>
         </div>
         <?php if ($notes) : ?>
             <h3>Recent Notes</h3>
@@ -1750,7 +1750,7 @@ class DG_Module_Marketing {
         <?php if (isset($_GET['edited'])) : ?><div class="notice notice-success"><p>✅ Contact updated successfully!</p></div><?php endif; ?>
         <?php if (isset($_GET['deleted'])) : ?><div class="notice notice-success"><p>✅ Contact deleted successfully!</p></div><?php endif; ?>
         <button id="dg-show-add-contact" class="button button-primary" style="margin-bottom:15px;">➕ Add Contact</button>
-        <div id="dg-add-contact-form" style="display:none;background:#f9f9f9;padding:20px;border-radius:8px;margin:10px 0 20px;">
+        <div id="dg-add-contact-form" style="display:none;" class="dg-panel-inset">
             <form method="post" action="<?php echo admin_url('admin-post.php'); ?>">
                 <input type="hidden" name="action" value="dg_marketing_add_contact"><input type="hidden" name="company_id" value="<?php echo $client_id; ?>"><?php wp_nonce_field('dg_marketing_add_contact'); ?>
                 <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">

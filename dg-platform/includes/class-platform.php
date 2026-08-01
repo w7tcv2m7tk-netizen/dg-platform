@@ -352,6 +352,12 @@ class DG_Platform {
                 DG_Integrations::save_api_key($key, sanitize_text_field(wp_unslash($_POST[$key])));
             }
         }
+        if (isset($_POST['dg_admin_dark_default'])) {
+            $mode = sanitize_text_field(wp_unslash($_POST['dg_admin_dark_default']));
+            if (in_array($mode, ['off', 'on', 'system'], true)) {
+                update_option('dg_admin_dark_default', $mode);
+            }
+        }
         wp_redirect(admin_url('admin.php?page=dg-platform-api&saved=1'));
         exit;
     }

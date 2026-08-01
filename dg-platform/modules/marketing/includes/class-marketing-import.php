@@ -188,7 +188,7 @@ class DG_Marketing_Import {
         ?>
         <div class="wrap dg-platform-wrap">
             <h1>📥 Import Contacts</h1>
-            <p style="color:#666;">Upload a CSV export (First Name, Last Name, phone columns, Email). Contacts are added to Agency Clients and synced to core CRM.</p>
+            <p class="description">Upload a CSV export (First Name, Last Name, phone columns, Email). Contacts are added to Agency Clients and synced to core CRM.</p>
 
             <?php if ($stats) : ?>
                 <div class="notice notice-success"><p>

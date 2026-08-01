@@ -26,7 +26,7 @@
 }
 
 .dg-pipeline-column {
-    background: #f6f7f7;
+    background: var(--dg-bg-subtle, #f6f7f7);
     border-radius: 8px;
     padding: 10px;
     min-width: 0;
@@ -36,42 +36,43 @@
     font-weight: 600;
     margin-bottom: 10px;
     padding-bottom: 8px;
-    border-bottom: 2px solid #C9A46C;
+    border-bottom: 2px solid var(--dg-accent, #C9A46C);
 }
 
 .dg-pipeline-card {
-    background: #fff;
-    border: 1px solid #ddd;
+    background: var(--dg-bg-panel, #fff);
+    border: 1px solid var(--dg-border-light, #ddd);
     border-radius: 6px;
     padding: 10px;
     margin-bottom: 8px;
     font-size: 13px;
+    color: var(--dg-text, inherit);
 }
 
 .dg-pipeline-empty {
-    color: #aaa;
+    color: var(--dg-text-muted, #aaa);
     font-size: 12px;
     text-align: center;
     padding: 16px 0;
 }
 
 .dg-re-notice {
-    background: #F5F2EF;
+    background: var(--dg-bg-subtle, #F5F2EF);
     padding: 16px;
     border-radius: 8px;
     margin-top: 16px;
     font-size: 13px;
-    color: #555;
+    color: var(--dg-text-muted, #555);
 }
 
 .dg-bar-track {
-    background: #eee;
+    background: var(--dg-border-light, #eee);
     border-radius: 4px;
     height: 8px;
     overflow: hidden;
 }
 
 .dg-bar-fill {
-    background: #C9A46C;
+    background: var(--dg-accent, #C9A46C);
     height: 100%;
 }

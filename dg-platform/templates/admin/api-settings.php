@@ -74,6 +74,22 @@
     <div class="dg-panel">
         <form method="post">
             <?php wp_nonce_field('dg_api_settings'); ?>
+            <h2>Admin appearance</h2>
+            <?php $dark_default = class_exists('DG_Admin_Dark_Mode') ? DG_Admin_Dark_Mode::site_default() : 'off'; ?>
+            <table class="form-table">
+                <tr>
+                    <th>Default dark mode</th>
+                    <td>
+                        <select name="dg_admin_dark_default">
+                            <option value="off" <?php selected($dark_default, 'off'); ?>>Off (light) — users opt in via admin bar</option>
+                            <option value="on" <?php selected($dark_default, 'on'); ?>>On — dark by default for new users</option>
+                            <option value="system" <?php selected($dark_default, 'system'); ?>>System — match OS light/dark preference</option>
+                        </select>
+                        <p class="description">Admins can always toggle with the 🌙 button in the top admin bar. Per-user choice is remembered.</p>
+                    </td>
+                </tr>
+            </table>
+            <hr>
             <table class="form-table">
                 <tr><th colspan="2"><h3>AI & Analytics</h3></th></tr>
                 <tr><th>Google PageSpeed API Key</th><td><input type="text" name="pagespeed" value="<?php echo esc_attr(DG_Integrations::get_api_key('pagespeed')); ?>" class="regular-text"></td></tr>
