@@ -3,7 +3,7 @@
  * Plugin Name: DG Platform
  * Plugin URI: https://digitalgate.com.au
  * Description: DigitalGate Business Platform Core - Modular CRM with Industry Modules
- * Version: 10.0.8
+ * Version: 10.0.9
  * Author: DigitalGate
  * Author URI: https://digitalgate.com.au
  * Text Domain: dg-platform
@@ -15,7 +15,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('DG_PLATFORM_VERSION', '10.0.8');
+define('DG_PLATFORM_VERSION', '10.0.9');
 define('DG_PLATFORM_PATH', plugin_dir_path(__FILE__));
 define('DG_PLATFORM_URL', plugin_dir_url(__FILE__));
 define('DG_MODULES_PATH', DG_PLATFORM_PATH . 'modules/');
@@ -37,6 +37,7 @@ require_once DG_INCLUDES_PATH . 'services/class-integrations.php';
 require_once DG_INCLUDES_PATH . 'services/class-search.php';
 require_once DG_INCLUDES_PATH . 'services/class-entity-meta.php';
 require_once DG_INCLUDES_PATH . 'class-legacy-notices.php';
+require_once DG_INCLUDES_PATH . 'class-dev-api.php';
 require_once DG_INCLUDES_PATH . 'api/class-rest-controller.php';
 require_once DG_INCLUDES_PATH . 'class-platform.php';
 

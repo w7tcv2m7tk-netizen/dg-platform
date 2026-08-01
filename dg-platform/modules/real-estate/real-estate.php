@@ -86,6 +86,7 @@ class DG_Module_RealEstate {
             'class-buyer-leads.php',
             'class-property-report-followups.php',
             'class-pipeline-reports.php',
+            'class-crm-dev-api.php',
             'booking-handler.php',
             'booking-shortcode.php',
             'properties-shortcodes.php',
