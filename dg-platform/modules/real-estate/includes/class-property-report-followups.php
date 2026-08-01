@@ -69,13 +69,11 @@ class DG_RE_Property_Report_Followups {
         self::maybe_seed_automation();
     }
 
-    public static function send_email($to, $subject, $body) {
-        $headers = [
-            'Content-Type: text/plain; charset=UTF-8',
-            'From: Ben Roe | Roe Realty <ben@roerealty.com.au>',
-            'Reply-To: Ben Roe <ben@roerealty.com.au>',
-        ];
-        return wp_mail($to, $subject, $body, $headers);
+    public static function send_email($to, $subject, $body, $template_key = '') {
+        $html = $template_key
+            ? DG_RE_Email_Templates::format_body_html($body, $template_key)
+            : DG_RE_Email_Templates::format_body_html($body, 'property_report_lead');
+        return wp_mail($to, $subject, $html, DG_RE_Email_Templates::mail_headers(true));
     }
 
     public static function process() {
@@ -110,7 +108,7 @@ class DG_RE_Property_Report_Followups {
                 'email' => $lead->email,
             ]);
             [$subject, $body] = [$mail['subject'], $mail['body']];
-            if (self::send_email($lead->email, $subject, $body)) {
+            if (self::send_email($lead->email, $subject, $body, 'followup_' . $step)) {
                 $wpdb->update($table, [$flag => 1], ['id' => $lead->id]);
                 if (class_exists('DG_Activities')) {
                     DG_Activities::log([

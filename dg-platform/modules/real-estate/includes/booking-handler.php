@@ -98,11 +98,19 @@ function dg_re_process_booking_creation($data) {
         ]);
     }
 
-    dg_re_maybe_update_lead_on_booking($contact_id, $email, $booking_type, [
+    $lead_link = dg_re_maybe_update_lead_on_booking($contact_id, $email, $booking_type, [
         'booking_id' => (int) $booking_id,
         'service_name' => $service_name,
         'appointment_when' => date('l, j F Y', strtotime($date)) . ' at ' . date('g:i A', strtotime($time_normalized)),
     ]);
+
+    $vendor_context = '';
+    if (is_array($lead_link) && !empty($lead_link['lead_id'])) {
+        $addr = $lead_link['property_address'] ?? '';
+        $vendor_context = 'Pipeline: Vendor lead linked'
+            . ($addr ? ' — ' . $addr : '')
+            . ' (Lead #' . (int) $lead_link['lead_id'] . ')';
+    }
 
     dg_re_send_booking_emails([
         'name' => $name,
@@ -112,6 +120,9 @@ function dg_re_process_booking_creation($data) {
         'date' => $date,
         'time' => $time_normalized,
         'notes' => $notes,
+        'vendor_context' => $vendor_context,
+        'vendor_lead_id' => is_array($lead_link) ? ($lead_link['lead_id'] ?? '') : '',
+        'property_address' => is_array($lead_link) ? ($lead_link['property_address'] ?? '') : '',
     ]);
 
     if (class_exists('DG_Automation')) {
@@ -164,7 +175,6 @@ function dg_re_resolve_legacy_contact_id($name, $email, $phone) {
 }
 
 function dg_re_send_booking_emails($booking) {
-    $headers = DG_RE_Email_Templates::mail_headers();
     $when = date('l, j F Y', strtotime($booking['date'])) . ' at ' . date('g:i A', strtotime($booking['time']));
     $first_name = explode(' ', trim($booking['name']))[0];
     $vars = [
@@ -174,15 +184,15 @@ function dg_re_send_booking_emails($booking) {
         'phone' => $booking['phone'] ?: 'Not provided',
         'service_name' => $booking['service_name'],
         'appointment_when' => $when,
-        'notes' => $booking['notes'] ?: '',
+        'notes' => $booking['notes'] ?: '—',
+        'vendor_context' => $booking['vendor_context'] ?? '',
+        'vendor_lead_id' => $booking['vendor_lead_id'] ?? '',
+        'property_address' => $booking['property_address'] ?? '',
     ];
 
     $admin_to = apply_filters('dg_re_booking_admin_email', 'enquiries@roerealty.com.au');
-    $admin_mail = DG_RE_Email_Templates::render('booking_admin', $vars);
-    wp_mail($admin_to, $admin_mail['subject'], $admin_mail['body'], $headers);
-
-    $confirm = DG_RE_Email_Templates::render('booking_confirmation', $vars);
-    wp_mail($booking['email'], $confirm['subject'], $confirm['body'], $headers);
+    DG_RE_Email_Templates::send_mail($admin_to, 'booking_admin', $vars, $booking['email'] ? $booking['name'] . ' <' . sanitize_email($booking['email']) . '>' : null);
+    DG_RE_Email_Templates::send_mail($booking['email'], 'booking_confirmation', $vars);
 }
 
 function dg_re_maybe_update_lead_on_booking($contact_id, $email, $booking_type, $context = []) {
@@ -232,5 +242,8 @@ function dg_re_maybe_update_lead_on_booking($contact_id, $email, $booking_type, 
 
     do_action('dg_re_vendor_lead_booking_linked', $lead_id, $context['booking_id'] ?? 0, $contact_id, $context);
 
-    return $lead_id;
+    return [
+        'lead_id' => $lead_id,
+        'property_address' => $lead->property_address ?? '',
+    ];
 }

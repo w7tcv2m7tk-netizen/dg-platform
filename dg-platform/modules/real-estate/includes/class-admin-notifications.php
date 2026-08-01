@@ -22,12 +22,12 @@ class DG_RE_Admin_Notifications {
         return apply_filters('dg_re_admin_notification_email', 'enquiries@roerealty.com.au');
     }
 
-    public static function send($subject, $body, $reply_to = null) {
-        $headers = DG_RE_Email_Templates::mail_headers();
+    public static function send($subject, $body_html, $reply_to = null) {
+        $headers = DG_RE_Email_Templates::mail_headers(true);
         if ($reply_to) {
             $headers[] = 'Reply-To: ' . $reply_to;
         }
-        return wp_mail(self::admin_email(), $subject, $body, $headers);
+        return wp_mail(self::admin_email(), $subject, $body_html, $headers);
     }
 
     public static function send_template($template_key, $vars, $reply_to = null) {
@@ -35,7 +35,7 @@ class DG_RE_Admin_Notifications {
         if ($mail['subject'] === '' && $mail['body'] === '') {
             return false;
         }
-        return self::send($mail['subject'], $mail['body'], $reply_to);
+        return self::send($mail['subject'], $mail['body_html'], $reply_to);
     }
 
     public static function on_vendor_lead_created($lead_id, $contact_id, $pipeline_id, $data) {
@@ -74,41 +74,21 @@ class DG_RE_Admin_Notifications {
         ], $email ? $full_name . ' <' . $email . '>' : null);
 
         if ($email) {
-            $headers = DG_RE_Email_Templates::mail_headers();
-            $confirm = DG_RE_Email_Templates::render('buyer_enquiry_confirmation', [
+            DG_RE_Email_Templates::send_mail($email, 'buyer_enquiry_confirmation', [
                 'first_name' => $name_parts['first_name'] ?? $full_name,
                 'full_name' => $full_name,
                 'property_address' => $data['property_address'] ?? 'your enquiry',
                 'email' => $email,
             ]);
-            wp_mail($email, $confirm['subject'], $confirm['body'], $headers);
         }
     }
 
     public static function on_booking_created($booking_id, $contact_id, $data) {
-        // Booking admin email is sent in dg_re_send_booking_emails().
+        // Admin booking email is sent in dg_re_send_booking_emails().
     }
 
     public static function on_vendor_lead_booking_linked($lead_id, $booking_id, $contact_id, $context) {
-        if (!class_exists('DG_RE_Vendor_Leads')) {
-            return;
-        }
-        $lead = DG_RE_Vendor_Leads::get($lead_id);
-        if (!$lead) {
-            return;
-        }
-
-        $name = trim(($lead->first_name ?? '') . ' ' . ($lead->last_name ?? ''));
-        self::send_template('vendor_lead_booked_admin', [
-            'full_name' => $name ?: 'Unknown',
-            'first_name' => $lead->first_name ?? '',
-            'email' => DG_RE_Contacts::display_email($lead->email ?? '') ?: 'Not provided',
-            'phone' => $lead->phone ?? 'Not provided',
-            'property_address' => $lead->property_address ?? '',
-            'service_name' => sanitize_text_field($context['service_name'] ?? 'Property Appraisal'),
-            'appointment_when' => sanitize_text_field($context['appointment_when'] ?? ''),
-            'notes' => 'Vendor lead #' . (int) $lead_id . ' linked to booking #' . (int) $booking_id . '.',
-        ]);
+        // Merged into booking_admin email — no separate notification.
     }
 }
 

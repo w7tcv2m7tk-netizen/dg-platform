@@ -40,22 +40,20 @@ function dg_re_process_property_report_lead($data) {
     }
 
     $first_name = explode(' ', trim($full_name))[0];
-    $headers = DG_RE_Email_Templates::mail_headers();
     $submitted_at = current_time('Y-m-d H:i:s');
 
     $admin_to = apply_filters('dg_re_property_report_admin_email', 'enquiries@roerealty.com.au');
-    $admin_mail = DG_RE_Email_Templates::render('property_report_admin', [
+    $admin_sent = DG_RE_Email_Templates::send_mail($admin_to, 'property_report_admin', [
         'full_name' => $full_name,
         'first_name' => $first_name,
         'property_address' => $property_address,
         'email' => $email !== '' ? $email : 'Not provided',
         'phone' => $phone !== '' ? $phone : 'Not provided',
         'submitted_at' => $submitted_at,
-    ]);
-    $admin_sent = wp_mail($admin_to, $admin_mail['subject'], $admin_mail['body'], $headers);
+    ], $email ? $full_name . ' <' . $email . '>' : null);
 
     if ($email !== '') {
-        $lead_mail = DG_RE_Email_Templates::render('property_report_lead', [
+        DG_RE_Email_Templates::send_mail($email, 'property_report_lead', [
             'full_name' => $full_name,
             'first_name' => $first_name,
             'property_address' => $property_address,
@@ -63,7 +61,6 @@ function dg_re_process_property_report_lead($data) {
             'phone' => $phone,
             'submitted_at' => $submitted_at,
         ]);
-        wp_mail($email, $lead_mail['subject'], $lead_mail['body'], $headers);
     }
 
     dg_re_store_property_report_lead([
