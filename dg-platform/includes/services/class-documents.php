@@ -44,4 +44,22 @@ class DG_Documents {
         global $wpdb;
         return (int) $wpdb->get_var('SELECT COUNT(*) FROM ' . self::table());
     }
+
+    public static function list_recent($limit = 200) {
+        global $wpdb;
+        return $wpdb->get_results($wpdb->prepare(
+            'SELECT * FROM ' . self::table() . ' ORDER BY created_at DESC LIMIT %d',
+            (int) $limit
+        ));
+    }
+
+    public static function get($id) {
+        global $wpdb;
+        return $wpdb->get_row($wpdb->prepare('SELECT * FROM ' . self::table() . ' WHERE id = %d', (int) $id));
+    }
+
+    public static function delete($id) {
+        global $wpdb;
+        return (bool) $wpdb->delete(self::table(), ['id' => (int) $id], ['%d']);
+    }
 }

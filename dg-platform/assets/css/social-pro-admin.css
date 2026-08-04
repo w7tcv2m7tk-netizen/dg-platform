@@ -1,0 +1,231 @@
+.dg-social-compose-grid {
+    display: grid;
+    grid-template-columns: 1fr 280px;
+    gap: 24px;
+    margin-top: 8px;
+}
+
+@media (max-width: 960px) {
+    .dg-social-compose-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+.dg-social-compose-platforms {
+    background: var(--dg-bg-subtle);
+    border: 1px solid var(--dg-border-light);
+    border-radius: 8px;
+    padding: 16px;
+    color: var(--dg-text);
+}
+
+.dg-social-compose-platforms h3 {
+    margin: 0 0 12px;
+    font-size: 14px;
+    color: var(--dg-text);
+}
+
+.dg-social-platform-chip {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+    padding: 10px 12px;
+    margin-bottom: 8px;
+    border: 2px solid var(--dg-border-light);
+    border-radius: 8px;
+    background: var(--dg-bg-panel);
+    color: var(--dg-text);
+    cursor: pointer;
+    transition: border-color .15s;
+}
+
+.dg-social-platform-chip.is-connected {
+    border-color: var(--platform-color, var(--dg-accent, #2271b1));
+}
+
+.dg-social-platform-chip.is-disconnected {
+    opacity: .65;
+}
+
+.dg-social-platform-chip input {
+    margin: 0;
+}
+
+.dg-social-platform-icon {
+    font-size: 18px;
+    line-height: 1;
+}
+
+.dg-social-platform-label {
+    font-weight: 600;
+    flex: 1;
+}
+
+.dg-social-platform-status {
+    font-size: 11px;
+    color: var(--dg-text-muted);
+    width: 100%;
+}
+
+.dg-social-platform-limit {
+    font-size: 10px;
+    color: var(--dg-text-subtle);
+    margin-left: auto;
+}
+
+.dg-social-media-row {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.dg-social-media-row .large-text {
+    flex: 1;
+}
+
+.dg-social-media-preview {
+    max-width: 200px;
+    margin-top: 8px;
+    border-radius: 4px;
+    border: 1px solid var(--dg-border-light);
+}
+
+.dg-social-compose-actions {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-top: 16px;
+}
+
+.dg-social-connections-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 16px;
+    margin-top: 20px;
+}
+
+.dg-social-connection-card {
+    border: 1px solid var(--dg-border-light);
+    border-top: 4px solid var(--platform-color, var(--dg-text-muted));
+    border-radius: 8px;
+    padding: 16px;
+    background: var(--dg-bg-panel);
+    color: var(--dg-text);
+}
+
+.dg-social-connection-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+}
+
+.dg-social-connection-header h3 {
+    margin: 0;
+    flex: 1;
+    font-size: 15px;
+    color: var(--dg-text);
+}
+
+.dg-social-connection-badge {
+    font-size: 11px;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 99px;
+}
+
+.dg-social-connection-badge.is-on {
+    background: #d1fae5;
+    color: #065f46;
+}
+
+.dg-social-connection-badge.is-off {
+    background: #fee2e2;
+    color: #991b1b;
+}
+
+.dg-social-status {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.dg-social-status-published,
+.dg-social-status-partial {
+    background: #dbeafe;
+    color: #1e40af;
+}
+
+.dg-social-status-failed {
+    background: #fee2e2;
+    color: #991b1b;
+}
+
+.dg-social-status-draft,
+.dg-social-status-scheduled {
+    background: #f3f4f6;
+    color: #374151;
+}
+
+.dg-social-results-list {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    font-size: 12px;
+}
+
+.dg-social-results-list li.is-ok {
+    color: #059669;
+}
+
+.dg-social-results-list li.is-fail {
+    color: #dc2626;
+}
+
+.dg-social-tips-list {
+    color: var(--dg-text-muted);
+    line-height: 1.7;
+}
+
+/* Dark mode */
+.admin-dark-mode .dg-social-connection-badge.is-on {
+    background: rgba(16, 185, 129, .18);
+    color: #6ee7b7;
+}
+
+.admin-dark-mode .dg-social-connection-badge.is-off {
+    background: rgba(239, 68, 68, .18);
+    color: #fca5a5;
+}
+
+.admin-dark-mode .dg-social-status-published,
+.admin-dark-mode .dg-social-status-partial {
+    background: rgba(59, 130, 246, .18);
+    color: #93c5fd;
+}
+
+.admin-dark-mode .dg-social-status-failed {
+    background: rgba(239, 68, 68, .18);
+    color: #fca5a5;
+}
+
+.admin-dark-mode .dg-social-status-draft,
+.admin-dark-mode .dg-social-status-scheduled {
+    background: rgba(161, 161, 170, .15);
+    color: var(--dg-text-muted);
+}
+
+.admin-dark-mode .dg-social-results-list li.is-ok {
+    color: #34d399;
+}
+
+.admin-dark-mode .dg-social-results-list li.is-fail {
+    color: #f87171;
+}
+
+.admin-dark-mode .dg-social-platform-chip.is-disconnected {
+    opacity: .55;
+}

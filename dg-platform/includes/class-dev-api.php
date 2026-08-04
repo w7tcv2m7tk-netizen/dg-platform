@@ -50,6 +50,9 @@ class DG_Dev_API {
         if (class_exists('DG_Acc_Permissions') && DG_Acc_Permissions::can_view_bookings()) {
             return true;
         }
+        if (class_exists('DG_Creator_Permissions') && DG_Creator_Permissions::can_view()) {
+            return true;
+        }
 
         $api_key = self::extract_key_from_request($request);
         $stored = self::get_key();

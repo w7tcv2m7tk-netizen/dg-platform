@@ -17,6 +17,10 @@
                         <?php if ($task->status !== 'completed') : ?>
                             <a href="<?php echo wp_nonce_url(admin_url('admin-post.php?action=dg_complete_task&id=' . $task->id), 'dg_complete_task'); ?>">Complete</a>
                         <?php endif; ?>
+                        <?php if (DG_Permissions::current_user_can('dg_manage_tasks')) : ?>
+                            <?php if ($task->status !== 'completed') : ?> | <?php endif; ?>
+                            <?php echo DG_Admin_Delete::link('dg_delete_task', (int) $task->id); ?>
+                        <?php endif; ?>
                     </td>
                 </tr>
             <?php endforeach; else : ?>

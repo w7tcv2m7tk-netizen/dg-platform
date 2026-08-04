@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>CVH Cleaning Checklist | Currumbin Valley Hideaway</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Inter:opsz,wght@14..32,300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Inter', sans-serif;
+      background: #F7F4EE;
+      color: #2F2F2F;
+      padding: 2rem 1rem;
+    }
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+    }
+    .header {
+      text-align: center;
+      margin-bottom: 2rem;
+    }
+    .header h1 {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 2.2rem;
+      color: #1C2B2A;
+      margin-bottom: 0.25rem;
+    }
+    .header p {
+      color: #6B7A78;
+      font-size: 0.85rem;
+    }
+    .property-info {
+      background: #FFFFFF;
+      border-radius: 16px;
+      padding: 1rem;
+      margin-bottom: 1.5rem;
+      border: 1px solid #E0D6CC;
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 1rem;
+    }
+    .info-field {
+      display: flex;
+      flex-direction: column;
+    }
+    .info-field label {
+      font-size: 0.7rem;
+      font-weight: 600;
+      color: #B9A48A;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+    .info-field input, .info-field select {
+      background: #FCF9F5;
+      border: 1px solid #E0D6CC;
+      border-radius: 8px;
+      padding: 0.5rem;
+      font-family: 'Inter', sans-serif;
+      font-size: 0.85rem;
+      margin-top: 0.25rem;
+    }
+    .section {
+      background: #FFFFFF;
+      border-radius: 20px;
+      padding: 1.25rem;
+      margin-bottom: 1rem;
+      border: 1px solid #E0D6CC;
+    }
+    .section h2 {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 1.3rem;
+      color: #1C2B2A;
+      margin-bottom: 1rem;
+      padding-bottom: 0.5rem;
+      border-bottom: 2px solid #B9A48A;
+      display: inline-block;
+    }
+    .task-list {
+      list-style: none;
+    }
+    .task-list li {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 0.6rem 0;
+      border-bottom: 1px solid #EBE4D9;
+      cursor: pointer;
+    }
+    .task-list li:last-child {
+      border-bottom: none;
+    }
+    .task-list li.completed .task-text {
+      text-decoration: line-through;
+      color: #9EADA9;
+    }
+    .task-list li .check-box {
+      width: 22px;
+      height: 22px;
+      border: 2px solid #B9A48A;
+      border-radius: 6px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background: white;
+      transition: all 0.2s;
+    }
+    .task-list li.completed .check-box {
+      background: #B9A48A;
+      color: white;
+    }
+    .task-list li .check-box i {
+      font-size: 0.7rem;
+      display: none;
+    }
+    .task-list li.completed .check-box i {
+      display: block;
+    }
+    .task-text {
+      flex: 1;
+      font-size: 0.85rem;
+      color: #2F2F2F;
+    }
+    .notes-section {
+      background: #FFFFFF;
+      border-radius: 16px;
+      padding: 1.25rem;
+      margin-bottom: 1rem;
+      border: 1px solid #E0D6CC;
+    }
+    .notes-section label {
+      font-weight: 600;
+      display: block;
+      margin-bottom: 0.5rem;
+    }
+    .notes-section textarea {
+      width: 100%;
+      padding: 0.75rem;
+      border: 1px solid #E0D6CC;
+      border-radius: 12px;
+      font-family: 'Inter', sans-serif;
+      font-size: 0.85rem;
+      resize: vertical;
+    }
+    .signature-section {
+      background: #FFFFFF;
+      border-radius: 16px;
+      padding: 1.25rem;
+      margin-bottom: 1rem;
+      border: 1px solid #E0D6CC;
+      text-align: center;
+    }
+    .signature-section input {
+      width: 100%;
+      padding: 0.75rem;
+      border: 1px solid #E0D6CC;
+      border-radius: 12px;
+      font-family: 'Inter', sans-serif;
+      font-size: 0.85rem;
+      margin-top: 0.5rem;
+      text-align: center;
+    }
+    .action-buttons {
+      display: flex;
+      gap: 1rem;
+      margin-top: 1rem;
+    }
+    .btn {
+      flex: 1;
+      padding: 0.75rem;
+      border-radius: 40px;
+      font-weight: 600;
+      font-size: 0.85rem;
+      cursor: pointer;
+      text-align: center;
+      transition: all 0.2s;
+      border: none;
+    }
+    .btn-primary {
+      background: #B9A48A;
+      color: white;
+    }
+    .btn-primary:hover {
+      background: #A89377;
+    }
+    .btn-secondary {
+      background: #E8EDEC;
+      color: #2F2F2F;
+    }
+    .btn-secondary:hover {
+      background: #D1DCD9;
+    }
+    .progress-bar {
+      background: #E8EDEC;
+      border-radius: 20px;
+      height: 8px;
+      margin-bottom: 1rem;
+      overflow: hidden;
+    }
+    .progress-fill {
+      background: #B9A48A;
+      width: 0%;
+      height: 100%;
+      transition: width 0.3s;
+    }
+    .stats {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.7rem;
+      color: #6B7A78;
+      margin-bottom: 1rem;
+    }
+    @media (max-width: 640px) {
+      .property-info {
+        grid-template-columns: 1fr;
+        gap: 0.75rem;
+      }
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  
+  <div class="header">
+    <h1>🧹 Cleaning Checklist</h1>
+    <p>Currumbin Valley Hideaway – Tap each task to mark as complete</p>
+  </div>
+
+  <!-- Property Info with Dwelling Dropdown -->
+  <div class="property-info">
+    <div class="info-field">
+      <label>Property</label>
+      <input type="text" id="property" value="Currumbin Valley Hideaway" readonly>
+    </div>
+    <div class="info-field">
+      <label>Dwelling / Accommodation</label>
+      <select id="dwelling">
+        <option value="">Select dwelling...</option>
+        <option value="Tiny Home">🏠 Tiny Home</option>
+        <option value="Studio">🛏️ Studio – Private Room</option>
+        <option value="Sanctuary Dome">⛺ Sanctuary Dome</option>
+        <option value="Rainforest Dome">🌿 Rainforest Dome</option>
+        <option value="Canopy Dome">🌳 Canopy Dome</option>
+        <option value="Starlight Dome">⭐ Starlight Dome</option>
+      </select>
+    </div>
+    <div class="info-field">
+      <label>Date</label>
+      <input type="date" id="date">
+    </div>
+    <div class="info-field">
+      <label>Cleaner Name</label>
+      <input type="text" id="cleaner" placeholder="Enter your name">
+    </div>
+    <div class="info-field">
+      <label>Guest Departure Time</label>
+      <input type="text" id="departureTime" placeholder="e.g., 10:00 AM">
+    </div>
+  </div>
+
+  <!-- Progress -->
+  <div class="stats">
+    <span id="completedCount">0</span> / <span id="totalCount">0</span> tasks completed
+  </div>
+  <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+
+  <!-- All Sections -->
+  <div id="checklist-container"></div>
+
+  <!-- Notes & Signature -->
+  <div class="notes-section">
+    <label>📝 Notes / Maintenance Issues</label>
+    <textarea id="notes" rows="3" placeholder="Report any damage, missing items, or maintenance issues..."></textarea>
+  </div>
+
+  <div class="signature-section">
+    <label>✍️ Cleaner Signature</label>
+    <input type="text" id="signature" placeholder="Type your full name as signature">
+    <div class="action-buttons">
+      <button class="btn btn-primary" onclick="generateReport()">📄 Generate Report</button>
+      <button class="btn btn-secondary" onclick="resetChecklist()">↻ Reset All</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  // Full task list
+  const taskCategories = [
+    { name: "☐ General", tasks: [
+      "Open windows and air property if required",
+      "Remove all rubbish from inside property",
+      "Replace bin liners",
+      "Check for guest belongings left behind",
+      "Dust all surfaces",
+      "Vacuum entire property",
+      "Mop all hard floors",
+      "Clean internal glass and mirrors",
+      "Wipe down light switches and door handles",
+      "Check for maintenance issues and report immediately"
+    ]},
+    { name: "☐ Kitchen", tasks: [
+      "Wash and put away all dishes",
+      "Clean sink and tapware",
+      "Clean benchtops",
+      "Wipe cupboard fronts",
+      "Clean microwave inside and out",
+      "Clean fridge inside and out",
+      "Check fridge is empty",
+      "Clean stovetop",
+      "Clean rangehood if required",
+      "Empty and clean rubbish bin",
+      "Refill tea, coffee, sugar and supplies",
+      "Check all appliances are clean and working"
+    ]},
+    { name: "☐ Bathroom", tasks: [
+      "Clean toilet thoroughly",
+      "Clean basin and vanity",
+      "Clean shower screens",
+      "Clean shower walls and floor",
+      "Polish mirrors",
+      "Empty bathroom bin",
+      "Replenish toilet paper",
+      "Replenish soap, shampoo and conditioner",
+      "Check drains are clear",
+      "Mop bathroom floor"
+    ]},
+    { name: "☐ Bedroom", tasks: [
+      "Strip used bedding",
+      "Check mattress protector",
+      "Make bed with fresh linen",
+      "Replace pillowcases",
+      "Replace towels",
+      "Check under bed for items",
+      "Dust bedside tables and lamps"
+    ]},
+    { name: "☐ Living Area", tasks: [
+      "Dust all furniture",
+      "Clean coffee table",
+      "Vacuum lounge and cushions",
+      "Arrange cushions and décor",
+      "Clean TV screen if required",
+      "Check remote controls working"
+    ]},
+    { name: "☐ Outdoor Area", tasks: [
+      "Sweep deck and entry areas",
+      "Wipe outdoor furniture",
+      "Clean BBQ (if used)",
+      "Empty outdoor bins",
+      "Remove cobwebs",
+      "Check pathways are clear",
+      "Tidy firepit area",
+      "Restack firewood neatly",
+      "Check outdoor lighting"
+    ]},
+    { name: "☐ Final Guest Presentation", tasks: [
+      "Wi-Fi information visible",
+      "Welcome guide present",
+      "All lights working",
+      "Air conditioning functioning",
+      "Property smells fresh",
+      "Curtains/blinds neatly arranged",
+      "Front door glass clean",
+      "Exterior entry tidy and welcoming"
+    ]},
+    { name: "☐ Before Leaving", tasks: [
+      "Take arrival-ready photos",
+      "Lock all windows and doors",
+      "Turn off unnecessary lights",
+      "Confirm property is guest-ready",
+      "Report any damage, missing items or maintenance issues"
+    ]}
+  ];
+
+  let tasks = [];
+
+  // Initialize tasks
+  function initTasks() {
+    tasks = [];
+    taskCategories.forEach(cat => {
+      cat.tasks.forEach(task => {
+        tasks.push({ text: task, completed: false });
+      });
+    });
+    loadFromStorage();
+    renderChecklist();
+  }
+
+  // Render checklist
+  function renderChecklist() {
+    const container = document.getElementById('checklist-container');
+    container.innerHTML = '';
+    let taskIndex = 0;
+    
+    taskCategories.forEach(cat => {
+      const section = document.createElement('div');
+      section.className = 'section';
+      section.innerHTML = `<h2>${cat.name}</h2><ul class="task-list" id="section-${taskIndex}"></ul>`;
+      const ul = section.querySelector('.task-list');
+      
+      cat.tasks.forEach(task => {
+        const li = document.createElement('li');
+        li.className = tasks[taskIndex].completed ? 'completed' : '';
+        li.innerHTML = `
+          <div class="check-box"><i class="fas fa-check"></i></div>
+          <span class="task-text">${task}</span>
+        `;
+        li.addEventListener('click', (function(idx) {
+          return function() { toggleTask(idx); };
+        })(taskIndex));
+        ul.appendChild(li);
+        taskIndex++;
+      });
+      container.appendChild(section);
+    });
+    updateStats();
+  }
+
+  function toggleTask(index) {
+    tasks[index].completed = !tasks[index].completed;
+    saveToStorage();
+    renderChecklist();
+  }
+
+  function updateStats() {
+    const total = tasks.length;
+    const completed = tasks.filter(t => t.completed).length;
+    document.getElementById('completedCount').innerText = completed;
+    document.getElementById('totalCount').innerText = total;
+    const percent = (completed / total) * 100;
+    document.getElementById('progressFill').style.width = percent + '%';
+  }
+
+  function saveToStorage() {
+    localStorage.setItem('cvhCleaningTasks', JSON.stringify(tasks));
+  }
+
+  function loadFromStorage() {
+    const saved = localStorage.getItem('cvhCleaningTasks');
+    if (saved) {
+      const savedTasks = JSON.parse(saved);
+      if (savedTasks.length === tasks.length) {
+        tasks = savedTasks;
+      }
+    }
+  }
+
+  function resetChecklist() {
+    if (confirm('Reset all checklist items? This cannot be undone.')) {
+      tasks.forEach(t => t.completed = false);
+      saveToStorage();
+      renderChecklist();
+    }
+  }
+
+  function generateReport() {
+    const date = document.getElementById('date').value || new Date().toISOString().split('T')[0];
+    const cleaner = document.getElementById('cleaner').value || 'Not specified';
+    const dwelling = document.getElementById('dwelling').value || 'Not specified';
+    const departureTime = document.getElementById('departureTime').value || 'Not specified';
+    const notes = document.getElementById('notes').value || 'None';
+    const signature = document.getElementById('signature').value || 'Not signed';
+    
+    const completedTasks = tasks.filter(t => t.completed).map(t => `✓ ${t.text}`).join('\n');
+    const pendingTasks = tasks.filter(t => !t.completed).map(t => `☐ ${t.text}`).join('\n');
+    
+    const report = `
+CURRUMBIN VALLEY HIDEAWAY - CLEANING REPORT
+=============================================
+Date: ${date}
+Dwelling: ${dwelling}
+Cleaner: ${cleaner}
+Guest Departure Time: ${departureTime}
+
+COMPLETED TASKS (${tasks.filter(t => t.completed).length}/${tasks.length}):
+${completedTasks || 'None'}
+
+PENDING TASKS:
+${pendingTasks || 'None'}
+
+NOTES / MAINTENANCE ISSUES:
+${notes}
+
+Cleaner Signature: ${signature}
+Report Generated: ${new Date().toLocaleString()}
+    `;
+    
+    // Download as text file
+    const blob = new Blob([report], { type: 'text/plain' });
+    const a = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    a.href = url;
+    a.download = `cleaning_report_${dwelling.replace(/ /g, '_')}_${date}.txt`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    
+    alert('Report downloaded! 📄');
+  }
+
+  // Set today's date
+  document.getElementById('date').valueAsDate = new Date();
+  
+  initTasks();
+</script>
+
+</body>
+</html>

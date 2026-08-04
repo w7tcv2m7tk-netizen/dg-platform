@@ -40,6 +40,7 @@ class DG_Module_Registry {
                 'name' => 'Digital Marketing',
                 'icon' => '📊',
                 'description' => 'Agency clients, AI Visibility, Voice Agent, Audits',
+                'site_host' => 'digitalgate.com.au',
                 'version' => '10.1.0',
                 'class' => 'DG_Module_Marketing',
                 'file' => 'marketing/marketing.php',
@@ -60,7 +61,9 @@ class DG_Module_Registry {
                 'name' => 'Real Estate',
                 'icon' => '🏠',
                 'description' => 'Vendor leads, Appraisals, Listings, Buyers, Sales',
+                'site_host' => 'roerealty.com.au',
                 'version' => '10.0.0',
+                'beta_status' => 'ga',
                 'class' => 'DG_Module_RealEstate',
                 'file' => 'real-estate/real-estate.php',
                 'is_core' => false,
@@ -91,10 +94,11 @@ class DG_Module_Registry {
             ],
             'accommodation' => [
                 'key' => 'accommodation',
-                'name' => 'Accommodation',
+                'name' => 'Currumbin Valley Hideaway',
                 'icon' => '🏨',
-                'description' => 'Reservations, Properties, Guests, Housekeeping',
-                'version' => '10.4.0',
+                'description' => 'Stay bookings, properties, guests, housekeeping, check-in',
+                'site_host' => 'currumbinvalleyhideaway.com.au',
+                'version' => '10.5.1',
                 'class' => 'DG_Module_Accommodation',
                 'file' => 'accommodation/accommodation.php',
                 'is_core' => false,
@@ -107,56 +111,117 @@ class DG_Module_Registry {
                     'dg_acc_manage_guests',
                 ],
             ],
+            'creator' => [
+                'key' => 'creator',
+                'name' => 'Creator',
+                'icon' => '✨',
+                'description' => 'Content, projects, audience, and creator CRM',
+                'site_host' => 'aetherra.com.au',
+                'version' => '10.6.0',
+                'beta_status' => 'preview',
+                'class' => 'DG_Module_Creator',
+                'file' => 'creator/creator.php',
+                'is_core' => false,
+                'required' => false,
+                'dependencies' => ['core'],
+                'capabilities' => [
+                    'dg_creator_view_content',
+                    'dg_creator_manage_content',
+                    'dg_creator_view_audience',
+                    'dg_creator_manage_audience',
+                ],
+            ],
             'finance' => [
                 'key' => 'finance',
+                'name' => 'Finance',
                 'icon' => '💰',
-                'description' => 'Loans, Lenders, Borrowers',
-                'version' => '0.0.0',
+                'description' => 'Loan applications, lenders, and settlement pipeline',
+                'version' => '10.11.0',
+                'beta_status' => 'preview',
                 'class' => 'DG_Module_Finance',
                 'file' => 'finance/finance.php',
                 'is_core' => false,
                 'required' => false,
                 'dependencies' => ['core'],
-                'capabilities' => [],
+                'capabilities' => [
+                    'dg_fin_view_loans',
+                    'dg_fin_manage_loans',
+                ],
+                'pipelines' => [
+                    'loan_pipeline' => [
+                        'label' => 'Loan Pipeline',
+                        'stages' => ['inquiry', 'pre_approval', 'application', 'assessment', 'approved', 'settled', 'declined'],
+                    ],
+                ],
             ],
             'commercial' => [
                 'key' => 'commercial',
                 'name' => 'Commercial',
                 'icon' => '🏢',
-                'description' => 'Commercial Listings, Tenants',
-                'version' => '0.0.0',
+                'description' => 'Commercial listings, tenants, and lease pipeline',
+                'version' => '10.11.0',
+                'beta_status' => 'preview',
                 'class' => 'DG_Module_Commercial',
                 'file' => 'commercial/commercial.php',
                 'is_core' => false,
                 'required' => false,
                 'dependencies' => ['core'],
-                'capabilities' => [],
+                'capabilities' => [
+                    'dg_com_view_listings',
+                    'dg_com_manage_listings',
+                ],
+                'pipelines' => [
+                    'tenancy_pipeline' => [
+                        'label' => 'Tenancy Pipeline',
+                        'stages' => ['inquiry', 'inspection', 'offer', 'lease_signed', 'active', 'expired'],
+                    ],
+                ],
             ],
             'dealership' => [
                 'key' => 'dealership',
-                'name' => 'Dealership',
+                'name' => 'Automotive',
                 'icon' => '🚗',
-                'description' => 'Inventory, Test Drives',
-                'version' => '0.0.0',
+                'description' => 'Vehicle inventory, leads, and test drives',
+                'version' => '10.11.0',
+                'beta_status' => 'preview',
                 'class' => 'DG_Module_Dealership',
                 'file' => 'dealership/dealership.php',
                 'is_core' => false,
                 'required' => false,
                 'dependencies' => ['core'],
-                'capabilities' => [],
+                'capabilities' => [
+                    'dg_dealer_view_inventory',
+                    'dg_dealer_manage_inventory',
+                ],
+                'pipelines' => [
+                    'sales_pipeline' => [
+                        'label' => 'Sales Pipeline',
+                        'stages' => ['inquiry', 'test_drive', 'negotiation', 'finance', 'sold', 'lost'],
+                    ],
+                ],
             ],
             'services' => [
                 'key' => 'services',
                 'name' => 'Services',
                 'icon' => '🔧',
-                'description' => 'Jobs, Invoices',
-                'version' => '0.0.0',
+                'description' => 'Service jobs, quotes, and invoicing pipeline',
+                'version' => '10.11.0',
+                'beta_status' => 'preview',
                 'class' => 'DG_Module_Services',
                 'file' => 'services/services.php',
                 'is_core' => false,
                 'required' => false,
                 'dependencies' => ['core'],
-                'capabilities' => [],
+                'capabilities' => [
+                    'dg_svc_view_jobs',
+                    'dg_svc_manage_jobs',
+                ],
+                'pipelines' => [
+                    'jobs_pipeline' => [
+                        'label' => 'Jobs Pipeline',
+                        'stages' => ['inquiry', 'quote', 'scheduled', 'in_progress', 'invoiced', 'complete', 'cancelled'],
+                    ],
+                ],
             ],
         ];
 
@@ -230,17 +295,24 @@ class DG_Module_Registry {
                 continue;
             }
 
-            require_once $module_file;
+            try {
+                require_once $module_file;
 
-            if (!empty($definition['class']) && class_exists($definition['class'])) {
-                $instance = $definition['class']::get_instance($platform);
-                $this->register_instance($module_key, $instance);
+                if (!empty($definition['class']) && class_exists($definition['class'])) {
+                    $instance = $definition['class']::get_instance($platform);
+                    $this->register_instance($module_key, $instance);
 
-                if (!empty($definition['pipelines'])) {
-                    foreach ($definition['pipelines'] as $pipeline_key => $pipeline) {
-                        $this->register_pipeline($module_key, $pipeline_key, $pipeline);
+                    if (!empty($definition['pipelines'])) {
+                        foreach ($definition['pipelines'] as $pipeline_key => $pipeline) {
+                            $this->register_pipeline($module_key, $pipeline_key, $pipeline);
+                        }
                     }
                 }
+            } catch (Throwable $e) {
+                if (defined('WP_DEBUG') && WP_DEBUG) {
+                    error_log('DG Platform module load failed (' . $module_key . '): ' . $e->getMessage());
+                }
+                continue;
             }
         }
 

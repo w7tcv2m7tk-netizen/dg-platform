@@ -9,18 +9,8 @@
             </div>
         <?php endforeach; ?>
     </div>
-    <div class="dg-panel">
-        <h3>Integration Status</h3>
-        <table class="wp-list-table widefat fixed striped">
-            <thead><tr><th>Integration</th><th>Status</th></tr></thead>
-            <tbody>
-                <?php foreach ($integrations as $name => $connected) : ?>
-                    <tr>
-                        <td><?php echo esc_html(ucwords(str_replace('_', ' ', $name))); ?></td>
-                        <td><?php echo $connected ? '✅ Connected' : '⚪ Not configured'; ?></td>
-                    </tr>
-                <?php endforeach; ?>
-            </tbody>
-        </table>
-    </div>
+    <?php
+    $integration_rows = class_exists('DG_Integrations') ? DG_Integrations::get_hub_rows() : [];
+    include DG_PLATFORM_PATH . 'templates/admin/integrations-panel.php';
+    ?>
 </div>

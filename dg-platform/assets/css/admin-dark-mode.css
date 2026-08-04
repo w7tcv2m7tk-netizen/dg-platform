@@ -1446,3 +1446,73 @@
 .admin-dark-mode #wp-admin-bar-dg-dark-toggle .ab-item {
     color: var(--dg-accent-muted, #60A5FA) !important;
 }
+
+#wp-admin-bar-dg-purge-cache .ab-item,
+#wp-admin-bar-dg-site-tools .ab-item,
+#wp-admin-bar-dg-platform-quick .ab-item,
+#wp-admin-bar-dg-beta-setup .ab-item,
+.admin-dark-mode #wp-admin-bar-dg-purge-cache .ab-item,
+.admin-dark-mode #wp-admin-bar-dg-site-tools .ab-item,
+.admin-dark-mode #wp-admin-bar-dg-platform-quick .ab-item,
+.admin-dark-mode #wp-admin-bar-dg-beta-setup .ab-item {
+    color: var(--dg-adminbar-icon, #B9A48A) !important;
+}
+
+#wp-admin-bar-dg-purge-cache .ab-item:hover,
+#wp-admin-bar-dg-site-tools .ab-item:hover,
+#wp-admin-bar-dg-platform-quick .ab-item:hover,
+#wp-admin-bar-dg-beta-setup .ab-item:hover {
+    color: var(--dg-accent, #C9A46C) !important;
+}
+
+/* ─── ACCOMMODATION PROPERTY META BOXES ─────────────────────────────────── */
+.admin-dark-mode .dg-meta-grid .dg-meta-field label,
+.admin-dark-mode .dg-meta-grid .dg-section-title,
+.admin-dark-mode .dg-booking-settings-field label,
+.admin-dark-mode .dg-booking-meta-field label {
+    color: var(--dg-text, #e6edf3) !important;
+}
+
+.admin-dark-mode .dg-meta-field input,
+.admin-dark-mode .dg-meta-field select,
+.admin-dark-mode .dg-meta-field textarea,
+.admin-dark-mode .dg-booking-settings-field input,
+.admin-dark-mode .dg-booking-settings-field select,
+.admin-dark-mode .dg-booking-meta-field input,
+.admin-dark-mode .dg-booking-meta-field select,
+.admin-dark-mode .dg-booking-meta-field textarea {
+    background: var(--dg-bg-inset, #1c1c1e) !important;
+    border-color: var(--dg-border, #48484a) !important;
+    color: var(--dg-text, #e6edf3) !important;
+}
+
+.admin-dark-mode .dg-meta-field .helper,
+.admin-dark-mode .dg-booking-settings-field .helper,
+.admin-dark-mode .dg-note-box,
+.admin-dark-mode .dg-booking-settings div[style*="background:#f8f6f2"] {
+    background: var(--dg-bg-panel, #2c2c2e) !important;
+    color: var(--dg-text-muted, #a1a1aa) !important;
+    border-color: var(--dg-accent, #C9A46C) !important;
+}
+
+.admin-dark-mode .post-type-dg_accommodation #poststuff .inside,
+.admin-dark-mode .post-type-dg_accommodation .postbox {
+    background: var(--dg-bg-panel, #2c2c2e) !important;
+    border-color: var(--dg-border, #48484a) !important;
+    color: var(--dg-text, #e6edf3) !important;
+}
+
+.admin-dark-mode .post-type-dg_accommodation .postbox-header {
+    background: var(--dg-bg-elevated, #3a3a3c) !important;
+    border-color: var(--dg-border, #48484a) !important;
+}
+
+.admin-dark-mode .post-type-dg_accommodation .postbox-header h2,
+.admin-dark-mode .post-type-dg_accommodation .postbox-header .handle-order-higher,
+.admin-dark-mode .post-type-dg_accommodation .postbox-header .handle-order-lower {
+    color: var(--dg-text, #e6edf3) !important;
+}
+
+.admin-dark-mode .dg-features-grid label {
+    color: var(--dg-text-muted, #c8c8cc) !important;
+}

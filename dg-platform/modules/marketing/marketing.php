@@ -337,6 +337,12 @@ class DG_Module_Marketing {
             DG_Marketing_AI_Visibility::record_scan($company_id, $audit_data, 'audit_webhook');
         }
 
+        do_action('dg_audit_completed', $company_id, [
+            'email' => $email,
+            'name' => $full_name,
+            'business_name' => $agency_name,
+        ]);
+
         DG_Marketing_Clients::sync_company($company_id);
         do_action('dg_marketing_audit_created', $company_id, $full_name, $email, $phone, $agency_name, [
             'website' => $agency_website,
@@ -374,9 +380,10 @@ class DG_Module_Marketing {
     
     private function send_audit_email($to, $name, $company, $audit_data, $audit_url) {
         $subject = 'Your Agency Visibility Audit Results';
+        $first_name = class_exists('DG_Email_Names') ? DG_Email_Names::first_name($name) : $name;
 
         $message = class_exists('DG_Marketing_Emails')
-            ? DG_Marketing_Emails::initial_audit_email($name, $company->company_name, $audit_data, $audit_url)
+            ? DG_Marketing_Emails::initial_audit_email($first_name, $company->company_name, $audit_data, $audit_url)
             : '';
 
         if ($message === '') {
@@ -954,7 +961,7 @@ class DG_Module_Marketing {
         add_submenu_page('dg-platform', 'Import Contacts', '📥 Import Contacts', DG_Marketing_Permissions::menu_cap_import(), 'dg-marketing-import', ['DG_Marketing_Import', 'render_admin_page']);
         add_submenu_page('dg-platform', 'Voice Agent', '🎙️ Voice Agent', DG_Marketing_Permissions::menu_cap_voice(), 'dg-platform-voice', [$this, 'render_voice']);
         add_submenu_page('dg-platform', 'Visibility Audits', '🔍 Audits', DG_Marketing_Permissions::menu_cap_audits(), 'dg-platform-audits', [$this, 'render_audits']);
-        add_submenu_page('dg-platform', 'AI Visibility', '🤖 AI Visibility', DG_Marketing_Permissions::menu_cap_ai(), 'dg-platform-ai', [$this, 'render_ai']);
+        add_submenu_page('dg-platform', 'Agency AI Audits', '🤖 Agency AI Audits', DG_Marketing_Permissions::menu_cap_ai(), 'dg-platform-ai', [$this, 'render_ai']);
         add_submenu_page('dg-platform', 'Email Templates', '✉️ Email Templates', DG_Marketing_Permissions::menu_cap_clients(), 'dg-marketing-email-templates', ['DG_Marketing_Admin_Views', 'render_email_templates']);
     }
 
@@ -982,8 +989,8 @@ class DG_Module_Marketing {
     public function register_automation_menu() {
         add_submenu_page(
             'dg-platform',
-            'Email Automation',
-            '📧 Automation',
+            'Agency Email Sequences',
+            '📧 Agency Sequences',
             DG_Marketing_Permissions::menu_cap_clients(),
             'dg-platform-automation',
             [$this, 'render_automation_dashboard']
@@ -1572,7 +1579,11 @@ class DG_Module_Marketing {
                             <td><?php echo $audit->overall_score; ?>%</td>
                             <td><span style="background:<?php echo $audit->grade === 'A' ? '#34D399' : ($audit->grade === 'B' ? '#60A5FA' : ($audit->grade === 'C' ? '#FBBF24' : '#F87171')); ?>;color:#fff;padding:2px 10px;border-radius:12px;font-size:11px;"><?php echo esc_html($audit->grade); ?></span></td>
                             <td><span style="background:<?php echo $audit->pdf_path ? '#34D399' : '#FBBF24'; ?>;color:#fff;padding:2px 10px;border-radius:12px;font-size:11px;"><?php echo $audit->pdf_path ? '✅ Ready' : '⏳ Processing'; ?></span></td>
-                            <td><?php if ($audit->pdf_path) : ?><a href="<?php echo esc_url($audit->pdf_path); ?>" target="_blank" class="button button-small">📄 View</a><?php endif; ?><a href="<?php echo admin_url('admin-post.php?action=dg_marketing_delete_audit&audit_id=' . $audit->id . '&_wpnonce=' . wp_create_nonce('dg_marketing_delete_audit')); ?>" onclick="return confirm('Delete this audit?')" style="color:#F87171;">🗑️ Delete</a></td>
+                            <td><?php if ($audit->pdf_path) : ?><a href="<?php echo esc_url($audit->pdf_path); ?>" target="_blank" class="button button-small">📄 View</a><?php endif; ?>
+                            <?php if (class_exists('DG_AI_Assist') && DG_AI_Assist::available()) : ?>
+                                <button type="button" class="button button-small dg-ai-btn" data-ai-task="audit_executive_summary" data-ai-audit-id="<?php echo (int) $audit->id; ?>" data-ai-modal="1" data-ai-modal-title="Executive summary">✨ AI summary</button>
+                            <?php endif; ?>
+                            <a href="<?php echo admin_url('admin-post.php?action=dg_marketing_delete_audit&audit_id=' . $audit->id . '&_wpnonce=' . wp_create_nonce('dg_marketing_delete_audit')); ?>" onclick="return confirm('Delete this audit?')" style="color:#F87171;">🗑️ Delete</a></td>
                         </tr>
                     <?php endforeach; else : ?>
                         <tr><td colspan="8" style="text-align:center;padding:30px 0;color:#999;">No audits found. Select a client above to generate your first audit.</td></tr>
@@ -1749,6 +1760,39 @@ class DG_Module_Marketing {
         <?php if (isset($_GET['added'])) : ?><div class="notice notice-success"><p>✅ Contact added successfully!</p></div><?php endif; ?>
         <?php if (isset($_GET['edited'])) : ?><div class="notice notice-success"><p>✅ Contact updated successfully!</p></div><?php endif; ?>
         <?php if (isset($_GET['deleted'])) : ?><div class="notice notice-success"><p>✅ Contact deleted successfully!</p></div><?php endif; ?>
+        <?php
+        $edit_contact_id = isset($_GET['edit_contact']) ? (int) $_GET['edit_contact'] : 0;
+        $edit_contact = null;
+        if ($edit_contact_id > 0) {
+            foreach ($contacts as $c) {
+                if ((int) $c->id === $edit_contact_id) {
+                    $edit_contact = $c;
+                    break;
+                }
+            }
+        }
+        if ($edit_contact) : ?>
+        <div class="dg-panel-inset" style="margin-bottom:15px;">
+            <h4>Edit contact</h4>
+            <form method="post" action="<?php echo admin_url('admin-post.php'); ?>">
+                <input type="hidden" name="action" value="dg_marketing_edit_contact">
+                <input type="hidden" name="contact_id" value="<?php echo (int) $edit_contact->id; ?>">
+                <input type="hidden" name="company_id" value="<?php echo (int) $client_id; ?>">
+                <?php wp_nonce_field('dg_marketing_edit_contact'); ?>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+                    <div><label>First Name *</label><br><input type="text" name="first_name" required style="width:100%;" value="<?php echo esc_attr($edit_contact->first_name); ?>"></div>
+                    <div><label>Last Name</label><br><input type="text" name="last_name" style="width:100%;" value="<?php echo esc_attr($edit_contact->last_name); ?>"></div>
+                    <div><label>Email *</label><br><input type="email" name="email" required style="width:100%;" value="<?php echo esc_attr($edit_contact->email); ?>"></div>
+                    <div><label>Phone</label><br><input type="text" name="phone" style="width:100%;" value="<?php echo esc_attr($edit_contact->phone); ?>"></div>
+                    <div><label>Position</label><br><input type="text" name="position" style="width:100%;" value="<?php echo esc_attr($edit_contact->position); ?>"></div>
+                    <div><label><input type="checkbox" name="is_primary" <?php checked($edit_contact->is_primary, 1); ?>> Primary Contact</label></div>
+                    <div style="grid-column:1/3;"><label>Notes</label><br><textarea name="notes" style="width:100%;height:60px;"><?php echo esc_textarea($edit_contact->notes); ?></textarea></div>
+                </div>
+                <div style="margin-top:10px;"><button type="submit" class="button button-primary">Save changes</button>
+                <a href="<?php echo esc_url(admin_url('admin.php?page=dg-platform-clients&tab=contacts&client_id=' . $client_id)); ?>" class="button">Cancel</a></div>
+            </form>
+        </div>
+        <?php endif; ?>
         <button id="dg-show-add-contact" class="button button-primary" style="margin-bottom:15px;">➕ Add Contact</button>
         <div id="dg-add-contact-form" style="display:none;" class="dg-panel-inset">
             <form method="post" action="<?php echo admin_url('admin-post.php'); ?>">
@@ -1768,7 +1812,7 @@ class DG_Module_Marketing {
         <table class="wp-list-table widefat fixed striped">
             <thead><tr><th>Name</th><th>Email</th><th>Phone</th><th>Position</th><th>Status</th><th>Actions</th></tr></thead>
             <tbody><?php if ($contacts) : foreach ($contacts as $contact) : ?>
-                <tr><td><?php echo esc_html($contact->first_name . ' ' . $contact->last_name); ?> <?php echo $contact->is_primary ? '⭐' : ''; ?></td><td><?php echo esc_html($contact->email); ?></td><td><?php echo esc_html($contact->phone); ?></td><td><?php echo esc_html($contact->position); ?></td><td><span style="background:<?php echo $contact->status === 'active' ? '#34D399' : '#999'; ?>;color:#fff;padding:2px 10px;border-radius:12px;font-size:11px;"><?php echo ucfirst($contact->status); ?></span></td><td><a href="<?php echo admin_url('admin-post.php?action=dg_marketing_delete_contact&contact_id=' . $contact->id . '&company_id=' . $client_id . '&_wpnonce=' . wp_create_nonce('dg_marketing_delete_contact')); ?>" onclick="return confirm('Delete this contact?')" style="color:#C62828;">🗑️ Delete</a></td></tr>
+                <tr><td><?php echo esc_html($contact->first_name . ' ' . $contact->last_name); ?> <?php echo $contact->is_primary ? '⭐' : ''; ?></td><td><?php echo esc_html($contact->email); ?></td><td><?php echo esc_html($contact->phone); ?></td><td><?php echo esc_html($contact->position); ?></td><td><span style="background:<?php echo $contact->status === 'active' ? '#34D399' : '#999'; ?>;color:#fff;padding:2px 10px;border-radius:12px;font-size:11px;"><?php echo ucfirst($contact->status); ?></span></td><td><a href="<?php echo esc_url(admin_url('admin.php?page=dg-platform-clients&tab=contacts&client_id=' . $client_id . '&edit_contact=' . (int) $contact->id)); ?>">Edit</a> · <a href="<?php echo admin_url('admin-post.php?action=dg_marketing_delete_contact&contact_id=' . $contact->id . '&company_id=' . $client_id . '&_wpnonce=' . wp_create_nonce('dg_marketing_delete_contact')); ?>" onclick="return confirm('Delete this contact?')" style="color:#C62828;">Delete</a></td></tr>
             <?php endforeach; else : ?><tr><td colspan="6" style="text-align:center;padding:20px;color:#999;">No contacts.</td></tr><?php endif; ?></tbody>
         </table>
         <script>
@@ -1815,7 +1859,7 @@ class DG_Module_Marketing {
             <table class="wp-list-table widefat fixed striped">
                 <thead><tr><th>ID</th><th>Date</th><th>AI Score</th><th>Overall</th><th>Grade</th><th>Status</th><th>Actions</th></tr></thead>
                 <tbody><?php foreach ($audits as $audit) : ?>
-                    <tr><td><?php echo $audit->id; ?></td><td><?php echo date('M j, Y', strtotime($audit->audit_date)); ?></td><td><?php echo $audit->ai_score; ?>%</td><td><?php echo $audit->overall_score; ?>%</td><td><span style="background:<?php echo $audit->grade === 'A' ? '#34D399' : ($audit->grade === 'B' ? '#60A5FA' : ($audit->grade === 'C' ? '#FBBF24' : '#F87171')); ?>;color:#fff;padding:2px 10px;border-radius:12px;"><?php echo $audit->grade; ?></span></td><td><?php echo $audit->pdf_path ? '✅ Ready' : '⏳ Processing'; ?></td><td><?php if ($audit->pdf_path) : ?><a href="<?php echo esc_url($audit->pdf_path); ?>" target="_blank" class="button button-small">📄 View</a><?php endif; ?></td></tr>
+                    <tr><td><?php echo $audit->id; ?></td><td><?php echo date('M j, Y', strtotime($audit->audit_date)); ?></td><td><?php echo $audit->ai_score; ?>%</td><td><?php echo $audit->overall_score; ?>%</td><td><span style="background:<?php echo $audit->grade === 'A' ? '#34D399' : ($audit->grade === 'B' ? '#60A5FA' : ($audit->grade === 'C' ? '#FBBF24' : '#F87171')); ?>;color:#fff;padding:2px 10px;border-radius:12px;"><?php echo $audit->grade; ?></span></td><td><?php echo $audit->pdf_path ? '✅ Report ready' : '⏳ Processing'; ?></td><td><?php if ($audit->pdf_path) : ?><a href="<?php echo esc_url($audit->pdf_path); ?>" target="_blank" class="button button-small">View report</a><?php endif; ?></td></tr>
                 <?php endforeach; ?></tbody>
             </table>
         <?php else : ?><p style="color:#999;">No audits yet. Generate one above.</p><?php endif; ?>

@@ -31,6 +31,14 @@ class DG_RE_Permissions {
         return 'dg_re_view_listings';
     }
 
+    public static function cap_manage_listings() {
+        return 'dg_re_manage_listings';
+    }
+
+    public static function menu_cap_listings() {
+        return self::cap_view_listings();
+    }
+
     public static function cap_view_agents() {
         return 'dg_re_view_agents';
     }
@@ -57,5 +65,13 @@ class DG_RE_Permissions {
 
     public static function can_manage_buyers() {
         return DG_Permissions::current_user_can(self::cap_manage_buyers());
+    }
+
+    public static function can_view_listings() {
+        return DG_Permissions::current_user_can(self::cap_view_listings());
+    }
+
+    public static function can_manage_listings() {
+        return DG_Permissions::current_user_can(self::cap_manage_listings());
     }
 }

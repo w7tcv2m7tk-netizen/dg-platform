@@ -266,6 +266,19 @@ class DG_RE_Buyer_Leads {
         ));
     }
 
+    public static function delete($buyer_id) {
+        global $wpdb;
+        $buyer_id = (int) $buyer_id;
+        $buyer = self::get($buyer_id);
+        if (!$buyer) {
+            return false;
+        }
+        if (!empty($buyer->pipeline_id)) {
+            $wpdb->delete(self::pipeline_table(), ['id' => (int) $buyer->pipeline_id], ['%d']);
+        }
+        return (bool) $wpdb->delete(self::buyers_table(), ['id' => $buyer_id], ['%d']);
+    }
+
     public static function count($status = null) {
         global $wpdb;
         $table = self::buyers_table();

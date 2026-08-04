@@ -11,12 +11,23 @@ if (!defined('ABSPATH')) {
 
 class DG_Acc_Reports {
 
+    private static function safe_post_count($post_type, $status = 'publish') {
+        if (!post_type_exists($post_type)) {
+            return 0;
+        }
+        $counts = wp_count_posts($post_type);
+        if (!is_object($counts) || !isset($counts->{$status})) {
+            return 0;
+        }
+        return (int) $counts->{$status};
+    }
+
     public static function properties_count() {
-        return (int) wp_count_posts('dg_accommodation')->publish;
+        return self::safe_post_count('dg_accommodation');
     }
 
     public static function guests_count() {
-        return (int) wp_count_posts('dg_guest')->publish;
+        return self::safe_post_count('dg_guest');
     }
 
     public static function bookings_query($args = []) {

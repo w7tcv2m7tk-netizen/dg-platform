@@ -1,0 +1,117 @@
+<!-- ACCOUNT PAGE - paste into Oxygen PHP Code Block on /client-account/ only. -->
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@100..800&family=Inter:opsz,wght@14..32,400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+
+<style>
+  .dg-client-account { font-family: 'Inter', sans-serif; background: #0A0E17; color: #FFFFFF; line-height: 1.5; margin: 0; padding: 0; }
+  .dg-client-account * { box-sizing: border-box; }
+  .dg-client-account .page-header { background: linear-gradient(135deg, #0A0E17 0%, #1A2A3A 100%); padding: 48px 0 32px; border-bottom: 1px solid rgba(59, 130, 246, 0.2); }
+  .dg-client-account .wrap { max-width: 900px; margin: 0 auto; padding: 0 2rem; }
+  .dg-client-account .header-flex { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; }
+  .dg-client-account h1 { font-family: 'Sora', sans-serif; font-size: 1.75rem; margin: 0 0 0.25rem; color: #fff; }
+  .dg-client-account .sub { color: #94A3B8; margin: 0; font-size: 0.95rem; }
+  .dg-client-account .header-btn { background: #334155; color: #fff; padding: 0.5rem 1rem; border-radius: 40px; text-decoration: none; font-size: 0.8rem; font-weight: 600; }
+  .dg-client-account .header-btn:hover { background: #475569; color: #fff; }
+  .dg-client-account .content { padding: 2rem 0 3rem; }
+  .dg-client-account .card { background: #1E293B; border: 1px solid #334155; border-radius: 20px; padding: 1.5rem; margin-bottom: 1.5rem; }
+  .dg-client-account .card h2 { font-family: 'Sora', sans-serif; font-size: 1.1rem; margin: 0 0 1rem; color: #fff; display: flex; align-items: center; gap: 8px; }
+  .dg-client-account .card h2 i { color: #3B82F6; }
+  .dg-client-account .field { display: grid; grid-template-columns: 140px 1fr; gap: 0.5rem 1rem; padding: 0.65rem 0; border-bottom: 1px solid #334155; font-size: 0.88rem; }
+  .dg-client-account .field:last-child { border-bottom: none; }
+  .dg-client-account .label { color: #64748B; }
+  .dg-client-account .value { color: #E2E8F0; word-break: break-word; }
+  .dg-client-account .actions { display: flex; flex-wrap: wrap; gap: 0.75rem; margin-top: 1rem; }
+  .dg-client-account .btn { display: inline-flex; align-items: center; gap: 8px; background: #0F172A; border: 1px solid #334155; color: #fff; padding: 0.65rem 1rem; border-radius: 12px; text-decoration: none; font-size: 0.82rem; }
+  .dg-client-account .btn:hover { border-color: #3B82F6; background: #1A253A; }
+  .dg-client-account .btn-primary { background: #3B82F6; border-color: #3B82F6; }
+  .dg-client-account .btn-primary:hover { background: #2563EB; }
+  .dg-client-account .note { color: #94A3B8; font-size: 0.82rem; margin: 0.75rem 0 0; line-height: 1.5; }
+  .dg-client-account .builder-note { background: rgba(59, 130, 246, 0.12); border: 1px solid rgba(59, 130, 246, 0.35); color: #BFDBFE; padding: 0.85rem 1rem; border-radius: 12px; margin-bottom: 1.5rem; font-size: 0.85rem; }
+  @media (max-width: 640px) { .dg-client-account .field { grid-template-columns: 1fr; } .dg-client-account .wrap { padding: 0 1rem; } }
+</style>
+
+<?php
+if (class_exists('DG_Client_Portal') && method_exists('DG_Client_Portal', 'account_template_context')) {
+    extract(DG_Client_Portal::account_template_context(), EXTR_SKIP);
+} else {
+    $name = 'Client';
+    $email = '';
+    $org_name = '';
+    $purchase_label = '';
+    $dashboard_url = home_url('/client-dashboard/');
+    $onboarding_url = home_url('/onboarding/');
+    $password_url = home_url('/wp-login.php?action=lostpassword');
+    $logout_url = home_url('/client-portal/');
+    $is_builder = false;
+    $show_wp_admin = false;
+}
+?>
+
+<div class="dg-client-account">
+
+<div class="page-header">
+  <div class="wrap header-flex">
+    <div>
+      <h1>My account</h1>
+      <p class="sub">Profile, login, and your DigitalGate plan details.</p>
+    </div>
+    <a href="<?php echo esc_url($dashboard_url); ?>" class="header-btn"><i class="fas fa-arrow-left"></i> Back to dashboard</a>
+  </div>
+</div>
+
+<div class="wrap content">
+
+  <?php if (!empty($is_builder)) : ?>
+  <div class="builder-note">Account page preview in Oxygen. Save and view the front end while signed in to see live profile and plan data.</div>
+  <?php endif; ?>
+
+  <div class="card">
+    <h2><i class="fas fa-user"></i> Profile</h2>
+    <div class="field"><div class="label">Name</div><div class="value"><?php echo esc_html($name); ?></div></div>
+    <div class="field"><div class="label">Email</div><div class="value"><?php echo esc_html($email); ?></div></div>
+    <?php if ($org_name !== '') : ?>
+    <div class="field"><div class="label">Business</div><div class="value"><?php echo esc_html($org_name); ?></div></div>
+    <?php endif; ?>
+    <?php if ($purchase_label !== '') : ?>
+    <div class="field"><div class="label">Plan</div><div class="value"><?php echo esc_html($purchase_label); ?></div></div>
+    <?php endif; ?>
+    <div class="actions">
+      <a href="<?php echo esc_url($password_url); ?>" class="btn btn-primary"><i class="fas fa-key"></i> Change password</a>
+      <?php if (!empty($show_wp_admin)) : ?>
+      <a href="<?php echo esc_url(admin_url()); ?>" class="btn"><i class="fas fa-cog"></i> WordPress admin</a>
+      <?php endif; ?>
+      <a href="<?php echo esc_url($logout_url); ?>" class="btn"><i class="fas fa-sign-out-alt"></i> Log out</a>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2><i class="fas fa-headset"></i> Support</h2>
+    <p class="note">Questions about your platform, onboarding, or billing? Chat with our team. We reply here and by email, typically within a few hours on business days.</p>
+    <div class="actions">
+      <a href="#" class="btn btn-primary dg-support-open"><i class="fas fa-comment-dots"></i> Open live support</a>
+      <a href="mailto:support@digitalgate.com.au" class="btn"><i class="fas fa-envelope"></i> Email support</a>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2><i class="fas fa-file-invoice-dollar"></i> Billing</h2>
+    <p class="note">Subscription and invoice management is handled through Stripe. For billing questions or plan changes, use live support or email <a href="mailto:support@digitalgate.com.au" style="color:#60A5FA;">support@digitalgate.com.au</a>.</p>
+    <div class="actions">
+      <a href="#" class="btn dg-support-open"><i class="fas fa-comment-dots"></i> Ask about billing</a>
+      <a href="https://digitalgate.com.au/pricing/" class="btn"><i class="fas fa-layer-group"></i> View plans</a>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2><i class="fas fa-clipboard-list"></i> Onboarding</h2>
+    <p class="note">Need to update business details, branding, or platform access? Submit or update your onboarding form anytime.</p>
+    <div class="actions">
+      <a href="<?php echo esc_url($onboarding_url); ?>" class="btn btn-primary"><i class="fas fa-edit"></i> Open onboarding form</a>
+    </div>
+  </div>
+
+</div>
+</div>

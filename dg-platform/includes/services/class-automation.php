@@ -70,6 +70,14 @@ class DG_Automation {
     }
 
     public static function run($automation, $context = []) {
+        $context = class_exists('DG_Email_Names') ? DG_Email_Names::normalize_context($context) : $context;
+        if (class_exists('DG_Automation_Pro_Runner') && class_exists('DG_Automation_Pro_Settings') && DG_Automation_Pro_Settings::is_enabled()) {
+            $full = is_object($automation) && !empty($automation->id) ? self::get($automation->id) : $automation;
+            if ($full) {
+                return DG_Automation_Pro_Runner::run_workflow($full, $context);
+            }
+        }
+
         global $wpdb;
         $steps = json_decode($automation->steps, true) ?: [];
 
@@ -120,12 +128,22 @@ class DG_Automation {
     }
 
     private static function action_send_email($step, $context) {
+        $context = class_exists('DG_Email_Names') ? DG_Email_Names::normalize_context($context) : $context;
         $to = $step['to'] ?? ($context['email'] ?? '');
         if (!$to) {
             return new WP_Error('no_recipient', 'No email recipient.');
         }
         $subject = $step['subject'] ?? 'Notification';
         $message = $step['message'] ?? '';
+        if (class_exists('DG_Email_Names')) {
+            $map = [
+                '{{email}}' => $context['email'] ?? '',
+                '{{name}}' => DG_Email_Names::first_name($context['name'] ?? ($context['first_name'] ?? '')),
+                '{{phone}}' => $context['phone'] ?? '',
+            ];
+            $subject = str_replace(array_keys($map), array_values($map), $subject);
+            $message = str_replace(array_keys($map), array_values($map), $message);
+        }
         $headers = $step['headers'] ?? [];
         wp_mail($to, $subject, $message, $headers);
         DG_Activities::log([
@@ -141,6 +159,13 @@ class DG_Automation {
         if (!wp_next_scheduled('dg_process_automations')) {
             wp_schedule_event(time(), 'every_minute', 'dg_process_automations');
         }
+    }
+
+    public static function delete($id) {
+        global $wpdb;
+        $id = (int) $id;
+        $wpdb->delete(self::logs_table(), ['automation_id' => $id]);
+        return $wpdb->delete(self::table(), ['id' => $id]);
     }
 }
 

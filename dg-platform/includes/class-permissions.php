@@ -81,7 +81,34 @@ class DG_Permissions {
             'dg_acc_manage_guests',
         ];
 
-        return array_merge($core, $marketing, $real_estate, $accommodation, apply_filters('dg_platform_capabilities', []));
+        $creator = [
+            'dg_creator_view_content',
+            'dg_creator_manage_content',
+            'dg_creator_view_audience',
+            'dg_creator_manage_audience',
+        ];
+
+        $finance = [
+            'dg_fin_view_loans',
+            'dg_fin_manage_loans',
+        ];
+
+        $services = [
+            'dg_svc_view_jobs',
+            'dg_svc_manage_jobs',
+        ];
+
+        $dealership = [
+            'dg_dealer_view_inventory',
+            'dg_dealer_manage_inventory',
+        ];
+
+        $commercial = [
+            'dg_com_view_listings',
+            'dg_com_manage_listings',
+        ];
+
+        return array_merge($core, $marketing, $real_estate, $accommodation, $creator, $finance, $services, $dealership, $commercial, ['dg_client_portal'], apply_filters('dg_platform_capabilities', []));
     }
 
     public static function install_role_templates() {
@@ -135,6 +162,19 @@ class DG_Permissions {
             'dg_marketing_manage_voice' => true,
             'dg_marketing_import_contacts' => true,
         ]);
+
+        self::ensure_role('dg_creator', 'DG Creator', [
+            'read' => true,
+            'dg_access_platform' => true,
+            'dg_view_contacts' => true,
+            'dg_manage_contacts' => true,
+            'dg_view_tasks' => true,
+            'dg_manage_tasks' => true,
+            'dg_creator_view_content' => true,
+            'dg_creator_manage_content' => true,
+            'dg_creator_view_audience' => true,
+            'dg_creator_manage_audience' => true,
+        ]);
     }
 
     private static function ensure_role($role_key, $display_name, $caps) {
@@ -158,6 +198,9 @@ class DG_Permissions {
     }
 
     public static function menu_cap($default = 'dg_access_platform') {
+        if (current_user_can('manage_options')) {
+            return 'manage_options';
+        }
         return apply_filters('dg_platform_menu_capability', $default);
     }
 

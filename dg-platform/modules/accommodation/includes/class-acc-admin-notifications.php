@@ -49,20 +49,29 @@ class DG_Acc_Admin_Notifications {
         $ref = get_post_meta($booking_id, 'dg_booking_ref', true);
         $email = get_post_meta($booking_id, 'dg_booking_email', true);
 
-        $subject = '✅ Booking confirmed: ' . $name . ' — ' . $accommodation;
-        $body = '<html><body style="font-family:Arial,sans-serif;color:#1e293b;">'
-            . '<h2>New confirmed booking</h2>'
-            . '<p><strong>Guest:</strong> ' . esc_html($name) . '<br>'
-            . '<strong>Email:</strong> ' . esc_html($email) . '<br>'
-            . '<strong>Property:</strong> ' . esc_html($accommodation) . '<br>'
-            . '<strong>Check-in:</strong> ' . esc_html($checkin) . '<br>'
-            . '<strong>Check-out:</strong> ' . esc_html($checkout) . '<br>'
-            . '<strong>Total:</strong> $' . number_format($total, 2) . '<br>'
-            . '<strong>Reference:</strong> ' . esc_html($ref) . '</p>'
-            . '<p><a href="' . esc_url(admin_url('post.php?post=' . (int) $booking_id . '&action=edit')) . '">View booking in admin</a></p>'
-            . '</body></html>';
+        $acc_id = (int) get_post_meta($booking_id, 'dg_booking_accommodation_id', true);
+        $checkin_url = class_exists('DG_Acc_Checkin') ? DG_Acc_Checkin::checkin_url_for_property($acc_id) : '';
+        $cleaning_url = class_exists('DG_Acc_Cleaning') ? DG_Acc_Cleaning::cleaning_url_for_property($acc_id) : '';
 
-        wp_mail(self::admin_email(), $subject, $body, ['Content-Type: text/html; charset=UTF-8']);
+        $subject = '✅ Booking confirmed: ' . $name . ' — ' . $accommodation;
+        $rows = [
+            'Guest' => $name,
+            'Email' => $email,
+            'Property' => $accommodation,
+            'Check-in' => $checkin,
+            'Check-out' => $checkout,
+            'Total' => '$' . number_format($total, 2),
+            'Reference' => $ref,
+        ];
+        $body = self::mail_body('New confirmed booking', $rows, admin_url('post.php?post=' . (int) $booking_id . '&action=edit'), 'View booking in admin');
+        if ($checkin_url) {
+            $body = str_replace('</table>', '</table><p><a href="' . esc_url($checkin_url) . '">Guest check-in page</a></p>', $body);
+        }
+        if ($cleaning_url) {
+            $body = str_replace('</table>', '</table><p><a href="' . esc_url($cleaning_url) . '">Cleaning checklist</a></p>', $body);
+        }
+
+        wp_mail(self::admin_email(), $subject, $body, self::mail_headers());
     }
 
     public static function schedule_reminders() {
@@ -90,22 +99,51 @@ class DG_Acc_Admin_Notifications {
             $accommodation = get_post_meta($b->ID, 'dg_booking_accommodation_name', true) ?: 'Property';
             $acc_id = (int) get_post_meta($b->ID, 'dg_booking_accommodation_id', true);
             $checkin_url = class_exists('DG_Acc_Checkin') ? DG_Acc_Checkin::checkin_url_for_property($acc_id) : '';
+            $cleaning_url = class_exists('DG_Acc_Cleaning') ? DG_Acc_Cleaning::cleaning_url_for_property($acc_id) : '';
 
             $subject = '📅 Check-in tomorrow: ' . $name . ' — ' . $accommodation;
-            $body = '<html><body style="font-family:Arial,sans-serif;">'
-                . '<h2>Check-in reminder</h2>'
-                . '<p><strong>Guest:</strong> ' . esc_html($name) . '<br>'
-                . '<strong>Property:</strong> ' . esc_html($accommodation) . '<br>'
-                . '<strong>Date:</strong> ' . esc_html($tomorrow) . '</p>';
+            $rows = [
+                'Guest' => $name,
+                'Property' => $accommodation,
+                'Date' => $tomorrow,
+            ];
+            $body = self::mail_body('Check-in reminder', $rows, admin_url('post.php?post=' . $b->ID . '&action=edit'), 'View booking');
             if ($checkin_url) {
-                $body .= '<p><a href="' . esc_url($checkin_url) . '">Guest check-in link</a></p>';
+                $body = str_replace('</table>', '</table><p><a href="' . esc_url($checkin_url) . '">Guest check-in page</a></p>', $body);
             }
-            $body .= '<p><a href="' . esc_url(admin_url('post.php?post=' . $b->ID . '&action=edit')) . '">View booking</a></p></body></html>';
+            if ($cleaning_url) {
+                $body = str_replace('</table>', '</table><p><a href="' . esc_url($cleaning_url) . '">Cleaning checklist</a></p>', $body);
+            }
 
-            wp_mail(self::admin_email(), $subject, $body, ['Content-Type: text/html; charset=UTF-8']);
+            wp_mail(self::admin_email(), $subject, $body, self::mail_headers());
             update_post_meta($b->ID, '_dg_acc_reminder_sent', $tomorrow);
         }
     }
-}
 
-DG_Acc_Admin_Notifications::init();
+    private static function mail_body($title, array $rows, $cta_url = '', $cta_label = '') {
+        $inner = '<h2 style="color:#1C2B2A;margin:0 0 16px;">' . esc_html($title) . '</h2><table style="width:100%;border-collapse:collapse;">';
+        foreach ($rows as $label => $value) {
+            if ($value === '' || $value === null) {
+                continue;
+            }
+            $inner .= '<tr><td style="padding:6px 0;color:#6B7A78;width:140px;vertical-align:top;">'
+                . esc_html((string) $label) . '</td><td style="padding:6px 0;color:#2F2F2F;">'
+                . esc_html((string) $value) . '</td></tr>';
+        }
+        $inner .= '</table>';
+        if ($cta_url && $cta_label && class_exists('DG_Email_Brand')) {
+            $inner .= DG_Email_Brand::cta($cta_url, $cta_label, 'cvh');
+        } elseif ($cta_url && $cta_label) {
+            $inner .= '<p><a href="' . esc_url($cta_url) . '">' . esc_html($cta_label) . '</a></p>';
+        }
+        return class_exists('DG_Email_Brand')
+            ? DG_Email_Brand::wrap($inner, ['theme' => 'cvh', 'site_label' => 'Currumbin Valley Hideaway'])
+            : $inner;
+    }
+
+    private static function mail_headers() {
+        return class_exists('DG_Email_Brand')
+            ? DG_Email_Brand::mail_headers(true)
+            : ['Content-Type: text/html; charset=UTF-8'];
+    }
+}

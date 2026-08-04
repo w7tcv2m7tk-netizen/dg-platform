@@ -12,15 +12,23 @@ if (!defined('ABSPATH')) {
 class DG_Acc_Permissions {
 
     public static function menu_cap_bookings() {
-        return current_user_can('dg_acc_manage_bookings') || current_user_can('manage_options')
-            ? 'dg_acc_manage_bookings'
-            : 'manage_options';
+        if (current_user_can('manage_options')) {
+            return 'manage_options';
+        }
+        if (current_user_can('dg_acc_manage_bookings')) {
+            return 'dg_acc_manage_bookings';
+        }
+        return 'dg_acc_view_bookings';
     }
 
     public static function menu_cap_guests() {
-        return current_user_can('dg_acc_manage_guests') || current_user_can('manage_options')
-            ? 'dg_acc_manage_guests'
-            : 'manage_options';
+        if (current_user_can('manage_options')) {
+            return 'manage_options';
+        }
+        if (current_user_can('dg_acc_manage_guests')) {
+            return 'dg_acc_manage_guests';
+        }
+        return 'dg_acc_view_guests';
     }
 
     public static function can_view_bookings() {

@@ -29,6 +29,7 @@ class DG_Module_RealEstate {
         
         // Register hooks
         add_action('init', [$this, 'register_post_types']);
+        add_action('init', [$this, 'init_routing'], 12);
         add_action('init', [$this, 'create_tables']);
         add_action('init', [$this, 'maybe_upgrade_data'], 5);
         add_action('init', [$this, 'schedule_cron']);
@@ -46,6 +47,8 @@ class DG_Module_RealEstate {
         add_action('save_post_agent', [$this, 'save_agent_meta']);
         
         add_action('admin_post_dg_re_save_email_templates', [$this, 'handle_save_email_templates']);
+        add_action('admin_post_dg_re_delete_vendor_lead', [$this, 'handle_delete_vendor_lead']);
+        add_action('admin_post_dg_re_delete_buyer_lead', [$this, 'handle_delete_buyer_lead']);
         add_action('wp_enqueue_scripts', [$this, 'enqueue_frontend_assets']);
         
         // AJAX handlers
@@ -57,6 +60,8 @@ class DG_Module_RealEstate {
         add_action('wp_ajax_nopriv_roe_crm_create_booking', [$this, 'create_booking_callback']);
         add_action('wp_ajax_dg_re_form_nonces', [$this, 'form_nonces_callback']);
         add_action('wp_ajax_nopriv_dg_re_form_nonces', [$this, 'form_nonces_callback']);
+        add_action('wp_ajax_dg_re_submit_contact', [$this, 'submit_contact_callback']);
+        add_action('wp_ajax_nopriv_dg_re_submit_contact', [$this, 'submit_contact_callback']);
         
         // Shortcodes
         add_shortcode('roe_properties', [$this, 'properties_shortcode']);
@@ -65,6 +70,7 @@ class DG_Module_RealEstate {
         add_shortcode('roe_agent_profile', [$this, 'agent_profile_shortcode']);
         add_shortcode('roe_crm_property_report_form', [$this, 'property_report_form_shortcode']);
         add_shortcode('roe_crm_booking_form', [$this, 'booking_form_shortcode']);
+        add_shortcode('roe_contact_form', [$this, 'contact_form_shortcode']);
         
         // REST API
         add_action('rest_api_init', [$this, 'register_rest_routes']);
@@ -99,6 +105,10 @@ class DG_Module_RealEstate {
             'properties-shortcodes.php',
             'property-display-shortcode.php',
             'agent-shortcodes.php',
+            'class-re-routing.php',
+            'class-re-property-workspace.php',
+            'class-re-contact-form.php',
+            'class-re-property-brochure.php',
             'property-report-leads.php',
             'rest-api.php',
         ];
@@ -112,6 +122,17 @@ class DG_Module_RealEstate {
         }
 
         $this->includes_loaded = true;
+
+        if (class_exists('DG_RE_Routing')) {
+            DG_RE_Routing::init();
+        }
+        if (class_exists('DG_RE_Property_Brochure')) {
+            DG_RE_Property_Brochure::init();
+        }
+        if (class_exists('DG_RE_Property_Workspace')) {
+            DG_RE_Property_Workspace::init();
+        }
+
         return true;
     }
 
@@ -134,6 +155,15 @@ class DG_Module_RealEstate {
     // POST TYPES
     // ============================================================
     
+    public function init_routing() {
+        if (!class_exists('DG_RE_Routing')) {
+            return;
+        }
+        if (get_option(DG_RE_Routing::VERSION_OPTION, '') !== DG_RE_Routing::ROUTING_VERSION) {
+            DG_RE_Routing::flag_flush();
+        }
+    }
+
     public function register_post_types() {
         // Agent Post Type - Hidden from admin menu
         $labels = [
@@ -618,6 +648,12 @@ class DG_Module_RealEstate {
                         </select>
                     <?php elseif ($field['type'] === 'textarea') : ?>
                         <textarea name="<?php echo $key; ?>" id="<?php echo $key; ?>" rows="6" placeholder="<?php echo $field['placeholder'] ?? ''; ?>"><?php echo esc_textarea($value); ?></textarea>
+                        <?php if ($key === 'roe_property_description' && class_exists('DG_AI_Assist')) : ?>
+                            <p style="margin-top:6px;">
+                                <button type="button" class="button button-secondary dg-ai-btn" data-ai-task="property_description" data-ai-post-id="<?php echo (int) $post->ID; ?>" data-ai-target="#roe_property_description" data-ai-target-title="roe_property_title">✨ Write listing with AI</button>
+                                <span class="dg-ai-status"></span>
+                            </p>
+                        <?php endif; ?>
                     <?php else : ?>
                         <input type="<?php echo $field['type']; ?>" name="<?php echo $key; ?>" id="<?php echo $key; ?>" value="<?php echo esc_attr($value); ?>" placeholder="<?php echo $field['placeholder'] ?? ''; ?>">
                     <?php endif; ?>
@@ -768,6 +804,44 @@ class DG_Module_RealEstate {
         return function_exists('roe_crm_property_report_form_shortcode')
             ? roe_crm_property_report_form_shortcode()
             : '';
+    }
+
+    public function contact_form_shortcode($atts = []) {
+        $this->ensure_frontend_loaded();
+        return function_exists('roe_contact_form_shortcode')
+            ? roe_contact_form_shortcode($atts)
+            : '';
+    }
+
+    public function submit_contact_callback() {
+        $this->ensure_frontend_loaded();
+
+        if (!function_exists('dg_re_process_contact_enquiry')) {
+            wp_send_json_error(['message' => 'Contact handler is unavailable.'], 500);
+        }
+
+        $data = wp_unslash($_POST);
+        if (class_exists('DG_RE_Form_Security')) {
+            $guard = DG_RE_Form_Security::guard('website_contact', $data);
+            if (!empty($guard['silent'])) {
+                wp_send_json_success(['message' => 'Thank you — your message has been sent.']);
+            }
+            if (empty($guard['ok'])) {
+                wp_send_json_error(['message' => $guard['message'] ?? 'Request blocked.']);
+            }
+        }
+
+        $result = dg_re_process_contact_enquiry($data);
+        if (!empty($result['success'])) {
+            do_action('dg_form_submitted', 'roe_contact', [
+                'email' => sanitize_email($data['email'] ?? ''),
+                'name' => sanitize_text_field($data['name'] ?? ''),
+                'phone' => sanitize_text_field($data['phone'] ?? ''),
+            ]);
+            wp_send_json_success(['message' => $result['message']]);
+        }
+
+        wp_send_json_error(['message' => $result['message'] ?? 'Unable to send your message.']);
     }
 
     public function save_lead_callback() {
@@ -946,6 +1020,7 @@ class DG_Module_RealEstate {
                         <th>Status</th>
                         <th>Assigned</th>
                         <th>Created</th>
+                        <th>Actions</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -980,9 +1055,10 @@ class DG_Module_RealEstate {
                             </td>
                             <td><?php echo esc_html(DG_RE_Lead_Assignment::user_label($lead->assigned_to ?? 0)); ?></td>
                             <td><?php echo esc_html($lead->created_at); ?></td>
+                            <td><a href="<?php echo esc_url(wp_nonce_url(admin_url('admin-post.php?action=dg_re_delete_vendor_lead&id=' . (int) $lead->id), 'dg_re_delete_vendor_lead_' . (int) $lead->id)); ?>" onclick="return confirm('Delete this vendor lead permanently?');" style="color:#C62828;">Delete</a></td>
                         </tr>
                     <?php endforeach; else : ?>
-                        <tr><td colspan="8" style="text-align:center;padding:30px 0;color:#999;">No vendor leads yet. Submissions from the property report form will appear here.</td></tr>
+                        <tr><td colspan="9" style="text-align:center;padding:30px 0;color:#999;">No vendor leads yet. Submissions from the property report form will appear here.</td></tr>
                     <?php endif; ?>
                 </tbody>
             </table>
@@ -1201,7 +1277,7 @@ class DG_Module_RealEstate {
                 </select>
             </form>
             <table class="wp-list-table widefat fixed striped" style="margin-top:12px;">
-                <thead><tr><th>ID</th><th>Contact</th><th>Requirements</th><th>Stage</th><th>Status</th><th>Assigned</th><th>Created</th></tr></thead>
+                <thead><tr><th>ID</th><th>Contact</th><th>Requirements</th><th>Stage</th><th>Status</th><th>Assigned</th><th>Created</th><th>Actions</th></tr></thead>
                 <tbody>
                     <?php if ($leads) : foreach ($leads as $lead) :
                         $name = trim(($lead->first_name ?? '') . ' ' . ($lead->last_name ?? ''));
@@ -1235,9 +1311,10 @@ class DG_Module_RealEstate {
                             </td>
                             <td><?php echo esc_html(DG_RE_Lead_Assignment::user_label($lead->assigned_to ?? 0)); ?></td>
                             <td><?php echo esc_html($lead->created_at); ?></td>
+                            <td><a href="<?php echo esc_url(wp_nonce_url(admin_url('admin-post.php?action=dg_re_delete_buyer_lead&id=' . (int) $lead->id), 'dg_re_delete_buyer_lead_' . (int) $lead->id)); ?>" onclick="return confirm('Delete this buyer lead permanently?');" style="color:#C62828;">Delete</a></td>
                         </tr>
                     <?php endforeach; else : ?>
-                        <tr><td colspan="7" style="text-align:center;padding:30px 0;color:#999;">No buyer enquiries yet.</td></tr>
+                        <tr><td colspan="8" style="text-align:center;padding:30px 0;color:#999;">No buyer enquiries yet.</td></tr>
                     <?php endif; ?>
                 </tbody>
             </table>
@@ -1582,6 +1659,32 @@ class DG_Module_RealEstate {
             </div>
         </div>
         <?php
+    }
+
+    public function handle_delete_vendor_lead() {
+        $id = (int) ($_GET['id'] ?? 0);
+        if ($id <= 0 || !DG_RE_Permissions::can_manage_leads()) {
+            wp_die('Unauthorized');
+        }
+        check_admin_referer('dg_re_delete_vendor_lead_' . $id);
+        if (class_exists('DG_RE_Vendor_Leads')) {
+            DG_RE_Vendor_Leads::delete($id);
+        }
+        wp_safe_redirect(admin_url('admin.php?page=dg-re-vendor-leads&deleted=1'));
+        exit;
+    }
+
+    public function handle_delete_buyer_lead() {
+        $id = (int) ($_GET['id'] ?? 0);
+        if ($id <= 0 || !DG_RE_Permissions::can_manage_leads()) {
+            wp_die('Unauthorized');
+        }
+        check_admin_referer('dg_re_delete_buyer_lead_' . $id);
+        if (class_exists('DG_RE_Buyer_Leads')) {
+            DG_RE_Buyer_Leads::delete($id);
+        }
+        wp_safe_redirect(admin_url('admin.php?page=dg-re-buyer-leads&deleted=1'));
+        exit;
     }
 
     public function handle_save_email_templates() {

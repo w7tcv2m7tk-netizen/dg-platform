@@ -21,22 +21,7 @@ class DG_Acc_Housekeeping {
     public static function init() {
         add_action('add_meta_boxes', [__CLASS__, 'add_meta_box']);
         add_action('save_post_dg_accommodation', [__CLASS__, 'save_meta'], 20);
-        add_action('dg_platform_register_menus', [__CLASS__, 'register_menu'], 16);
         add_filter('dg_platform_dashboard_widgets', [__CLASS__, 'dashboard_widgets']);
-    }
-
-    public static function register_menu() {
-        if (!class_exists('DG_Acc_Permissions') || !DG_Acc_Permissions::can_view_bookings()) {
-            return;
-        }
-        add_submenu_page(
-            'dg-platform',
-            'Housekeeping',
-            '🧹 Housekeeping',
-            DG_Acc_Permissions::menu_cap_bookings(),
-            'dg-acc-housekeeping',
-            [__CLASS__, 'render_board']
-        );
     }
 
     public static function dashboard_widgets($widgets) {
@@ -160,6 +145,8 @@ class DG_Acc_Housekeeping {
                                 <th>Property</th>
                                 <th>Status</th>
                                 <th>Last cleaned</th>
+                                <th>Last report</th>
+                                <th>Cleaning form</th>
                                 <th>Notes</th>
                             </tr>
                         </thead>
@@ -168,6 +155,8 @@ class DG_Acc_Housekeeping {
                             $status = get_post_meta($p->ID, 'dg_housekeeping_status', true) ?: 'unknown';
                             $last = get_post_meta($p->ID, 'dg_housekeeping_last_cleaned', true);
                             $notes = get_post_meta($p->ID, 'dg_housekeeping_notes', true);
+                            $report_id = (int) get_post_meta($p->ID, 'dg_housekeeping_last_report_id', true);
+                            $cleaning_url = class_exists('DG_Acc_Cleaning') ? DG_Acc_Cleaning::cleaning_url_for_property($p->ID) : '';
                             ?>
                             <tr>
                                 <td><a href="<?php echo esc_url(get_edit_post_link($p->ID)); ?>"><?php echo esc_html($p->post_title); ?></a></td>
@@ -179,6 +168,21 @@ class DG_Acc_Housekeeping {
                                     </select>
                                 </td>
                                 <td><?php echo $last ? esc_html($last) : '—'; ?></td>
+                                <td>
+                                    <?php if ($report_id) : ?>
+                                        <a href="<?php echo esc_url(get_edit_post_link($report_id)); ?>">View report</a>
+                                        · <a href="<?php echo esc_url(admin_url('edit.php?post_type=dg_cleaning_report&accommodation_id=' . (int) $p->ID)); ?>">History</a>
+                                    <?php else : ?>
+                                        —
+                                    <?php endif; ?>
+                                </td>
+                                <td>
+                                    <?php if ($cleaning_url) : ?>
+                                        <a href="<?php echo esc_url($cleaning_url); ?>" target="_blank" rel="noopener">Open form</a>
+                                    <?php else : ?>
+                                        —
+                                    <?php endif; ?>
+                                </td>
                                 <td><?php echo $notes ? esc_html($notes) : '—'; ?></td>
                             </tr>
                         <?php endforeach; ?>
@@ -191,5 +195,3 @@ class DG_Acc_Housekeeping {
         <?php
     }
 }
-
-DG_Acc_Housekeeping::init();

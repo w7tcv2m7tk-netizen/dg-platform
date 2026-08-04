@@ -19,25 +19,36 @@ class DG_Acc_Admin_Pages {
     public static function booking_settings_page() {
         if (isset($_POST['dg_booking_page_id'])) {
             update_option('dg_booking_page_id', intval($_POST['dg_booking_page_id']));
-            echo '<div class="notice notice-success"><p>Booking page updated!</p></div>';
+            if (isset($_POST['dg_cleaning_access_code'])) {
+                update_option('dg_cleaning_access_code', sanitize_text_field(wp_unslash($_POST['dg_cleaning_access_code'])));
+            }
+            echo '<div class="notice notice-success"><p>Booking settings updated!</p></div>';
         }
         $selected_page = get_option('dg_booking_page_id', 0);
+        $cleaning_access_code = get_option('dg_cleaning_access_code', '');
         ?>
         <div class="wrap dg-platform-wrap">
             <h1>Booking Settings</h1>
-            <p class="dg-muted-subtle">Configure the front-end booking page for accommodation enquiries.</p>
+            <p class="dg-muted-subtle">Hub page: <code>/accommodation/</code> with <code>[dg_accommodation_display]</code> or links to property pages. Set below if using a different slug.</p>
             <div class="dg-panel">
                 <form method="post">
                     <table class="form-table">
                         <tr>
-                            <th><label for="dg_booking_page_id">Booking Page</label></th>
+                            <th><label for="dg_booking_page_id">Accommodation hub page</label></th>
                             <td>
                                 <select name="dg_booking_page_id" id="dg_booking_page_id">
-                                    <option value="0">— Select —</option>
+                                    <option value="0">— Auto: /accommodation/ —</option>
                                     <?php foreach (get_pages(['post_status' => 'publish']) as $page) : ?>
                                         <option value="<?php echo (int) $page->ID; ?>" <?php selected($selected_page, $page->ID); ?>><?php echo esc_html($page->post_title); ?></option>
                                     <?php endforeach; ?>
                                 </select>
+                            </td>
+                        </tr>
+                        <tr>
+                            <th><label for="dg_cleaning_access_code">Cleaning form access code</label></th>
+                            <td>
+                                <input type="text" name="dg_cleaning_access_code" id="dg_cleaning_access_code" value="<?php echo esc_attr($cleaning_access_code); ?>" class="regular-text" autocomplete="off">
+                                <p class="description">Optional. If set, cleaners must enter this code when submitting a report. Leave blank to require only the checklist + signature.</p>
                             </td>
                         </tr>
                     </table>
@@ -60,7 +71,7 @@ class DG_Acc_Admin_Pages {
         ?>
         <div class="wrap dg-platform-wrap">
             <h1>💳 Stripe Payment Settings</h1>
-            <p class="dg-muted-subtle">Credit card payments for direct bookings.</p>
+            <p class="dg-muted-subtle">Credit card payments for direct bookings. Platform billing keys (DigitalGate sales) live in <a href="<?php echo esc_url(admin_url('admin.php?page=dg-platform-api')); ?>">API Settings</a>.</p>
             <div class="dg-panel">
                 <form method="post">
                     <table class="form-table">
@@ -77,6 +88,11 @@ class DG_Acc_Admin_Pages {
                     </table>
                     <?php submit_button('Save Stripe Settings', 'primary', 'submit_stripe_settings'); ?>
                 </form>
+            </div>
+            <div class="dg-panel" style="margin-top:1.5rem;">
+                <h2>🧪 Test mode</h2>
+                <p class="dg-muted">Use Stripe <strong>test</strong> keys (<code>pk_test_…</code> / <code>sk_test_…</code>) with Test Mode checked. Test card: <code>4242 4242 4242 4242</code>, any future expiry, any CVC.</p>
+                <p class="dg-muted">Webhook secret is optional for dev — bookings confirm via the payment success callback. Add a webhook in Stripe Dashboard for production (<code>payment_intent.succeeded</code>).</p>
             </div>
             <div class="dg-panel" style="margin-top:1.5rem;">
                 <h2>🔗 Webhook URL</h2>
@@ -157,10 +173,33 @@ class DG_Acc_Admin_Pages {
 
     public static function admin_calendar_page() {
         $nonce = wp_create_nonce('dg_calendar_nonce');
+        $accommodations = get_posts(['post_type' => 'dg_accommodation', 'posts_per_page' => -1, 'orderby' => 'title', 'order' => 'ASC']);
+        $ota_count = 0;
+        foreach ($accommodations as $acc) {
+            if (get_post_meta($acc->ID, 'dg_ical_url', true) || get_post_meta($acc->ID, 'dg_bookingcom_ical_url', true)) {
+                $ota_count++;
+            }
+        }
         ?>
         <div class="wrap dg-platform-wrap">
             <h1>📅 Booking Calendar</h1>
             <p class="dg-muted-subtle">All properties and booking statuses in one view.</p>
+            <div class="dg-panel" style="margin-bottom:1rem;">
+                <p style="margin:0 0 0.75rem;">
+                    <strong>Calendar sync</strong> — refresh blocked dates from OTA iCal feeds and local bookings.
+                    <?php if ($ota_count) : ?>
+                        <span class="dg-muted">(<?php echo (int) $ota_count; ?> propert<?php echo $ota_count === 1 ? 'y' : 'ies'; ?> with iCal URLs)</span>
+                    <?php else : ?>
+                        <span class="dg-muted">(Add iCal URLs on each property to sync Airbnb / Booking.com)</span>
+                    <?php endif; ?>
+                </p>
+                <p class="dg-actions" style="margin:0;">
+                    <button type="button" class="button button-primary" id="dg-cal-sync-all">🔄 Sync all calendars</button>
+                    <button type="button" class="button" id="dg-cal-refresh">↻ Refresh view</button>
+                    <a href="<?php echo esc_url(admin_url('admin.php?page=dg-force-sync-all')); ?>" class="button">OTA sync settings</a>
+                    <span id="dg-cal-sync-status" class="dg-muted" style="margin-left:10px;"></span>
+                </p>
+            </div>
             <div class="dg-panel">
                 <div id="dg-admin-calendar" style="min-height:500px;"></div>
             </div>
@@ -168,50 +207,104 @@ class DG_Acc_Admin_Pages {
         <script>
         document.addEventListener('DOMContentLoaded', function() {
             var calendarEl = document.getElementById('dg-admin-calendar');
-            if (!calendarEl || typeof FullCalendar === 'undefined') {
-                calendarEl.innerHTML = '<p class="dg-muted" style="text-align:center;padding:40px;">Loading calendar...</p>';
-                return;
-            }
-            var calendar = new FullCalendar.Calendar(calendarEl, {
-                initialView: 'dayGridMonth',
-                headerToolbar: { left: 'prev,next today', center: 'title', right: 'dayGridMonth,timeGridWeek' },
-                events: function(fetchInfo, successCallback) {
-                    jQuery.ajax({
-                        url: ajaxurl,
-                        type: 'POST',
-                        data: {
-                            action: 'dg_admin_get_bookings',
-                            start: fetchInfo.startStr,
-                            end: fetchInfo.endStr,
-                            nonce: '<?php echo esc_js($nonce); ?>'
-                        },
-                        success: function(response) {
-                            if (response.success) {
-                                successCallback(response.data.map(function(b) {
-                                    var color = '#ffc107';
-                                    if (b.status === 'confirmed') color = '#28a745';
-                                    else if (b.status === 'cancelled') color = '#dc3545';
-                                    else if (b.status === 'airbnb') color = '#ff5a5f';
-                                    else if (b.status === 'bookingcom') color = '#003580';
-                                    return { id: b.id, title: b.guest_name + ' - ' + b.accommodation, start: b.checkin, end: b.checkout, color: color, extendedProps: b };
-                                }));
-                            }
-                        }
-                    });
-                },
-                eventClick: function(info) {
-                    var p = info.event.extendedProps;
-                    alert('Booking #' + p.id + '\nGuest: ' + p.guest_name + '\nAccommodation: ' + p.accommodation + '\nCheck-in: ' + p.checkin + '\nCheck-out: ' + p.checkout + '\nStatus: ' + p.status);
+            var calendar = null;
+            var otaIds = <?php echo wp_json_encode(array_map('intval', wp_list_pluck($accommodations, 'ID'))); ?>;
+            var nonce = '<?php echo esc_js($nonce); ?>';
+
+            function renderCalendar() {
+                if (!calendarEl || typeof FullCalendar === 'undefined') {
+                    if (calendarEl) {
+                        calendarEl.innerHTML = '<p class="dg-muted" style="text-align:center;padding:40px;">Loading calendar...</p>';
+                    }
+                    return;
                 }
+                if (calendar) {
+                    calendar.refetchEvents();
+                    return;
+                }
+                calendar = new FullCalendar.Calendar(calendarEl, {
+                    initialView: 'dayGridMonth',
+                    headerToolbar: { left: 'prev,next today', center: 'title', right: 'dayGridMonth,timeGridWeek' },
+                    events: function(fetchInfo, successCallback) {
+                        jQuery.ajax({
+                            url: ajaxurl,
+                            type: 'POST',
+                            data: {
+                                action: 'dg_admin_get_bookings',
+                                start: fetchInfo.startStr,
+                                end: fetchInfo.endStr,
+                                nonce: nonce
+                            },
+                            success: function(response) {
+                                if (response.success) {
+                                    successCallback(response.data.map(function(b) {
+                                        var color = '#ffc107';
+                                        if (b.status === 'confirmed') color = '#28a745';
+                                        else if (b.status === 'cancelled') color = '#dc3545';
+                                        else if (b.status === 'airbnb') color = '#ff5a5f';
+                                        else if (b.status === 'bookingcom') color = '#003580';
+                                        return { id: b.id, title: b.guest_name + ' - ' + b.accommodation, start: b.checkin, end: b.checkout, color: color, extendedProps: b };
+                                    }));
+                                }
+                            }
+                        });
+                    },
+                    eventClick: function(info) {
+                        var p = info.event.extendedProps;
+                        alert('Booking #' + p.id + '\nGuest: ' + p.guest_name + '\nAccommodation: ' + p.accommodation + '\nCheck-in: ' + p.checkin + '\nCheck-out: ' + p.checkout + '\nStatus: ' + p.status);
+                    }
+                });
+                calendar.render();
+            }
+
+            renderCalendar();
+
+            document.getElementById('dg-cal-refresh').addEventListener('click', function () {
+                renderCalendar();
+                document.getElementById('dg-cal-sync-status').textContent = 'View refreshed';
             });
-            calendar.render();
+
+            document.getElementById('dg-cal-sync-all').addEventListener('click', function () {
+                var status = document.getElementById('dg-cal-sync-status');
+                if (!otaIds.length) {
+                    status.textContent = 'No properties to sync';
+                    return;
+                }
+                status.textContent = '⏳ Syncing...';
+                var processed = 0;
+                var ok = 0;
+                var fail = 0;
+                var total = otaIds.length * 2;
+                otaIds.forEach(function(accId) {
+                    ['airbnb', 'bookingcom'].forEach(function(source) {
+                        jQuery.ajax({
+                            url: ajaxurl,
+                            type: 'POST',
+                            data: { action: 'dg_ota_sync', accommodation_id: accId, source: source, nonce: nonce },
+                            complete: function(xhr) {
+                                processed++;
+                                try {
+                                    var r = JSON.parse(xhr.responseText);
+                                    if (r.success) ok++; else fail++;
+                                } catch (e) { fail++; }
+                                if (processed === total) {
+                                    status.textContent = '✅ Sync complete — ' + ok + ' OK, ' + fail + ' skipped/errors';
+                                    if (calendar) calendar.refetchEvents();
+                                } else {
+                                    status.textContent = '⏳ Syncing... ' + processed + '/' + total;
+                                }
+                            }
+                        });
+                    });
+                });
+            });
         });
         </script>
         <?php
     }
 
     public static function admin_calendar_scripts($hook) {
-        if ($hook !== 'dg_accommodation_page_dg-admin-calendar') {
+        if ($hook !== 'dg-platform_page_dg-admin-calendar') {
             return;
         }
         wp_enqueue_style('fullcalendar-css', 'https://cdn.jsdelivr.net/npm/fullcalendar@5.11.5/main.min.css', [], '5.11.5');
@@ -246,5 +339,3 @@ class DG_Acc_Admin_Pages {
         wp_send_json_success($events);
     }
 }
-
-DG_Acc_Admin_Pages::init();

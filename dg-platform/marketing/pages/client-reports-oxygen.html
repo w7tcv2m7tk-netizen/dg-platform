@@ -1,0 +1,429 @@
+<!-- REPORTS PAGE - paste into Oxygen PHP Code Block on /client-reports/ only. -->
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@100..800&family=Inter:opsz,wght@14..32,400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
+<style>
+  .dg-client-reports { font-family: 'Inter', sans-serif; background: #0A0E17; color: #FFFFFF; line-height: 1.5; margin: 0; padding: 0; }
+  .dg-client-reports * { box-sizing: border-box; }
+  .dg-client-reports .page-header { background: linear-gradient(135deg, #0A0E17 0%, #1A2A3A 100%); padding: 48px 0 32px; border-bottom: 1px solid rgba(59, 130, 246, 0.2); }
+  .dg-client-reports .wrap { max-width: 1280px; margin: 0 auto; padding: 0 2rem; }
+  .dg-client-reports .header-flex { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; }
+  .dg-client-reports h1 { font-family: 'Sora', sans-serif; font-size: 1.75rem; margin: 0 0 0.25rem; color: #fff; }
+  .dg-client-reports .sub { color: #94A3B8; margin: 0; font-size: 0.95rem; }
+  .dg-client-reports .header-actions { display: flex; gap: 0.65rem; flex-wrap: wrap; }
+  .dg-client-reports .header-btn { background: #334155; color: #fff; padding: 0.5rem 1rem; border-radius: 40px; text-decoration: none; font-size: 0.8rem; font-weight: 600; border: none; cursor: pointer; }
+  .dg-client-reports .header-btn:hover { background: #475569; color: #fff; }
+  .dg-client-reports .header-btn.primary { background: #3B82F6; }
+  .dg-client-reports .header-btn.primary:hover { background: #2563EB; }
+  .dg-client-reports .content { padding: 2rem 0 3rem; }
+  .dg-client-reports .builder-note, .dg-client-reports .no-print { }
+  .dg-client-reports .builder-note { background: rgba(59, 130, 246, 0.12); border: 1px solid rgba(59, 130, 246, 0.35); color: #BFDBFE; padding: 0.85rem 1rem; border-radius: 12px; margin-bottom: 1.5rem; font-size: 0.85rem; }
+  .dg-client-reports .hero-grid { display: grid; grid-template-columns: 220px 1fr; gap: 1.5rem; margin-bottom: 2rem; align-items: stretch; }
+  .dg-client-reports .ring-card { background: #1E293B; border: 1px solid #334155; border-radius: 24px; padding: 1.5rem; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
+  .dg-client-reports .ring-wrap { position: relative; width: 140px; height: 140px; margin-bottom: 0.75rem; }
+  .dg-client-reports .ring-wrap canvas { width: 140px !important; height: 140px !important; }
+  .dg-client-reports .ring-label { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-family: 'Sora', sans-serif; font-size: 1.75rem; font-weight: 700; color: #fff; pointer-events: none; }
+  .dg-client-reports .ring-title { font-size: 0.85rem; color: #94A3B8; margin: 0; }
+  .dg-client-reports .setup-card { background: #1E293B; border: 1px solid #334155; border-radius: 24px; padding: 1.5rem; }
+  .dg-client-reports .setup-card h2 { font-family: 'Sora', sans-serif; font-size: 1.1rem; margin: 0 0 1rem; color: #fff; }
+  .dg-client-reports .setup-step { display: grid; grid-template-columns: 28px 1fr auto; gap: 0.75rem; align-items: center; padding: 0.65rem 0; border-bottom: 1px solid #334155; font-size: 0.85rem; }
+  .dg-client-reports .setup-step:last-child { border-bottom: none; }
+  .dg-client-reports .setup-dot { width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: rgba(100,116,139,0.25); color: #94A3B8; font-size: 0.75rem; }
+  .dg-client-reports .setup-step.done .setup-dot { background: rgba(16,185,129,0.18); color: #10B981; }
+  .dg-client-reports .setup-desc { color: #64748B; font-size: 0.75rem; }
+  .dg-client-reports .setup-badge { font-size: 0.68rem; padding: 0.2rem 0.55rem; border-radius: 20px; background: #334155; color: #CBD5E1; }
+  .dg-client-reports .setup-step.done .setup-badge { background: #10B981; color: #fff; }
+  .dg-client-reports .summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; margin-bottom: 2rem; }
+  .dg-client-reports .summary-card { background: #1E293B; border: 1px solid #334155; border-radius: 20px; padding: 1.25rem; }
+  .dg-client-reports .summary-icon { width: 42px; height: 42px; border-radius: 12px; display: flex; align-items: center; justify-content: center; margin-bottom: 0.85rem; }
+  .dg-client-reports .summary-value { font-family: 'Sora', sans-serif; font-size: 1.6rem; font-weight: 700; line-height: 1.1; margin-bottom: 0.25rem; }
+  .dg-client-reports .summary-label { color: #94A3B8; font-size: 0.78rem; }
+  .dg-client-reports .section-block { background: #1E293B; border: 1px solid #334155; border-radius: 24px; padding: 1.5rem; margin-bottom: 1.5rem; }
+  .dg-client-reports .section-head { display: flex; align-items: center; gap: 12px; margin-bottom: 0.35rem; }
+  .dg-client-reports .section-sub { color: #64748B; font-size: 0.82rem; margin: 0 0 1.25rem 56px; }
+  .dg-client-reports .section-icon { width: 44px; height: 44px; border-radius: 14px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .dg-client-reports .section-head h2 { font-family: 'Sora', sans-serif; font-size: 1.15rem; margin: 0; color: #fff; }
+  .dg-client-reports .premium-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1rem; margin-bottom: 0.5rem; }
+  .dg-client-reports .premium-card { background: #0F172A; border: 1px solid #334155; border-radius: 20px; padding: 1.25rem; display: flex; flex-direction: column; gap: 0.85rem; }
+  .dg-client-reports .premium-top { display: flex; justify-content: space-between; gap: 1rem; align-items: flex-start; }
+  .dg-client-reports .premium-title-wrap { display: flex; gap: 12px; align-items: flex-start; }
+  .dg-client-reports .premium-icon { width: 44px; height: 44px; border-radius: 14px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .dg-client-reports .premium-title { font-family: 'Sora', sans-serif; font-size: 1rem; font-weight: 700; margin: 0 0 0.15rem; }
+  .dg-client-reports .premium-headline { color: #94A3B8; font-size: 0.82rem; margin: 0; }
+  .dg-client-reports .status-pill { font-size: 0.68rem; font-weight: 700; padding: 0.25rem 0.55rem; border-radius: 999px; white-space: nowrap; }
+  .dg-client-reports .status-pill.good { background: rgba(16,185,129,0.18); color: #34D399; }
+  .dg-client-reports .status-pill.attention { background: rgba(245,158,11,0.18); color: #FBBF24; }
+  .dg-client-reports .status-pill.critical { background: rgba(239,68,68,0.18); color: #F87171; }
+  .dg-client-reports .critical-bar-wrap { }
+  .dg-client-reports .critical-label { display: flex; justify-content: space-between; font-size: 0.72rem; color: #94A3B8; margin-bottom: 0.35rem; }
+  .dg-client-reports .critical-bar { height: 8px; background: #1E293B; border-radius: 999px; overflow: hidden; }
+  .dg-client-reports .critical-bar span { display: block; height: 100%; border-radius: 999px; background: linear-gradient(90deg, #3B82F6, #8B5CF6); }
+  .dg-client-reports .premium-stats { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.65rem; }
+  .dg-client-reports .premium-stat { background: #1E293B; border: 1px solid #334155; border-radius: 12px; padding: 0.65rem 0.75rem; }
+  .dg-client-reports .premium-stat .value { font-weight: 700; font-size: 0.95rem; }
+  .dg-client-reports .premium-stat .label { color: #64748B; font-size: 0.68rem; margin-top: 0.1rem; }
+  .dg-client-reports .highlights { margin: 0; padding-left: 1.1rem; color: #94A3B8; font-size: 0.78rem; }
+  .dg-client-reports .highlights li { margin-bottom: 0.25rem; }
+  .dg-client-reports .stat-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.85rem; margin-bottom: 1.25rem; }
+  .dg-client-reports .stat-box { background: #0F172A; border: 1px solid #334155; border-radius: 14px; padding: 0.85rem 1rem; }
+  .dg-client-reports .stat-box .value { font-family: 'Sora', sans-serif; font-size: 1.2rem; font-weight: 700; color: #fff; }
+  .dg-client-reports .stat-box .label { color: #64748B; font-size: 0.72rem; margin-top: 0.15rem; }
+  .dg-client-reports .charts-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1rem; }
+  .dg-client-reports .chart-card { background: #0F172A; border: 1px solid #334155; border-radius: 16px; padding: 1rem; min-height: 280px; }
+  .dg-client-reports .chart-card h3 { font-size: 0.82rem; color: #94A3B8; margin: 0 0 0.75rem; font-weight: 600; }
+  .dg-client-reports .chart-canvas { position: relative; height: 220px; }
+  .dg-client-reports .empty-state { color: #64748B; font-size: 0.9rem; padding: 2rem 0; text-align: center; }
+  @media print { .dg-client-reports .no-print { display: none !important; } }
+  @media (max-width: 900px) { .dg-client-reports .hero-grid, .dg-client-reports .stat-row, .dg-client-reports .premium-stats { grid-template-columns: 1fr; } .dg-client-reports .wrap { padding: 0 1rem; } .dg-client-reports .section-sub { margin-left: 0; } }
+</style>
+
+<?php
+if (class_exists('DG_Client_Portal') && method_exists('DG_Client_Portal', 'reports_template_context')) {
+    extract(DG_Client_Portal::reports_template_context(), EXTR_SKIP);
+} else {
+    $client_name = 'Client';
+    $dashboard_url = home_url('/client-dashboard/');
+    $generated_label = date('j M Y');
+    $setup_steps = [];
+    $setup_percent = 0;
+    $summary_cards = [];
+    $sections = [];
+    $premium_apps = [];
+    $trend_charts = [];
+    $charts = [];
+    $ai_narrative = null;
+    $pdf_filename = 'digitalgate-progress-report.pdf';
+    $is_builder = false;
+    $has_data = false;
+}
+?>
+
+<div class="dg-client-reports">
+
+<div class="page-header no-print">
+  <div class="wrap header-flex">
+    <div>
+      <h1>Progress reports</h1>
+      <p class="sub">Overview for <?php echo esc_html($client_name); ?>. Updated <?php echo esc_html($generated_label); ?>.</p>
+    </div>
+    <div class="header-actions">
+      <button type="button" class="header-btn primary" id="dg-report-pdf"><i class="fas fa-file-pdf"></i> Download PDF</button>
+      <a href="<?php echo esc_url($dashboard_url); ?>" class="header-btn"><i class="fas fa-arrow-left"></i> Back to dashboard</a>
+    </div>
+  </div>
+</div>
+
+<div class="wrap content" id="dg-report-export">
+
+  <?php if (!empty($is_builder)) : ?>
+  <div class="builder-note no-print">Reports preview in Oxygen. Save and view the front end while signed in to see live metrics from your apps.</div>
+  <?php endif; ?>
+
+  <div class="hero-grid">
+    <div class="ring-card">
+      <div class="ring-wrap">
+        <canvas id="dg-setup-ring" aria-hidden="true"></canvas>
+        <div class="ring-label"><?php echo esc_html((int) $setup_percent); ?>%</div>
+      </div>
+      <p class="ring-title">Platform setup complete</p>
+    </div>
+
+    <div class="setup-card">
+      <h2>Your setup journey</h2>
+      <?php if (empty($setup_steps)) : ?>
+      <p class="empty-state" style="padding:1rem 0;">Setup progress will appear here once your account is linked.</p>
+      <?php else : ?>
+        <?php foreach ($setup_steps as $step) : ?>
+        <div class="setup-step <?php echo !empty($step['done']) ? 'done' : ''; ?>">
+          <div class="setup-dot"><i class="fas fa-<?php echo !empty($step['done']) ? 'check' : 'circle'; ?>"></i></div>
+          <div>
+            <div><?php echo esc_html($step['label']); ?></div>
+            <div class="setup-desc"><?php echo esc_html($step['desc']); ?></div>
+          </div>
+          <span class="setup-badge"><?php echo !empty($step['done']) ? 'Done' : 'Pending'; ?></span>
+        </div>
+        <?php endforeach; ?>
+      <?php endif; ?>
+    </div>
+  </div>
+
+  <?php if (!empty($summary_cards)) : ?>
+  <div class="summary-grid">
+    <?php foreach ($summary_cards as $card) : ?>
+    <div class="summary-card">
+      <div class="summary-icon" style="background: <?php echo esc_attr($card['color']); ?>22; color: <?php echo esc_attr($card['color']); ?>;">
+        <i class="fas <?php echo esc_attr($card['icon']); ?>"></i>
+      </div>
+      <div class="summary-value"><?php echo esc_html($card['value']); ?><?php if (!empty($card['suffix'])) : ?><span style="font-size:0.95rem;color:#94A3B8;"><?php echo esc_html($card['suffix']); ?></span><?php endif; ?></div>
+      <div class="summary-label"><?php echo esc_html($card['label']); ?></div>
+    </div>
+    <?php endforeach; ?>
+  </div>
+  <?php endif; ?>
+
+  <?php if (!empty($ai_narrative['headline']) || !empty($ai_narrative['narrative'])) : ?>
+  <div class="section-block" style="background: linear-gradient(135deg, rgba(59,130,246,0.08), rgba(16,185,129,0.06)); border-color: rgba(59,130,246,0.2);">
+    <div class="section-head">
+      <div class="section-icon" style="background: rgba(59,130,246,0.15); color: #3B82F6;"><i class="fas fa-wand-magic-sparkles"></i></div>
+      <h2><?php echo esc_html($ai_narrative['headline'] ?? 'Progress summary'); ?></h2>
+    </div>
+    <p class="section-sub" style="white-space: pre-line;"><?php echo esc_html($ai_narrative['narrative'] ?? ''); ?></p>
+    <?php if (!empty($ai_narrative['highlights'])) : ?>
+    <ul style="margin:0.5rem 0 0 1.2rem;color:#CBD5E1;">
+      <?php foreach ($ai_narrative['highlights'] as $highlight) : ?>
+        <li><?php echo esc_html($highlight); ?></li>
+      <?php endforeach; ?>
+    </ul>
+    <?php endif; ?>
+  </div>
+  <?php endif; ?>
+
+  <?php if (!empty($premium_apps)) : ?>
+  <div class="section-block">
+    <div class="section-head">
+      <div class="section-icon" style="background: rgba(139,92,246,0.15); color: #8B5CF6;"><i class="fas fa-star"></i></div>
+      <h2>Premium apps</h2>
+    </div>
+    <p class="section-sub">Critical intelligence across your growth stack — scores, health status, and what needs attention first.</p>
+
+    <div class="premium-grid">
+      <?php foreach ($premium_apps as $app) :
+        $status = !empty($app['status']) ? (string) $app['status'] : 'good';
+        $percent = min(100, max(0, (int) ($app['percent'] ?? 0)));
+      ?>
+      <div class="premium-card">
+        <div class="premium-top">
+          <div class="premium-title-wrap">
+            <div class="premium-icon" style="background: <?php echo esc_attr($app['color']); ?>22; color: <?php echo esc_attr($app['color']); ?>;">
+              <i class="fas <?php echo esc_attr($app['icon']); ?>"></i>
+            </div>
+            <div>
+              <p class="premium-title"><?php echo esc_html($app['title']); ?><?php if (!empty($app['grade'])) : ?> <span style="color:#64748B;font-weight:600;">· <?php echo esc_html($app['grade']); ?></span><?php endif; ?></p>
+              <p class="premium-headline"><?php echo esc_html($app['headline'] ?? ''); ?></p>
+            </div>
+          </div>
+          <span class="status-pill <?php echo esc_attr($status); ?>"><?php echo esc_html($app['status_label'] ?? 'Active'); ?></span>
+        </div>
+
+        <div class="critical-bar-wrap">
+          <div class="critical-label">
+            <span><?php echo esc_html($app['critical_value'] ?? 'Health score'); ?></span>
+            <span><?php echo esc_html($percent); ?><?php echo esc_html($app['percent_suffix'] ?? '%'); ?></span>
+          </div>
+          <div class="critical-bar"><span style="width: <?php echo esc_attr($percent); ?>%; background: <?php echo esc_attr($app['color']); ?>;"></span></div>
+        </div>
+
+        <?php if (!empty($app['stats'])) : ?>
+        <div class="premium-stats">
+          <?php foreach ($app['stats'] as $stat) : ?>
+          <div class="premium-stat">
+            <div class="value"><?php echo esc_html($stat['value']); ?><?php if (!empty($stat['suffix'])) : ?><span style="font-size:0.72rem;color:#64748B;"><?php echo esc_html($stat['suffix']); ?></span><?php endif; ?></div>
+            <div class="label"><?php echo esc_html($stat['label']); ?></div>
+          </div>
+          <?php endforeach; ?>
+        </div>
+        <?php endif; ?>
+
+        <?php if (!empty($app['highlights'])) : ?>
+        <ul class="highlights">
+          <?php foreach ($app['highlights'] as $highlight) : ?>
+          <li><?php echo esc_html($highlight); ?></li>
+          <?php endforeach; ?>
+        </ul>
+        <?php endif; ?>
+
+        <?php if (!empty($app['charts'])) : ?>
+        <div class="charts-grid">
+          <?php foreach ($app['charts'] as $chart) : ?>
+          <div class="chart-card" style="min-height:240px;">
+            <h3><?php echo esc_html($chart['title']); ?></h3>
+            <div class="chart-canvas" style="height:180px;"><canvas id="chart-<?php echo esc_attr($chart['id']); ?>"></canvas></div>
+          </div>
+          <?php endforeach; ?>
+        </div>
+        <?php endif; ?>
+      </div>
+      <?php endforeach; ?>
+    </div>
+  </div>
+  <?php endif; ?>
+
+  <?php if (!empty($trend_charts)) : ?>
+  <div class="section-block">
+    <div class="section-head">
+      <div class="section-icon" style="background: rgba(59,130,246,0.15); color: #3B82F6;"><i class="fas fa-chart-line"></i></div>
+      <h2>30-day trends</h2>
+    </div>
+    <p class="section-sub">Daily snapshots showing how your platform metrics are moving over the last month.</p>
+    <div class="charts-grid">
+      <?php foreach ($trend_charts as $chart) : ?>
+      <div class="chart-card">
+        <h3><?php echo esc_html($chart['title']); ?></h3>
+        <div class="chart-canvas"><canvas id="chart-<?php echo esc_attr($chart['id']); ?>"></canvas></div>
+      </div>
+      <?php endforeach; ?>
+    </div>
+  </div>
+  <?php endif; ?>
+
+  <?php if (empty($sections)) : ?>
+  <div class="section-block">
+    <p class="empty-state">No industry app metrics yet. Once your modules are active and you have data in your apps, charts and percentages will show here automatically.</p>
+  </div>
+  <?php else : ?>
+    <?php foreach ($sections as $section) : ?>
+    <div class="section-block">
+      <div class="section-head">
+        <div class="section-icon" style="background: <?php echo esc_attr($section['color']); ?>22; color: <?php echo esc_attr($section['color']); ?>;">
+          <i class="fas <?php echo esc_attr($section['icon']); ?>"></i>
+        </div>
+        <h2><?php echo esc_html($section['title']); ?></h2>
+      </div>
+
+      <?php if (!empty($section['stats'])) : ?>
+      <div class="stat-row">
+        <?php foreach ($section['stats'] as $stat) : ?>
+        <div class="stat-box">
+          <div class="value"><?php echo esc_html($stat['value']); ?><?php if (!empty($stat['suffix'])) : ?><span style="font-size:0.75rem;color:#94A3B8;"><?php echo esc_html($stat['suffix']); ?></span><?php endif; ?></div>
+          <div class="label"><?php echo esc_html($stat['label']); ?></div>
+        </div>
+        <?php endforeach; ?>
+      </div>
+      <?php endif; ?>
+
+      <?php if (!empty($section['charts'])) : ?>
+      <div class="charts-grid">
+        <?php foreach ($section['charts'] as $chart) : ?>
+        <div class="chart-card">
+          <h3><?php echo esc_html($chart['title']); ?></h3>
+          <div class="chart-canvas"><canvas id="chart-<?php echo esc_attr($chart['id']); ?>"></canvas></div>
+        </div>
+        <?php endforeach; ?>
+      </div>
+      <?php endif; ?>
+    </div>
+    <?php endforeach; ?>
+  <?php endif; ?>
+
+</div>
+</div>
+
+<script>
+(function () {
+  var setupPercent = <?php echo (int) $setup_percent; ?>;
+  var chartConfigs = <?php echo wp_json_encode($charts); ?>;
+  var pdfFilename = <?php echo wp_json_encode($pdf_filename ?? 'digitalgate-progress-report.pdf'); ?>;
+
+  function doughnutOptions() {
+    return {
+      responsive: true,
+      maintainAspectRatio: false,
+      cutout: '72%',
+      plugins: { legend: { position: 'bottom', labels: { color: '#94A3B8', boxWidth: 12, font: { size: 11 } } } }
+    };
+  }
+
+  function barOptions() {
+    return {
+      responsive: true,
+      maintainAspectRatio: false,
+      scales: {
+        x: { ticks: { color: '#94A3B8', font: { size: 10 } }, grid: { color: 'rgba(51,65,85,0.35)' } },
+        y: { beginAtZero: true, ticks: { color: '#94A3B8', font: { size: 10 } }, grid: { color: 'rgba(51,65,85,0.35)' } }
+      },
+      plugins: { legend: { display: false } }
+    };
+  }
+
+  function lineOptions(color) {
+    return {
+      responsive: true,
+      maintainAspectRatio: false,
+      scales: {
+        x: { ticks: { color: '#94A3B8', font: { size: 10 }, maxRotation: 0, autoSkip: true, maxTicksLimit: 8 }, grid: { color: 'rgba(51,65,85,0.2)' } },
+        y: { beginAtZero: true, ticks: { color: '#94A3B8', font: { size: 10 } }, grid: { color: 'rgba(51,65,85,0.35)' } }
+      },
+      plugins: { legend: { display: false } },
+      elements: { line: { tension: 0.35, borderWidth: 2, borderColor: color || '#3B82F6' }, point: { radius: 2, backgroundColor: color || '#3B82F6' } }
+    };
+  }
+
+  var ringEl = document.getElementById('dg-setup-ring');
+  if (ringEl && window.Chart) {
+    new Chart(ringEl, {
+      type: 'doughnut',
+      data: {
+        labels: ['Complete', 'Remaining'],
+        datasets: [{
+          data: [setupPercent, Math.max(0, 100 - setupPercent)],
+          backgroundColor: ['#3B82F6', '#1E293B'],
+          borderWidth: 0
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        cutout: '78%',
+        plugins: { legend: { display: false }, tooltip: { enabled: false } }
+      }
+    });
+  }
+
+  if (window.Chart && Array.isArray(chartConfigs)) {
+    chartConfigs.forEach(function (cfg) {
+      var el = document.getElementById('chart-' + cfg.id);
+      if (!el) {
+        return;
+      }
+      var type = cfg.type === 'line' ? 'line' : (cfg.type === 'bar' ? 'bar' : 'doughnut');
+      var color = (cfg.colors && cfg.colors[0]) ? cfg.colors[0] : '#3B82F6';
+      var dataset = {
+        data: cfg.values || [],
+        borderWidth: type === 'line' ? 2 : 0,
+        borderRadius: type === 'bar' ? 6 : 0
+      };
+      if (type === 'line') {
+        dataset.borderColor = color;
+        dataset.backgroundColor = color + '33';
+        dataset.fill = true;
+        dataset.pointBackgroundColor = color;
+      } else {
+        dataset.backgroundColor = cfg.colors || ['#3B82F6', '#10B981', '#F59E0B', '#8B5CF6'];
+      }
+      new Chart(el, {
+        type: type,
+        data: { labels: cfg.labels || [], datasets: [dataset] },
+        options: type === 'line' ? lineOptions(color) : (type === 'bar' ? barOptions() : doughnutOptions())
+      });
+    });
+  }
+
+  var pdfBtn = document.getElementById('dg-report-pdf');
+  if (pdfBtn && window.html2pdf) {
+    pdfBtn.addEventListener('click', function () {
+      pdfBtn.disabled = true;
+      pdfBtn.textContent = 'Generating PDF...';
+      var node = document.getElementById('dg-report-export');
+      window.html2pdf().set({
+        margin: [10, 10, 10, 10],
+        filename: pdfFilename,
+        image: { type: 'jpeg', quality: 0.95 },
+        html2canvas: { scale: 2, useCORS: true, backgroundColor: '#0A0E17' },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+        pagebreak: { mode: ['css', 'legacy'] }
+      }).from(node).save().then(function () {
+        pdfBtn.disabled = false;
+        pdfBtn.innerHTML = '<i class="fas fa-file-pdf"></i> Download PDF';
+      }).catch(function () {
+        pdfBtn.disabled = false;
+        pdfBtn.innerHTML = '<i class="fas fa-file-pdf"></i> Download PDF';
+      });
+    });
+  }
+})();
+</script>

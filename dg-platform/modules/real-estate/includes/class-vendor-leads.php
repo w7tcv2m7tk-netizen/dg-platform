@@ -293,6 +293,19 @@ class DG_RE_Vendor_Leads {
         ));
     }
 
+    public static function delete($lead_id) {
+        global $wpdb;
+        $lead_id = (int) $lead_id;
+        $lead = self::get($lead_id);
+        if (!$lead) {
+            return false;
+        }
+        if (!empty($lead->pipeline_id)) {
+            $wpdb->delete(self::pipeline_table(), ['id' => (int) $lead->pipeline_id], ['%d']);
+        }
+        return (bool) $wpdb->delete(self::leads_table(), ['id' => $lead_id], ['%d']);
+    }
+
     private static function find_recent_duplicate($contact_id, $property_address) {
         global $wpdb;
         if ($property_address === '') {

@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>DigitalGate | Client Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@100..800&family=Inter:opsz,wght@14..32,400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Inter', sans-serif; background: #0A0E17; color: #FFFFFF; line-height: 1.5; }
+    .dashboard-header { background: linear-gradient(135deg, #0A0E17 0%, #1A2A3A 100%); padding: 48px 0 32px; border-bottom: 1px solid rgba(59, 130, 246, 0.2); }
+    .dashboard-container { max-width: 1280px; margin: 0 auto; padding: 0 2rem; }
+    .header-flex { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; }
+    .welcome-text h1 { font-family: 'Sora', sans-serif; font-size: 1.75rem; margin-bottom: 0.25rem; }
+    .welcome-text p { color: #94A3B8; font-size: 0.95rem; }
+    .header-actions { display: flex; gap: 0.75rem; flex-wrap: wrap; }
+    .header-btn { background: #334155; color: #fff; padding: 0.5rem 1rem; border-radius: 40px; text-decoration: none; font-size: 0.8rem; font-weight: 600; transition: all 0.2s; }
+    .header-btn:hover { background: #475569; color: #fff; }
+    .header-btn.logout:hover { background: #EF4444; }
+    .container { max-width: 1280px; margin: 0 auto; padding: 2rem; }
+    .welcome-card { background: #1E293B; border-radius: 24px; padding: 1.75rem 2rem; margin-bottom: 2rem; border: 1px solid #334155; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 1rem; }
+    .welcome-card h2 { font-family: 'Sora', sans-serif; font-size: 1.35rem; margin-bottom: 0.35rem; }
+    .welcome-card p { color: #94A3B8; font-size: 0.9rem; max-width: 640px; }
+    .support-email { display: inline-flex; align-items: center; gap: 8px; color: #60A5FA; text-decoration: none; font-size: 0.85rem; font-weight: 600; }
+    .support-email:hover { text-decoration: underline; }
+    .portal-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1.5rem; margin-bottom: 2rem; }
+    .portal-card { background: #1E293B; border-radius: 20px; padding: 1.5rem; text-align: center; border: 1px solid #334155; transition: all 0.3s ease; text-decoration: none; display: block; }
+    .portal-card:hover { transform: translateY(-5px); border-color: #3B82F6; background: #1A253A; }
+    .portal-card.primary { border-color: rgba(59, 130, 246, 0.45); background: linear-gradient(180deg, #1E293B 0%, #172033 100%); }
+    .portal-icon { width: 64px; height: 64px; background: rgba(59, 130, 246, 0.15); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1rem; }
+    .portal-icon i { font-size: 1.8rem; color: #3B82F6; }
+    .portal-card h3 { font-size: 1rem; font-weight: 700; margin-bottom: 0.5rem; color: #FFFFFF; }
+    .portal-card p { font-size: 0.75rem; color: #94A3B8; }
+    .section-title { font-family: 'Sora', sans-serif; font-size: 1.2rem; font-weight: 700; margin: 0 0 1rem; display: flex; align-items: center; gap: 10px; }
+    .section-title i { color: #3B82F6; }
+    .actions-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin-bottom: 2rem; }
+    .action-btn { background: #0F172A; border: 1px solid #334155; border-radius: 12px; padding: 0.85rem 1rem; text-align: center; text-decoration: none; display: flex; align-items: center; justify-content: center; gap: 8px; color: #FFFFFF; font-size: 0.82rem; transition: all 0.2s; }
+    .action-btn:hover { border-color: #3B82F6; background: #1A253A; transform: translateY(-2px); }
+    .action-btn i { color: #3B82F6; }
+    .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
+    .panel { background: #1E293B; border-radius: 20px; padding: 1.5rem; border: 1px solid #334155; }
+    .step-item { display: flex; align-items: flex-start; gap: 1rem; padding: 1rem 0; border-bottom: 1px solid #334155; }
+    .step-item:last-child { border-bottom: none; padding-bottom: 0; }
+    .step-icon { width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; background: rgba(100, 116, 139, 0.2); color: #94A3B8; }
+    .step-item.done .step-icon { background: rgba(16, 185, 129, 0.15); color: #10B981; }
+    .step-item.active .step-icon { background: rgba(59, 130, 246, 0.15); color: #3B82F6; }
+    .step-details { flex: 1; }
+    .step-title { font-size: 0.88rem; font-weight: 600; margin-bottom: 0.15rem; }
+    .step-desc { font-size: 0.75rem; color: #64748B; }
+    .step-badge { font-size: 0.68rem; padding: 0.2rem 0.55rem; border-radius: 20px; background: #334155; color: #CBD5E1; white-space: nowrap; }
+    .step-item.done .step-badge { background: #10B981; color: #fff; }
+    .step-item.active .step-badge { background: #3B82F6; color: #fff; }
+    .resource-item { background: #0F172A; border-radius: 12px; padding: 1rem; display: flex; align-items: center; gap: 12px; text-decoration: none; border: 1px solid #334155; transition: all 0.2s; margin-bottom: 0.75rem; }
+    .resource-item:last-child { margin-bottom: 0; }
+    .resource-item:hover { border-color: #3B82F6; transform: translateY(-2px); }
+    .resource-item i { font-size: 1.1rem; color: #3B82F6; width: 24px; text-align: center; }
+    .resource-name { font-size: 0.85rem; font-weight: 600; color: #FFFFFF; }
+    .resource-size { font-size: 0.7rem; color: #64748B; }
+    .alert-banner { background: rgba(59, 130, 246, 0.12); border: 1px solid rgba(59, 130, 246, 0.35); color: #BFDBFE; padding: 1rem 1.25rem; border-radius: 12px; margin-bottom: 1.5rem; font-size: 0.88rem; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 1rem; }
+    .alert-banner a { color: #fff; background: #3B82F6; padding: 0.45rem 1rem; border-radius: 40px; text-decoration: none; font-size: 0.8rem; font-weight: 600; }
+    .alert-banner a:hover { background: #2563EB; }
+    @media (max-width: 1000px) { .portal-grid { grid-template-columns: repeat(2, 1fr); } .actions-grid, .two-col { grid-template-columns: 1fr; } }
+    @media (max-width: 640px) { .portal-grid { grid-template-columns: 1fr; } .container { padding: 1rem; } }
+  </style>
+</head>
+<body>
+
+<?php
+$client_name = 'there';
+$client_email = '';
+$payment_done = false;
+$onboarding_done = false;
+$setup_live = false;
+
+if (function_exists('wp_get_current_user')) {
+    $user = wp_get_current_user();
+    if ($user && $user->ID) {
+        $client_name = class_exists('DG_Email_Names')
+            ? DG_Email_Names::first_name($user)
+            : ($user->first_name ?: $user->display_name ?: explode('@', $user->user_email)[0]);
+        $client_email = $user->user_email;
+        $contact_id = (int) get_user_meta($user->ID, 'dg_contact_id', true);
+        if ($contact_id && class_exists('DG_Contacts')) {
+            $contact = DG_Contacts::get($contact_id);
+            if ($contact) {
+                $tags = (string) ($contact->tags ?? '');
+                $payment_done = stripos($tags, 'Payment Received') !== false;
+                $onboarding_done = stripos($tags, 'Onboarding Complete') !== false;
+                $setup_live = stripos($tags, 'Platform Live') !== false || $contact->status === 'active';
+            }
+        } elseif ($user->ID) {
+            $payment_done = true;
+        }
+    }
+}
+
+$logout_url = function_exists('wp_logout_url')
+    ? wp_logout_url(home_url('/system-pages/client-portal/'))
+    : '/wp-login.php?action=logout';
+$account_url = home_url('/system-pages/customer-account/');
+$onboarding_url = home_url('/onboarding/');
+?>
+
+<div class="dashboard-header">
+  <div class="dashboard-container header-flex">
+    <div class="welcome-text">
+      <h1>Welcome back, <?php echo esc_html($client_name); ?></h1>
+      <p>Your DigitalGate client hub — onboarding, support, and account settings.</p>
+    </div>
+    <div class="header-actions">
+      <a href="<?php echo esc_url($account_url); ?>" class="header-btn"><i class="fas fa-user-cog"></i> Account</a>
+      <a href="<?php echo esc_url($logout_url); ?>" class="header-btn logout"><i class="fas fa-sign-out-alt"></i> Log out</a>
+    </div>
+  </div>
+</div>
+
+<div class="container">
+
+  <?php if (!$onboarding_done) : ?>
+  <div class="alert-banner">
+    <span><i class="fas fa-clipboard-list"></i> <strong>Next step:</strong> complete your onboarding form so we can configure your platform (usually 15–20 minutes).</span>
+    <a href="<?php echo esc_url($onboarding_url); ?>">Complete onboarding</a>
+  </div>
+  <?php endif; ?>
+
+  <div class="welcome-card">
+    <div>
+      <h2>You're all set to get started</h2>
+      <p>After payment, our team configures your DG Platform, apps, and integrations. Most clients go live within <strong>2–3 business days</strong> once onboarding is submitted.</p>
+      <?php if ($client_email) : ?>
+      <p style="margin-top:0.5rem;font-size:0.8rem;color:#64748B;">Signed in as <?php echo esc_html($client_email); ?></p>
+      <?php endif; ?>
+    </div>
+    <a href="mailto:support@digitalgate.com.au" class="support-email"><i class="fas fa-headset"></i> support@digitalgate.com.au</a>
+  </div>
+
+  <div class="portal-grid">
+    <a href="<?php echo esc_url($onboarding_url); ?>" class="portal-card primary">
+      <div class="portal-icon"><i class="fas fa-clipboard-list"></i></div>
+      <h3>Onboarding</h3>
+      <p>Business details, branding, apps &amp; access</p>
+    </a>
+    <a href="https://calendly.com/digitalgate" class="portal-card" target="_blank" rel="noopener">
+      <div class="portal-icon"><i class="fas fa-calendar-alt"></i></div>
+      <h3>Book a call</h3>
+      <p>Strategy sessions &amp; project reviews</p>
+    </a>
+    <a href="mailto:support@digitalgate.com.au?subject=DigitalGate%20support%20request" class="portal-card">
+      <div class="portal-icon"><i class="fas fa-life-ring"></i></div>
+      <h3>Get support</h3>
+      <p>Questions, changes &amp; technical help</p>
+    </a>
+    <a href="<?php echo esc_url($account_url); ?>" class="portal-card">
+      <div class="portal-icon"><i class="fas fa-user-circle"></i></div>
+      <h3>My account</h3>
+      <p>Profile, password &amp; billing details</p>
+    </a>
+  </div>
+
+  <div class="section-title"><i class="fas fa-bolt"></i> Quick actions</div>
+  <div class="actions-grid">
+    <a href="<?php echo esc_url($onboarding_url); ?>" class="action-btn"><i class="fas fa-edit"></i> Update onboarding info</a>
+    <a href="https://calendly.com/digitalgate" class="action-btn" target="_blank" rel="noopener"><i class="fas fa-video"></i> Schedule a call</a>
+    <a href="mailto:onboarding@digitalgate.com.au" class="action-btn"><i class="fas fa-envelope"></i> Email onboarding team</a>
+  </div>
+
+  <div class="two-col">
+    <div class="panel">
+      <div class="section-title"><i class="fas fa-route"></i> Setup progress</div>
+
+      <div class="step-item <?php echo $payment_done ? 'done' : 'active'; ?>">
+        <div class="step-icon"><i class="fas fa-<?php echo $payment_done ? 'check' : 'credit-card'; ?>"></i></div>
+        <div class="step-details">
+          <div class="step-title">Payment received</div>
+          <div class="step-desc">Stripe checkout completed — your account is provisioned.</div>
+        </div>
+        <span class="step-badge"><?php echo $payment_done ? 'Done' : 'Pending'; ?></span>
+      </div>
+
+      <div class="step-item <?php echo $onboarding_done ? 'done' : ($payment_done ? 'active' : ''); ?>">
+        <div class="step-icon"><i class="fas fa-<?php echo $onboarding_done ? 'check' : 'clipboard-list'; ?>"></i></div>
+        <div class="step-details">
+          <div class="step-title">Onboarding form submitted</div>
+          <div class="step-desc">Tell us about your business, branding, and platform needs.</div>
+        </div>
+        <span class="step-badge"><?php echo $onboarding_done ? 'Done' : 'Action needed'; ?></span>
+      </div>
+
+      <div class="step-item <?php echo ($onboarding_done && !$setup_live) ? 'active' : ($setup_live ? 'done' : ''); ?>">
+        <div class="step-icon"><i class="fas fa-<?php echo $setup_live ? 'check' : 'cogs'; ?>"></i></div>
+        <div class="step-details">
+          <div class="step-title">Platform configuration</div>
+          <div class="step-desc">Our team sets up your DG Platform, modules, and integrations.</div>
+        </div>
+        <span class="step-badge"><?php echo $setup_live ? 'Live' : 'In progress'; ?></span>
+      </div>
+
+      <div class="step-item <?php echo $setup_live ? 'done' : ''; ?>">
+        <div class="step-icon"><i class="fas fa-<?php echo $setup_live ? 'check' : 'rocket'; ?>"></i></div>
+        <div class="step-details">
+          <div class="step-title">Go live</div>
+          <div class="step-desc">Training handover, portal access, and ongoing support.</div>
+        </div>
+        <span class="step-badge"><?php echo $setup_live ? 'Done' : 'Upcoming'; ?></span>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="section-title"><i class="fas fa-book-open"></i> Helpful links</div>
+      <a href="<?php echo esc_url($onboarding_url); ?>" class="resource-item">
+        <i class="fas fa-clipboard-list"></i>
+        <div>
+          <div class="resource-name">Client onboarding form</div>
+          <div class="resource-size">Required after purchase</div>
+        </div>
+      </a>
+      <a href="https://digitalgate.com.au/pricing/" class="resource-item">
+        <i class="fas fa-layer-group"></i>
+        <div>
+          <div class="resource-name">Plans &amp; add-ons</div>
+          <div class="resource-size">Upgrade modules anytime</div>
+        </div>
+      </a>
+      <a href="https://digitalgate.com.au/terms-conditions/" class="resource-item">
+        <i class="fas fa-file-contract"></i>
+        <div>
+          <div class="resource-name">Terms &amp; conditions</div>
+          <div class="resource-size">Service agreement</div>
+        </div>
+      </a>
+      <a href="mailto:support@digitalgate.com.au" class="resource-item">
+        <i class="fas fa-headset"></i>
+        <div>
+          <div class="resource-name">Contact support</div>
+          <div class="resource-size">We respond within 1 business day</div>
+        </div>
+      </a>
+    </div>
+  </div>
+
+</div>
+
+</body>
+</html>

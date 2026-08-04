@@ -1,0 +1,255 @@
+<!--
+  DigitalGate Pricing — Value Comparison Section
+  Paste into Oxygen HTML on /pricing BEFORE the "What DigitalGate Replaces" section.
+  Anchor: #value-comparison
+  Last updated: August 2026 · aligns with DG Platform v10.44
+-->
+
+<style>
+  .value-section {
+    background: #0A0E17;
+    padding: 72px 0;
+    border-top: 1px solid #1E293B;
+  }
+  .value-section .section-header { text-align: center; max-width: 760px; margin: 0 auto 2.5rem; }
+  .value-section .sub-label {
+    display: inline-block; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.12em;
+    color: #60A5FA; margin-bottom: 0.75rem;
+  }
+  .value-section .section-header h2 {
+    font-family: Inter, system-ui, sans-serif; font-size: clamp(1.6rem, 3vw, 2.2rem);
+    font-weight: 800; margin-bottom: 0.75rem;
+  }
+  .value-section .section-header p { color: #94A3B8; font-size: 1rem; line-height: 1.6; }
+  .value-stats {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem;
+    max-width: 960px; margin: 0 auto 2.5rem;
+  }
+  .value-stat {
+    background: #111827; border: 1px solid #1E293B; border-radius: 16px;
+    padding: 1.25rem; text-align: center;
+  }
+  .value-stat .num {
+    font-family: Inter, system-ui, sans-serif; font-size: 1.75rem; font-weight: 800;
+    color: #FFFFFF; line-height: 1.1;
+  }
+  .value-stat .num.accent { color: #34D399; }
+  .value-stat .lbl { color: #94A3B8; font-size: 0.78rem; margin-top: 0.35rem; line-height: 1.4; }
+  .value-table-wrap {
+    max-width: 960px; margin: 0 auto 2.5rem; overflow-x: auto;
+    border: 1px solid #1E293B; border-radius: 16px; background: #111827;
+  }
+  .value-table { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
+  .value-table th, .value-table td { padding: 0.85rem 1rem; text-align: left; border-bottom: 1px solid #1E293B; }
+  .value-table th { color: #94A3B8; font-weight: 600; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.06em; }
+  .value-table td { color: #CBD5E1; }
+  .value-table tr:last-child td { border-bottom: none; }
+  .value-table .price-dg { color: #34D399; font-weight: 700; }
+  .value-table .price-market { color: #F87171; text-decoration: line-through; opacity: 0.85; }
+  .value-table .save { color: #60A5FA; font-weight: 700; }
+  .value-industry-grid {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.25rem;
+    max-width: 1100px; margin: 0 auto 2rem;
+  }
+  .value-industry-card {
+    background: #111827; border: 1px solid #1E293B; border-radius: 16px; padding: 1.35rem;
+    display: flex; flex-direction: column; gap: 0.5rem;
+  }
+  .value-industry-card .ind-head { display: flex; align-items: center; gap: 0.5rem; }
+  .value-industry-card .ind-icon { font-size: 1.4rem; }
+  .value-industry-card h3 { font-size: 1rem; font-weight: 700; margin: 0; }
+  .value-industry-card .badge {
+    display: inline-block; font-size: 0.65rem; font-weight: 700; letter-spacing: 0.06em;
+    text-transform: uppercase; padding: 0.2rem 0.5rem; border-radius: 999px;
+  }
+  .badge-ga { background: rgba(16,185,129,0.15); color: #34D399; border: 1px solid rgba(16,185,129,0.25); }
+  .badge-soon { background: rgba(251,191,36,0.12); color: #FBBF24; border: 1px solid rgba(251,191,36,0.25); }
+  .value-industry-card p { color: #94A3B8; font-size: 0.82rem; line-height: 1.55; margin: 0; flex: 1; }
+  .value-industry-card .ind-pricing { margin-top: 0.5rem; font-size: 0.85rem; }
+  .value-industry-card .ind-pricing strong { color: #FFFFFF; }
+  .value-industry-card .ind-pricing span { color: #64748B; font-size: 0.78rem; }
+  .value-includes {
+    max-width: 960px; margin: 0 auto; display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;
+  }
+  .value-includes-col {
+    background: #111827; border: 1px solid #1E293B; border-radius: 16px; padding: 1.35rem;
+  }
+  .value-includes-col h4 { font-size: 1rem; font-weight: 700; margin-bottom: 0.85rem; }
+  .value-includes-col ul { list-style: none; margin: 0; padding: 0; }
+  .value-includes-col li {
+    padding: 0.45rem 0; border-bottom: 1px solid #1E293B; font-size: 0.85rem; color: #94A3B8;
+    display: flex; align-items: flex-start; gap: 8px;
+  }
+  .value-includes-col li:last-child { border-bottom: none; }
+  .value-includes-col li .check { color: #10B981; font-weight: 700; flex-shrink: 0; }
+  .value-footnote {
+    max-width: 760px; margin: 2rem auto 0; text-align: center;
+    color: #64748B; font-size: 0.78rem; line-height: 1.6;
+  }
+  @media (max-width: 1024px) {
+    .value-stats { grid-template-columns: repeat(2, 1fr); }
+    .value-industry-grid { grid-template-columns: repeat(2, 1fr); }
+  }
+  @media (max-width: 768px) {
+    .value-stats { grid-template-columns: 1fr 1fr; }
+    .value-industry-grid { grid-template-columns: 1fr; }
+    .value-includes { grid-template-columns: 1fr; }
+  }
+</style>
+
+<section class="value-section" id="value-comparison">
+  <div class="container">
+    <div class="section-header">
+      <span class="sub-label">VALUE COMPARISON</span>
+      <h2>One platform. Up to 85% less than stacking separate tools.</h2>
+      <p>DigitalGate replaces a patchwork of CRM, automation, SEO, industry software, and client portals — with one login, one bill, and data that actually connects.</p>
+    </div>
+
+    <div class="value-stats">
+      <div class="value-stat">
+        <div class="num">40+</div>
+        <div class="lbl">Built-in capabilities across 7 industry verticals</div>
+      </div>
+      <div class="value-stat">
+        <div class="num">$99</div>
+        <div class="lbl">Platform from — vs ~$680/mo in separate solo tools</div>
+      </div>
+      <div class="value-stat">
+        <div class="num accent">73%</div>
+        <div class="lbl">Typical saving vs best-of-breed stack (Business + Pro apps)</div>
+      </div>
+      <div class="value-stat">
+        <div class="num accent">$0</div>
+        <div class="lbl">Lock-in contracts — month-to-month on all plans</div>
+      </div>
+    </div>
+
+    <div class="value-table-wrap">
+      <table class="value-table">
+        <thead>
+          <tr>
+            <th>Typical business</th>
+            <th>DigitalGate</th>
+            <th>Separate tools (est.)</th>
+            <th>You save</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Solo operator — CRM, tasks, basic automation</td>
+            <td class="price-dg">$99/mo Starter</td>
+            <td class="price-market">~$680/mo</td>
+            <td class="save">~$581/mo (85%)</td>
+          </tr>
+          <tr>
+            <td>Growing team — CRM + 1 industry app + automation</td>
+            <td class="price-dg">$348/mo</td>
+            <td class="price-market">~$1,850/mo</td>
+            <td class="save">~$1,502/mo (81%)</td>
+          </tr>
+          <tr>
+            <td>Full stack — Business + all Premium Pro apps</td>
+            <td class="price-dg">$874/mo</td>
+            <td class="price-market">~$3,200/mo</td>
+            <td class="save">~$2,326/mo (73%)</td>
+          </tr>
+          <tr>
+            <td>Agency + managed growth (Foundation tier)</td>
+            <td class="price-dg">$497/mo</td>
+            <td class="price-market">~$2,200/mo software alone*</td>
+            <td class="save">~$1,700/mo+</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="value-footnote">*Growth Systems includes strategy, SEO, and execution — not just software. HubSpot Marketing Pro alone starts around $1,380/mo before onboarding fees. Market estimates based on published AUD list prices (HubSpot AU, Semrush, ActiveCampaign, Lodgify, Rex-class CRM). August 2026.</p>
+
+    <div class="section-header" style="margin-top:3rem;">
+      <span class="sub-label">BY INDUSTRY</span>
+      <h2>Built for your vertical — not bolted on</h2>
+      <p>Industry Apps add specialised pipelines, workflows, and portals on top of the core platform.</p>
+    </div>
+
+    <div class="value-industry-grid">
+      <div class="value-industry-card">
+        <div class="ind-head">
+          <span class="ind-icon" aria-hidden="true">📊</span>
+          <h3>Agencies &amp; Professional Services</h3>
+          <span class="badge badge-ga">Live</span>
+        </div>
+        <p>Client CRM, visibility audits, voice agent leads, follow-up automations, client portal, onboarding, and progress reports.</p>
+        <div class="ind-pricing"><strong>From $497/mo</strong> <span>Growth Systems · or Platform from $249/mo</span></div>
+      </div>
+      <div class="value-industry-card">
+        <div class="ind-head">
+          <span class="ind-icon" aria-hidden="true">🏠</span>
+          <h3>Real Estate</h3>
+          <span class="badge badge-ga">Live</span>
+        </div>
+        <p>Vendor &amp; buyer pipelines, listings, appraisal booking, property workspace, brochures, and agent tools. Owner Portal coming soon.</p>
+        <div class="ind-pricing"><strong>+$99/mo</strong> <span>Industry App on Professional+ · replaces ~$1,100/mo in Rex + Calendly + portals</span></div>
+      </div>
+      <div class="value-industry-card">
+        <div class="ind-head">
+          <span class="ind-icon" aria-hidden="true">🏨</span>
+          <h3>Accommodation &amp; STR</h3>
+          <span class="badge badge-ga">Live</span>
+        </div>
+        <p>Direct bookings, Stripe/PayID, OTA sync, guest CRM, check-in QR, housekeeping, and Guest Portal for returning guests.</p>
+        <div class="ind-pricing"><strong>+$99/mo</strong> <span>Industry App · replaces Lodgify + guest comms + housekeeping tools</span></div>
+      </div>
+      <div class="value-industry-card">
+        <div class="ind-head">
+          <span class="ind-icon" aria-hidden="true">✨</span>
+          <h3>Creator &amp; Personal Brand</h3>
+          <span class="badge badge-soon">Preview</span>
+        </div>
+        <p>Creator Studio portal and audience tools in active development. Platform CRM and Social Pro available today.</p>
+        <div class="ind-pricing"><strong>+$99/mo</strong> <span>Industry App · early access for founding customers</span></div>
+      </div>
+      <div class="value-industry-card">
+        <div class="ind-head">
+          <span class="ind-icon" aria-hidden="true">💰</span>
+          <h3>Finance &amp; Mortgage</h3>
+          <span class="badge badge-soon">Preview</span>
+        </div>
+        <p>Loan application pipeline from inquiry through settlement. Full broker workflows rolling out — enquire for early access.</p>
+        <div class="ind-pricing"><strong>+$99/mo</strong> <span>Industry App · pipeline CRM today</span></div>
+      </div>
+      <div class="value-industry-card">
+        <div class="ind-head">
+          <span class="ind-icon" aria-hidden="true">🔧</span>
+          <h3>Services, Auto &amp; Commercial</h3>
+          <span class="badge badge-soon">Preview</span>
+        </div>
+        <p>Jobs, inventory, and tenancy pipelines built. Quoting, invoicing, and syndication on the roadmap.</p>
+        <div class="ind-pricing"><strong>+$99/mo each</strong> <span>Industry App · founding pricing available</span></div>
+      </div>
+    </div>
+
+    <div class="value-includes">
+      <div class="value-includes-col">
+        <h4>Every Professional+ plan includes</h4>
+        <ul>
+          <li><span class="check" aria-hidden="true">✓</span> Full CRM — contacts, tasks, calendar, documents</li>
+          <li><span class="check" aria-hidden="true">✓</span> Growth Automations &amp; Intelligence reports</li>
+          <li><span class="check" aria-hidden="true">✓</span> AI Assist for emails, SEO, and content (BYO API key)</li>
+          <li><span class="check" aria-hidden="true">✓</span> Frontend SEO engine — meta, schema, sitemap, redirects</li>
+          <li><span class="check" aria-hidden="true">✓</span> Site Tools — cache, SMTP, image compression, Cloudflare</li>
+          <li><span class="check" aria-hidden="true">✓</span> Client portal, onboarding &amp; support chat (on platform sales)</li>
+        </ul>
+      </div>
+      <div class="value-includes-col">
+        <h4>Premium Pro apps (add as needed)</h4>
+        <ul>
+          <li><span class="check" aria-hidden="true">✓</span> SEO Pro — audits, IndexNow, AI optimiser (+$99/mo)</li>
+          <li><span class="check" aria-hidden="true">✓</span> AI Visibility Pro — scans, llms.txt, monitoring (+$99/mo)</li>
+          <li><span class="check" aria-hidden="true">✓</span> Automation Pro — multi-step workflows &amp; webhooks (+$49/mo)</li>
+          <li><span class="check" aria-hidden="true">✓</span> Analytics Pro — KPI snapshots &amp; trend reports (+$49/mo)</li>
+          <li><span class="check" aria-hidden="true">✓</span> Social Pro — publish to 5 platforms (+$79/mo)</li>
+          <li><span class="check" aria-hidden="true">✓</span> Voice AI — inbound call leads to CRM (+$99/mo)</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>

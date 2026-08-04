@@ -12,23 +12,72 @@ if (!defined('ABSPATH')) {
 class DG_Activator {
 
     public static function activate() {
+        if (function_exists('set_time_limit')) {
+            @set_time_limit(120);
+        }
+
         self::create_tables();
         self::migrate_legacy_contacts();
-        self::migrate_marketing_schema();
+        if (class_exists('DG_Site_Profile') && DG_Site_Profile::is_digitalgate()) {
+            self::migrate_marketing_schema();
+        }
+
         DG_Permissions::register_capabilities();
         DG_Permissions::install_role_templates();
-        DG_Site_Profile::maybe_apply_defaults();
 
-        if (!get_option('dg_platform_active_modules')) {
-            update_option('dg_platform_active_modules', DG_Site_Profile::recommended_modules());
+        $recommended = class_exists('DG_Site_Profile')
+            ? DG_Site_Profile::recommended_modules()
+            : ['core'];
+
+        // Activate core only first — vertical module loads on next admin request (avoids timeout).
+        update_option('dg_platform_active_modules', ['core']);
+        if (count($recommended) > 1) {
+            update_option('dg_platform_deferred_modules', $recommended);
         }
+
+        update_option(self::site_profile_option(), (class_exists('DG_Site_Profile') ? DG_Site_Profile::hostname() : '') . '|' . implode(',', $recommended));
 
         if (!file_exists(DG_MODULES_PATH)) {
             wp_mkdir_p(DG_MODULES_PATH);
         }
 
+        update_option('dg_acc_needs_rewrite_flush', 1);
+        update_option('dg_re_needs_rewrite_flush', 1);
+        update_option('dg_seo_needs_rewrite_flush', 1);
+        update_option('dg_ai_visibility_needs_rewrite_flush', 1);
         update_option('dg_platform_db_version', DG_PLATFORM_VERSION);
-        flush_rewrite_rules();
+
+        if (class_exists('DG_Plan_Registry') && !get_option(DG_Plan_Registry::OPTION_PLAN)) {
+            DG_Plan_Registry::set_plan(DG_Plan_Registry::default_for_site());
+        }
+    }
+
+    private static function site_profile_option() {
+        return 'dg_platform_site_profile_applied';
+    }
+
+    public static function maybe_enable_deferred_modules() {
+        $deferred = get_option('dg_platform_deferred_modules');
+        if (!$deferred || !is_array($deferred)) {
+            return false;
+        }
+        update_option('dg_platform_active_modules', array_values(array_unique($deferred)));
+        delete_option('dg_platform_deferred_modules');
+        update_option('dg_platform_show_module_refresh_notice', 1);
+        return true;
+    }
+
+    /** Run schema updates after zip deploy (activation not required). */
+    public static function maybe_upgrade_schema() {
+        $saved = get_option('dg_platform_db_version', '');
+        if ($saved === DG_PLATFORM_VERSION) {
+            return;
+        }
+        self::create_tables();
+        if (class_exists('DG_Permissions')) {
+            DG_Permissions::register_capabilities();
+        }
+        update_option('dg_platform_db_version', DG_PLATFORM_VERSION);
     }
 
     public static function deactivate() {
@@ -169,6 +218,27 @@ class DG_Activator {
                 KEY entity (entity_type, entity_id),
                 KEY attachment_id (attachment_id)
             ",
+            $wpdb->prefix . 'dg_reviews' => "
+                id bigint(20) NOT NULL AUTO_INCREMENT,
+                platform varchar(50) NOT NULL DEFAULT 'manual',
+                author_name varchar(100) DEFAULT NULL,
+                author_photo varchar(500) DEFAULT NULL,
+                rating decimal(2,1) DEFAULT 0,
+                title varchar(255) DEFAULT NULL,
+                content longtext,
+                review_date date DEFAULT NULL,
+                source_url varchar(500) DEFAULT NULL,
+                external_id varchar(100) DEFAULT NULL,
+                listing_id varchar(100) DEFAULT NULL,
+                status varchar(20) DEFAULT 'published',
+                imported_at datetime DEFAULT CURRENT_TIMESTAMP,
+                PRIMARY KEY (id),
+                KEY platform (platform),
+                KEY status (status),
+                KEY review_date (review_date),
+                KEY external_id (external_id),
+                KEY listing_id (listing_id)
+            ",
             $wpdb->prefix . 'dg_automations' => "
                 id bigint(20) NOT NULL AUTO_INCREMENT,
                 name varchar(100) NOT NULL,
@@ -211,6 +281,29 @@ class DG_Activator {
                 PRIMARY KEY (id),
                 KEY action (action),
                 KEY entity (entity_type, entity_id),
+                KEY created_at (created_at)
+            ",
+            $wpdb->prefix . 'dg_support_conversations' => "
+                id bigint(20) NOT NULL AUTO_INCREMENT,
+                user_id bigint(20) NOT NULL,
+                contact_id bigint(20) DEFAULT NULL,
+                status varchar(20) DEFAULT 'open',
+                last_message_at datetime DEFAULT CURRENT_TIMESTAMP,
+                created_at datetime DEFAULT CURRENT_TIMESTAMP,
+                PRIMARY KEY (id),
+                UNIQUE KEY user_id (user_id),
+                KEY contact_id (contact_id),
+                KEY last_message_at (last_message_at)
+            ",
+            $wpdb->prefix . 'dg_support_messages' => "
+                id bigint(20) NOT NULL AUTO_INCREMENT,
+                conversation_id bigint(20) NOT NULL,
+                sender_role varchar(20) NOT NULL,
+                sender_user_id bigint(20) DEFAULT NULL,
+                body text NOT NULL,
+                created_at datetime DEFAULT CURRENT_TIMESTAMP,
+                PRIMARY KEY (id),
+                KEY conversation_id (conversation_id),
                 KEY created_at (created_at)
             ",
             // Legacy tables kept for backward compatibility

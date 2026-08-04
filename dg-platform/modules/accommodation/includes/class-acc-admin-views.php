@@ -16,6 +16,16 @@ class DG_Acc_Admin_Views {
             wp_die('Unauthorized');
         }
 
+        try {
+            self::render_dashboard_inner();
+        } catch (Throwable $e) {
+            echo '<div class="wrap dg-platform-wrap"><h1>🏨 Accommodation</h1>';
+            echo '<div class="notice notice-error"><p><strong>Dashboard error:</strong> '
+                . esc_html($e->getMessage()) . '</p></div></div>';
+        }
+    }
+
+    private static function render_dashboard_inner() {
         $summary = DG_Acc_Reports::summary();
         $status = $summary['status_counts'];
         ?>

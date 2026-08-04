@@ -28,6 +28,17 @@ class DG_Marketing_Form_Security {
         return true;
     }
 
+    /** @param array<string,mixed> $params */
+    public static function guard_post($action, array $params) {
+        if (!empty($params['website'])) {
+            return true;
+        }
+        if (!self::rate_limit_ok($action)) {
+            return new WP_Error('rate-limit', 'Too many requests. Try again later.');
+        }
+        return true;
+    }
+
     public static function rate_limit_ok($action) {
         $ip = isset($_SERVER['REMOTE_ADDR']) ? sanitize_text_field(wp_unslash($_SERVER['REMOTE_ADDR'])) : 'unknown';
         $key = 'dg_mk_rate_' . md5($action . '|' . $ip);

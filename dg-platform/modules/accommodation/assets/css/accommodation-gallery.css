@@ -1,0 +1,157 @@
+.dg-acc-gallery {
+    margin: 0 0 1.5rem;
+    background: #000;
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+.dg-acc-gallery .gallery-grid {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 2px;
+    background: #000;
+    max-height: 500px;
+    overflow: hidden;
+}
+
+.dg-acc-gallery .gallery-item {
+    display: block;
+    overflow: hidden;
+    position: relative;
+    background: #1a1a1a;
+    cursor: pointer;
+}
+
+.dg-acc-gallery .gallery-item img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    transition: transform 0.3s ease;
+}
+
+.dg-acc-gallery .gallery-item:hover img {
+    transform: scale(1.02);
+}
+
+.dg-acc-gallery .gallery-main {
+    grid-row: span 2;
+    min-height: 400px;
+    max-height: 500px;
+}
+
+.dg-acc-gallery .gallery-main img {
+    min-height: 400px;
+    max-height: 500px;
+}
+
+.dg-acc-gallery .gallery-thumbs {
+    display: grid;
+    grid-template-rows: 1fr 1fr;
+    gap: 2px;
+    background: #000;
+}
+
+.dg-acc-gallery .gallery-thumb {
+    min-height: 200px;
+    max-height: 249px;
+    overflow: hidden;
+}
+
+.dg-acc-gallery .gallery-thumb img {
+    min-height: 200px;
+    max-height: 249px;
+}
+
+.dg-acc-gallery .gallery-more {
+    position: relative;
+}
+
+.dg-acc-gallery .gallery-more .more-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    font-size: 2.5rem;
+    font-weight: 700;
+    font-family: 'Cormorant Garamond', Georgia, serif;
+}
+
+.dg-acc-gallery ~ .fancybox__container,
+.fancybox__container {
+    --fancybox-bg: rgba(0, 0, 0, 0.9);
+}
+
+.fancybox__nav {
+    --fancybox-nav-width: 60px;
+}
+
+.fancybox__nav button {
+    background: rgba(0, 0, 0, 0.5) !important;
+    color: #fff !important;
+    border-radius: 0 !important;
+    width: 60px !important;
+    height: 80px !important;
+    margin: 0 !important;
+}
+
+.fancybox__nav button:hover {
+    background: rgba(0, 0, 0, 0.8) !important;
+}
+
+.fancybox__nav button svg {
+    width: 30px !important;
+    height: 30px !important;
+}
+
+@media (max-width: 768px) {
+    .dg-acc-gallery .gallery-grid {
+        grid-template-columns: 1fr 1fr;
+        max-height: none;
+    }
+
+    .dg-acc-gallery .gallery-main {
+        grid-column: span 2;
+        grid-row: span 1;
+        min-height: 250px;
+        max-height: 350px;
+    }
+
+    .dg-acc-gallery .gallery-main img {
+        min-height: 250px;
+        max-height: 350px;
+    }
+
+    .dg-acc-gallery .gallery-thumbs {
+        grid-column: span 2;
+        grid-template-rows: 1fr 1fr;
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .dg-acc-gallery .gallery-thumb,
+    .dg-acc-gallery .gallery-thumb img {
+        min-height: 120px;
+        max-height: 180px;
+    }
+}
+
+@media (max-width: 480px) {
+    .dg-acc-gallery .gallery-main,
+    .dg-acc-gallery .gallery-main img {
+        min-height: 180px;
+        max-height: 250px;
+    }
+
+    .dg-acc-gallery .gallery-thumb,
+    .dg-acc-gallery .gallery-thumb img {
+        min-height: 80px;
+        max-height: 120px;
+    }
+
+    .dg-acc-gallery .gallery-more .more-overlay {
+        font-size: 1.5rem;
+    }
+}

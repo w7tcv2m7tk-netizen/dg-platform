@@ -18,7 +18,7 @@ class DG_Marketing_Email_Templates {
             'audit_lead_initial' => [
                 'label' => 'Agency Audit — Lead Initial Email',
                 'subject' => 'Your Agency Visibility Audit Results Are In',
-                'body' => "Hi {full_name},\n\nYour Agency Visibility Audit for {company_name} is ready.\n\nOverall Score: {overall_score}%\nGrade: {grade}\n\nView your full report: {audit_url}",
+                'body' => "Hi {first_name},\n\nYour Agency Visibility Audit for {company_name} is ready.\n\nOverall Score: {overall_score}%\nGrade: {grade}\n\nView your full report: {audit_url}",
             ],
             'audit_admin' => [
                 'label' => 'Agency Audit — Admin Notification',
@@ -75,6 +75,7 @@ class DG_Marketing_Email_Templates {
         if (!$template) {
             return ['subject' => '', 'body' => '', 'body_html' => ''];
         }
+        $vars = class_exists('DG_Email_Names') ? DG_Email_Names::enrich_template_vars($vars) : $vars;
         $replacements = [];
         foreach ($vars as $name => $value) {
             $replacements['{' . $name . '}'] = (string) $value;

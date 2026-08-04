@@ -231,6 +231,7 @@ class DG_Marketing_Audit_Followups {
     }
 
     private static function email_templates($company_name, $full_name, $audit_data, $audit_url) {
+        $first_name = class_exists('DG_Email_Names') ? DG_Email_Names::first_name($full_name) : $full_name;
         $h2 = 'color:#FFFFFF;font-size:22px;font-weight:700;margin:0 0 16px;letter-spacing:-0.02em;';
         $p = 'color:#E2E8F0;font-size:16px;line-height:1.65;margin:0 0 16px;';
         $ul = 'color:#E2E8F0;font-size:15px;line-height:1.8;padding-left:20px;margin:0 0 16px;';
@@ -246,7 +247,7 @@ class DG_Marketing_Audit_Followups {
             1 => [
                 'subject' => 'Your Agency Visibility Audit Results Are In',
                 'content' => '
-                <h2 style="' . $h2 . '">Hi ' . esc_html($full_name) . ',</h2>
+                <h2 style="' . $h2 . '">Hi ' . esc_html($first_name) . ',</h2>
                 <p style="' . $p . '">Your Agency Visibility Audit for <strong style="color:#60A5FA;">' . esc_html($company_name) . '</strong> is ready.</p>
                 <p style="' . $p . '">Here are your key results:</p>
                 ' . (class_exists('DG_Marketing_Emails') ? DG_Marketing_Emails::score_table([
@@ -262,7 +263,7 @@ class DG_Marketing_Audit_Followups {
             2 => [
                 'subject' => 'Your AI Visibility Breakdown & What It Means',
                 'content' => '
-                <h2 style="' . $h2 . '">Hi ' . esc_html($full_name) . ',</h2>
+                <h2 style="' . $h2 . '">Hi ' . esc_html($first_name) . ',</h2>
                 <p style="' . $p . '">Let\'s break down your AI Visibility score for <strong style="color:#60A5FA;">' . esc_html($company_name) . '</strong>.</p>
                 <p style="' . $p . '">Your AI Visibility score is <strong style="color:#FFFFFF;">' . $ai . '%</strong> ' . ($ai < 50 ? '— this means AI systems like ChatGPT and Google AI Mode are not currently recommending your agency.' : '— this is a solid foundation, but there\'s room to grow.') . '</p>
                 <p style="' . $p . '">Here\'s how AI visibility works:</p>
@@ -271,13 +272,13 @@ class DG_Marketing_Audit_Followups {
                     <li>They look for authority signals, reviews, and local citations</li>
                     <li>The more consistent your presence, the higher your AI visibility</li>
                 </ul>
-                <p style="' . $p . '">Want to see how this compares to other agencies in your area? <a href="' . esc_url(admin_url('admin.php?page=dg-platform-ai')) . '" style="' . $link . '">View the AI Visibility Dashboard →</a></p>
+                <p style="' . $p . '">Want to see your full breakdown and recommendations? <a href="' . esc_url($audit_url) . '" style="' . $link . '">View your full audit report →</a></p>
                 ',
             ],
             3 => [
                 'subject' => 'Your Website Performance & Lead Generation Potential',
                 'content' => '
-                <h2 style="' . $h2 . '">Hi ' . esc_html($full_name) . ',</h2>
+                <h2 style="' . $h2 . '">Hi ' . esc_html($first_name) . ',</h2>
                 <p style="' . $p . '">Let\'s talk about your website performance and lead potential for <strong style="color:#60A5FA;">' . esc_html($company_name) . '</strong>.</p>
                 <p style="' . $p . '">Your website scored <strong style="color:#FFFFFF;">' . $web . '%</strong> on Google PageSpeed ' . ($web < 50 ? '— which is below average. This means potential vendors are likely leaving your site before enquiring.' : '— which is above average, giving you a good foundation.') . '</p>
                 <p style="' . $p . '"><strong style="color:#FFFFFF;">Your Lead Potential Score:</strong> ' . $vendor . '%</p>
@@ -292,7 +293,7 @@ class DG_Marketing_Audit_Followups {
             4 => [
                 'subject' => 'Action Plan: 3 Steps to Improve Your Agency Visibility',
                 'content' => '
-                <h2 style="' . $h2 . '">Hi ' . esc_html($full_name) . ',</h2>
+                <h2 style="' . $h2 . '">Hi ' . esc_html($first_name) . ',</h2>
                 <p style="' . $p . '">Based on your audit for <strong style="color:#60A5FA;">' . esc_html($company_name) . '</strong>, here are the <strong style="color:#FFFFFF;">3 most impactful actions</strong> you can take right now:</p>
                 <ol style="' . $ul . '">
                     <li><strong style="color:#FFFFFF;">Build local authority content</strong> — Create suburb-specific landing pages with detailed market insights</li>
@@ -310,7 +311,7 @@ class DG_Marketing_Audit_Followups {
             5 => [
                 'subject' => 'Final Step: Let\'s Build Your Growth Plan',
                 'content' => '
-                <h2 style="' . $h2 . '">Hi ' . esc_html($full_name) . ',</h2>
+                <h2 style="' . $h2 . '">Hi ' . esc_html($first_name) . ',</h2>
                 <p style="' . $p . '">This is the final email in your Agency Visibility Audit series for <strong style="color:#60A5FA;">' . esc_html($company_name) . '</strong>.</p>
                 <ul style="' . $ul . '">
                     <li>✅ Your AI visibility score and breakdown</li>

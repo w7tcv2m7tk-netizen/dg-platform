@@ -46,20 +46,60 @@ class DG_Module_Accommodation {
             'class-acc-guests.php',
             'class-acc-reports.php',
             'class-acc-admin-views.php',
+            'class-acc-admin-menus.php',
             'class-acc-ota.php',
+            'class-acc-ical-import.php',
             'class-acc-payments.php',
             'class-acc-admin-pages.php',
             'class-acc-dev-api.php',
             'class-acc-admin-notifications.php',
+            'class-acc-guest-notifications.php',
             'class-acc-housekeeping.php',
             'class-acc-checkin.php',
+            'class-acc-cleaning.php',
+            'class-acc-frontend.php',
+            'class-acc-calendar.php',
+            'class-acc-gallery.php',
+            'class-acc-ical-export.php',
             'class-acc-shortcodes.php',
             'class-acc-listing-status.php',
+            'class-acc-shortcode-render.php',
         ] as $file) {
             $path = $dir . $file;
             if (file_exists($path)) {
                 require_once $path;
             }
+        }
+        $this->bootstrap_includes();
+    }
+
+    private function bootstrap_includes() {
+        foreach ([
+            'DG_Acc_Ota',
+            'DG_Acc_Payments',
+            'DG_Acc_Admin_Pages',
+            'DG_Acc_Admin_Menus',
+            'DG_Acc_Admin_Notifications',
+            'DG_Acc_Guest_Notifications',
+            'DG_Acc_Housekeeping',
+            'DG_Acc_Checkin',
+            'DG_Acc_Cleaning',
+            'DG_Acc_Calendar',
+            'DG_Acc_Gallery',
+            'DG_Acc_Ical_Export',
+            'DG_Acc_Shortcodes',
+            'DG_Acc_Listing_Status',
+            'DG_Acc_Shortcode_Render',
+        ] as $class) {
+            if (class_exists($class) && method_exists($class, 'init')) {
+                $class::init();
+            }
+        }
+        if (class_exists('DG_Acc_Frontend') && method_exists('DG_Acc_Frontend', 'init')) {
+            DG_Acc_Frontend::init();
+        }
+        if (class_exists('DG_Acc_Dev_API')) {
+            add_action('rest_api_init', ['DG_Acc_Dev_API', 'register_routes']);
         }
     }
     
@@ -70,7 +110,6 @@ class DG_Module_Accommodation {
     private function init() {
         $this->load_includes();
 
-        add_action('dg_platform_register_menus', [$this, 'register_platform_menus'], 15);
         add_action('dg_platform_quick_actions', [$this, 'quick_actions']);
         add_filter('dg_platform_dashboard_widgets', [$this, 'dashboard_widgets']);
 
@@ -78,7 +117,7 @@ class DG_Module_Accommodation {
         add_action('init', [$this, 'register_post_types']);
         add_action('init', [$this, 'register_taxonomies']);
         add_action('init', [$this, 'prepopulate_types']);
-        add_action('init', [$this, 'flush_rewrites']);
+        add_action('init', [$this, 'maybe_flush_rewrites'], 99);
         
         // Admin Columns - Accommodation
         add_filter('manage_dg_accommodation_posts_columns', [$this, 'admin_columns_accommodation']);
@@ -116,19 +155,17 @@ class DG_Module_Accommodation {
         
         // Meta Boxes
         add_action('add_meta_boxes', [$this, 'add_meta_boxes']);
+        
+        // Booking page — strip legacy summary blocks and ensure calendar works
+        add_filter('the_content', [$this, 'filter_booking_page_content'], 20);
         add_action('save_post_dg_accommodation', [$this, 'save_accommodation_meta']);
+        add_action('save_post_dg_accommodation', [$this, 'save_booking_settings_meta']);
         add_action('save_post_dg_booking', [$this, 'save_booking_meta']);
         add_action('save_post_dg_guest', [$this, 'save_guest_meta']);
         add_action('save_post_dg_guest', [$this, 'sync_guest_to_core'], 25);
         
         // Admin Notices
         add_action('admin_notices', [$this, 'saturday_restriction_notice']);
-        
-        // Admin Menus
-        add_action('admin_menu', [$this, 'add_admin_menus'], 20);
-        add_action('admin_menu', [$this, 'reorder_accommodation_submenus'], 9999);
-        add_action('admin_menu', [$this, 'add_visible_menu_separators'], 9998);
-        add_action('admin_head', [$this, 'menu_separator_css']);
         
         // Admin Bar
         add_action('admin_bar_menu', [$this, 'update_admin_bar_menu'], 999);
@@ -148,37 +185,27 @@ class DG_Module_Accommodation {
         add_action('admin_init', [$this, 'cleanup_orphaned_ota_bookings']);
     }
     
-    public function register_platform_menus() {
-        if (!DG_Acc_Permissions::can_view_bookings()) {
-            return;
-        }
-        add_submenu_page(
-            'dg-platform',
-            'Accommodation',
-            '🏨 Accommodation',
-            DG_Acc_Permissions::menu_cap_bookings(),
-            'dg-acc-dashboard',
-            ['DG_Acc_Admin_Views', 'render_dashboard']
-        );
-    }
-
     public function dashboard_widgets($widgets) {
         if (!class_exists('DG_Acc_Reports') || !DG_Acc_Permissions::can_view_bookings()) {
             return $widgets;
         }
-        $summary = DG_Acc_Reports::summary();
-        $widgets[] = [
-            'id' => 'acc_upcoming',
-            'label' => 'Upcoming stays (30d)',
-            'value' => $summary['upcoming_30d'],
-            'color' => '#34D399',
-        ];
-        $widgets[] = [
-            'id' => 'acc_guests',
-            'label' => 'Guests',
-            'value' => $summary['guests'],
-            'color' => '#8B5CF6',
-        ];
+        try {
+            $summary = DG_Acc_Reports::summary();
+            $widgets[] = [
+                'id' => 'acc_upcoming',
+                'label' => 'Upcoming stays (30d)',
+                'value' => $summary['upcoming_30d'],
+                'color' => '#34D399',
+            ];
+            $widgets[] = [
+                'id' => 'acc_guests',
+                'label' => 'Guests',
+                'value' => $summary['guests'],
+                'color' => '#8B5CF6',
+            ];
+        } catch (Throwable $e) {
+            // ignore widget errors on main dashboard
+        }
         return $widgets;
     }
 
@@ -219,7 +246,7 @@ class DG_Module_Accommodation {
             'public' => true,
             'publicly_queryable' => true,
             'show_ui' => true,
-            'show_in_menu' => true,
+            'show_in_menu' => false,
             'show_in_rest' => true,
             'query_var' => true,
             'rewrite' => ['slug' => 'accommodation', 'with_front' => false],
@@ -322,10 +349,17 @@ class DG_Module_Accommodation {
         }
     }
     
-    public function flush_rewrites() {
-        $this->register_post_types();
-        $this->register_taxonomies();
+    public function maybe_flush_rewrites() {
+        if (!get_option('dg_acc_needs_rewrite_flush')) {
+            return;
+        }
         flush_rewrite_rules();
+        delete_option('dg_acc_needs_rewrite_flush');
+    }
+
+    /** Schedule rewrite flush (e.g. on plugin activation). */
+    public static function flag_rewrite_flush() {
+        update_option('dg_acc_needs_rewrite_flush', 1);
     }
     
     // ============================================================
@@ -818,75 +852,6 @@ class DG_Module_Accommodation {
     }
     
     // ============================================================
-    // ADMIN MENUS (Snippet 1)
-    // ============================================================
-    
-    public function add_admin_menus() {
-        // Bookings submenu
-        add_submenu_page('edit.php?post_type=dg_accommodation', 'All Bookings', 'All Bookings', 'manage_options', 'edit.php?post_type=dg_booking');
-        add_submenu_page('edit.php?post_type=dg_accommodation', 'Add New Booking', 'Add New Booking', 'manage_options', 'post-new.php?post_type=dg_booking');
-        add_submenu_page('edit.php?post_type=dg_accommodation', 'Accommodation Types', 'Types', 'manage_options', 'edit-tags.php?taxonomy=dg_accommodation_type&post_type=dg_accommodation');
-        add_submenu_page('edit.php?post_type=dg_accommodation', 'Booking Calendar', '📅 Calendar', 'manage_options', 'dg-admin-calendar', ['DG_Acc_Admin_Pages', 'admin_calendar_page']);
-        add_submenu_page('edit.php?post_type=dg_accommodation', 'Booking Settings', 'Booking Settings', 'manage_options', 'dg-booking-settings', ['DG_Acc_Admin_Pages', 'booking_settings_page']);
-        add_submenu_page('edit.php?post_type=dg_accommodation', '💳 Stripe Settings', '💳 Stripe Settings', 'manage_options', 'dg-stripe-settings', ['DG_Acc_Admin_Pages', 'stripe_settings_page']);
-        add_submenu_page('edit.php?post_type=dg_accommodation', 'Force Sync OTA', '🔄 Sync OTA (All)', 'manage_options', 'dg-force-sync-all', ['DG_Acc_Admin_Pages', 'force_sync_all_page']);
-        
-        // Guest menu
-        add_submenu_page('edit.php?post_type=dg_accommodation', 'Guests', '👥 Guests', 'manage_options', 'edit.php?post_type=dg_guest');
-    }
-    
-    public function reorder_accommodation_submenus() {
-        global $submenu;
-        if (!isset($submenu['edit.php?post_type=dg_accommodation'])) return;
-        
-        $menu_items = $submenu['edit.php?post_type=dg_accommodation'];
-        $order = ['edit.php?post_type=dg_accommodation', 'post-new.php?post_type=dg_accommodation', 'edit-tags.php?taxonomy=dg_accommodation_type&post_type=dg_accommodation', 'edit.php?post_type=dg_booking', 'post-new.php?post_type=dg_booking', 'dg-admin-calendar', 'dg-booking-settings', 'dg-force-sync-all'];
-        
-        $reordered = [];
-        foreach ($order as $slug) {
-            foreach ($menu_items as $item) {
-                if ($item[2] == $slug) { $reordered[] = $item; break; }
-            }
-        }
-        foreach ($menu_items as $item) {
-            if (!in_array($item[2], $order)) $reordered[] = $item;
-        }
-        $submenu['edit.php?post_type=dg_accommodation'] = $reordered;
-    }
-    
-    public function add_visible_menu_separators() {
-        global $submenu;
-        if (!isset($submenu['edit.php?post_type=dg_accommodation'])) return;
-        
-        $new_submenu = [];
-        foreach ($submenu['edit.php?post_type=dg_accommodation'] as $item) {
-            $new_submenu[] = $item;
-            if ($item[2] == 'post-new.php?post_type=dg_accommodation') {
-                $new_submenu[] = ['', 'manage_options', 'dg-separator-1', '──────────────────', ['class' => 'dg-menu-separator']];
-            }
-            if ($item[2] == 'post-new.php?post_type=dg_booking') {
-                $new_submenu[] = ['', 'manage_options', 'dg-separator-2', '──────────────────', ['class' => 'dg-menu-separator']];
-            }
-            if ($item[2] == 'dg-booking-settings') {
-                $new_submenu[] = ['', 'manage_options', 'dg-separator-3', '──────────────────', ['class' => 'dg-menu-separator']];
-            }
-        }
-        $submenu['edit.php?post_type=dg_accommodation'] = $new_submenu;
-    }
-    
-    public function menu_separator_css() {
-        ?>
-        <style>
-            .dg-menu-separator { pointer-events: none; opacity: 0.4; padding-top: 5px !important; padding-bottom: 5px !important; font-size: 11px !important; letter-spacing: 1px; color: #999 !important; }
-            .dg-menu-separator:hover { cursor: default; background: transparent !important; }
-            .dg-menu-separator .wp-submenu-head { display: none; }
-            .dg-menu-separator a { color: #999 !important; cursor: default !important; pointer-events: none; }
-            .dg-menu-separator a:hover { color: #999 !important; background: transparent !important; }
-        </style>
-        <?php
-    }
-    
-    // ============================================================
     // ADMIN BAR MENU (Snippet 1)
     // ============================================================
     
@@ -907,9 +872,6 @@ class DG_Module_Accommodation {
     public function add_meta_boxes() {
         // Accommodation meta boxes
         add_meta_box('dg_accommodation_details', '🏠 Accommodation Details', [$this, 'accommodation_details_meta_box'], 'dg_accommodation', 'normal', 'high');
-        add_meta_box('dg_airbnb_meta', '🏠 Airbnb Integration', [$this, 'airbnb_meta_box'], 'dg_accommodation', 'side', 'default');
-        add_meta_box('dg_ical_meta', '📅 iCal Sync', [$this, 'ical_meta_box'], 'dg_accommodation', 'side', 'default');
-        add_meta_box('dg_airbnb_sync_meta', '🔄 Airbnb Sync', [$this, 'airbnb_sync_meta_box'], 'dg_accommodation', 'side', 'default');
         add_meta_box('dg_booking_settings', '📋 Booking & OTA Settings', [$this, 'booking_settings_meta_box'], 'dg_accommodation', 'side', 'default');
         
         // Booking meta boxes
@@ -957,6 +919,12 @@ class DG_Module_Accommodation {
                 <label for="dg_description">Property Description</label>
                 <textarea name="dg_description" id="dg_description" rows="6" placeholder="Enter a detailed description of the accommodation. Use line breaks to create paragraphs."><?php echo esc_textarea(get_post_meta($post->ID, 'dg_description', true)); ?></textarea>
                 <div class="helper">Press Enter twice for new paragraphs. Formatting will be preserved.</div>
+                <?php if (class_exists('DG_AI_Assist')) : ?>
+                    <p style="margin-top:6px;">
+                        <button type="button" class="button button-secondary dg-ai-btn" data-ai-task="accommodation_description" data-ai-post-id="<?php echo (int) $post->ID; ?>" data-ai-target="#dg_description">✨ Write stay description with AI</button>
+                        <span class="dg-ai-status"></span>
+                    </p>
+                <?php endif; ?>
             </div>
             
             <!-- Basic Information -->
@@ -1137,11 +1105,15 @@ class DG_Module_Accommodation {
             <div class="dg-meta-field full-width">
                 <label for="dg_listing_status">Listing status</label>
                 <select name="dg_listing_status" id="dg_listing_status" style="width:100%;max-width:400px;">
-                    <?php foreach (DG_Acc_Listing_Status::labels() as $value => $label) : ?>
-                        <option value="<?php echo esc_attr($value); ?>" <?php selected($listing_status, $value); ?>><?php echo esc_html($label); ?></option>
-                    <?php endforeach; ?>
+                    <?php if (class_exists('DG_Acc_Listing_Status')) : ?>
+                        <?php foreach (DG_Acc_Listing_Status::labels() as $value => $label) : ?>
+                            <option value="<?php echo esc_attr($value); ?>" <?php selected($listing_status, $value); ?>><?php echo esc_html($label); ?></option>
+                        <?php endforeach; ?>
+                    <?php else : ?>
+                        <option value="bookable">Open for bookings</option>
+                    <?php endif; ?>
                 </select>
-                <div class="helper">Domes default to <strong>Coming soon</strong>. The Shed defaults to <strong>Events & functions</strong>. Studio and Tiny Home stay open for bookings.</div>
+                <div class="helper">Domes, Tiny Home, and Private Retreat default to <strong>Coming soon</strong>. The Shed defaults to <strong>Events & functions</strong>. Private Studio stays open for bookings.</div>
             </div>
             <div class="dg-meta-field">
                 <label for="dg_checkin_time">Check-in Time</label>
@@ -1168,6 +1140,23 @@ class DG_Module_Accommodation {
                 <div class="helper">Enter each blocked date range on a new line. Format: YYYY-MM-DD to YYYY-MM-DD</div>
             </div>
             
+            <!-- Landing Page -->
+            <div class="dg-section-title">🌐 Public Page</div>
+            <div class="dg-meta-field full-width">
+                <label for="dg_landing_page_id">WordPress Booking Page</label>
+                <?php
+                $landing_page_id = (int) get_post_meta($post->ID, 'dg_landing_page_id', true);
+                wp_dropdown_pages([
+                    'name' => 'dg_landing_page_id',
+                    'id' => 'dg_landing_page_id',
+                    'selected' => $landing_page_id,
+                    'show_option_none' => '— Auto-match by slug —',
+                    'option_none_value' => '0',
+                ]);
+                ?>
+                <div class="helper">Link to the Oxygen page for this stay (e.g. /tiny-home/). Place <code>[dg_accommodation_page]</code> on that page.</div>
+            </div>
+
             <!-- Featured -->
             <div class="dg-section-title">⭐ Featured</div>
             <div class="dg-meta-field full-width">
@@ -1265,6 +1254,8 @@ class DG_Module_Accommodation {
         $bookingcom_id = get_post_meta($post->ID, 'dg_bookingcom_id', true);
         $bookingcom_ical_url = get_post_meta($post->ID, 'dg_bookingcom_ical_url', true);
         $bookingcom_last_sync = get_post_meta($post->ID, 'dg_bookingcom_ical_last_sync', true);
+        $export_url = class_exists('DG_Acc_Ical_Export') ? DG_Acc_Ical_Export::url_for($post->ID) : '';
+        $sync_nonce = wp_create_nonce('dg_calendar_nonce');
         ?>
         <style>
             .dg-booking-settings-field { margin-bottom: 12px; }
@@ -1290,11 +1281,10 @@ class DG_Module_Accommodation {
                 <input type="text" name="dg_airbnb_id" value="<?php echo esc_attr($airbnb_id); ?>" placeholder="e.g. 12345678">
             </div>
             <div class="dg-booking-settings-field">
-                <label>iCal URL</label>
-                <div style="padding:6px 8px;background:#f5f5f5;border:1px solid #ddd;border-radius:4px;font-size:12px;word-break:break-all;margin-bottom:4px;">
-                    <?php echo $ical_url ? esc_url($ical_url) : '<em style="color:#999;">Not set</em>'; ?>
-                </div>
-                <div style="font-size:11px;color:#666;">🔄 Last synced: <?php echo $ical_last_sync ? date_i18n('M j, Y g:i A', strtotime($ical_last_sync)) : 'Never'; ?></div>
+                <label for="dg_ical_url">Airbnb iCal Import URL</label>
+                <input type="url" id="dg_ical_url" name="dg_ical_url" value="<?php echo esc_url($ical_url); ?>" placeholder="https://www.airbnb.com/calendar/ical/...">
+                <div class="helper">Airbnb → Calendar → Availability → Export calendar</div>
+                <div style="font-size:11px;color:#666;margin-top:4px;">🔄 Last synced: <?php echo $ical_last_sync ? date_i18n('M j, Y g:i A', strtotime($ical_last_sync)) : 'Never'; ?></div>
             </div>
             
             <!-- Booking.com -->
@@ -1313,12 +1303,54 @@ class DG_Module_Accommodation {
                 <input type="url" name="dg_bookingcom_ical_url" value="<?php echo esc_url($bookingcom_ical_url); ?>" placeholder="https://www.booking.com/.../ical">
                 <div style="font-size:11px;color:#666;margin-top:4px;">🔄 Last synced: <?php echo $bookingcom_last_sync ? date_i18n('M j, Y g:i A', strtotime($bookingcom_last_sync)) : 'Never'; ?></div>
             </div>
+
+            <!-- iCal Export (for Booking.com / Airbnb) -->
+            <div class="dg-booking-settings-divider"><span>📤 iCal Export</span></div>
+            <?php if ($export_url) :
+                $fallback_url = class_exists('DG_Acc_Ical_Export') ? DG_Acc_Ical_Export::fallback_url_for($post->ID) : '';
+                ?>
+            <div class="dg-booking-settings-field">
+                <label>Export URL (paste into Booking.com / Airbnb)</label>
+                <input type="text" readonly value="<?php echo esc_attr($export_url); ?>" id="dg-ical-export-url" onclick="this.select();" style="font-size:11px;background:#f5f5f5;">
+                <div class="helper">Must return calendar data — open the link in a new tab to verify before pasting into an OTA.</div>
+                <div class="helper"><a href="<?php echo esc_url($export_url); ?>" target="_blank" rel="noopener">Test export link ↗</a><?php if ($fallback_url && $fallback_url !== $export_url) : ?> · <a href="<?php echo esc_url($fallback_url); ?>" target="_blank" rel="noopener">Alternate link ↗</a><?php endif; ?></div>
+                <div class="helper">Booking.com → Calendar → Import calendar · Airbnb → Availability → Connect calendars → Import</div>
+            </div>
+            <?php endif; ?>
+
+            <div style="margin-top:12px;">
+                <button type="button" class="button button-secondary" id="dg-ota-sync-btn" style="width:100%;">🔄 Sync OTA Now</button>
+                <div id="dg-ota-sync-status" style="font-size:11px;color:#666;margin-top:6px;text-align:center;"></div>
+            </div>
             
             <div style="margin-top:12px;padding:10px;background:#f8f6f2;border-radius:4px;border-left:3px solid #B9A48A;font-size:11px;color:#666;">
-                <strong>💡 iCal URL:</strong> Airbnb → Edit → Availability → Export calendar<br>
-                <strong>Booking.com:</strong> Property → Calendar → iCal feed
+                <strong>💡 Import:</strong> Airbnb → Calendar → Export calendar<br>
+                <strong>Booking.com:</strong> Property → Calendar → iCal import link
             </div>
         </div>
+        <script>
+        jQuery(function($) {
+            $('#dg-ota-sync-btn').on('click', function() {
+                var $status = $('#dg-ota-sync-status');
+                $status.text('⏳ Syncing...');
+                $.post(ajaxurl, {
+                    action: 'dg_ota_sync',
+                    accommodation_id: <?php echo (int) $post->ID; ?>,
+                    source: 'all',
+                    nonce: '<?php echo esc_js($sync_nonce); ?>'
+                }).done(function(r) {
+                    if (r.success) {
+                        $status.text('✅ ' + (r.data.message || 'Synced'));
+                        setTimeout(function() { window.location.reload(); }, 1200);
+                    } else {
+                        $status.text('❌ ' + (r.data || 'Sync failed'));
+                    }
+                }).fail(function() {
+                    $status.text('❌ Error connecting to server.');
+                });
+            });
+        });
+        </script>
         <?php
     }
     
@@ -1493,6 +1525,19 @@ class DG_Module_Accommodation {
             </div>
         </div>
         <?php
+        $checkin_sent = get_post_meta($post->ID, '_dg_acc_checkin_email_sent', true) === 'yes';
+        $checkin_sent_at = get_post_meta($post->ID, '_dg_acc_checkin_email_sent_at', true);
+        ?>
+        <div style="margin-top:12px;padding-top:12px;border-top:1px solid #eee;">
+            <p style="margin:0 0 8px;font-size:12px;">
+                <strong>Check-in email:</strong>
+                <?php echo $checkin_sent ? '✅ Sent' . ($checkin_sent_at ? ' (' . esc_html($checkin_sent_at) . ')' : '') : '— Not sent yet'; ?>
+            </p>
+            <?php if (class_exists('DG_Acc_Guest_Notifications')) : ?>
+                <a class="button button-small" href="<?php echo esc_url(wp_nonce_url(admin_url('admin-post.php?action=dg_resend_checkin_email&booking_id=' . (int) $post->ID), 'dg_resend_checkin_email_' . (int) $post->ID)); ?>">Resend check-in email</a>
+            <?php endif; ?>
+        </div>
+        <?php
     }
     
     // ============================================================
@@ -1660,7 +1705,7 @@ class DG_Module_Accommodation {
             'dg_sleeps', 'dg_bedrooms', 'dg_bathrooms', 'dg_max_guests', 'dg_min_nights', 'dg_size',
             'dg_security_deposit', 'dg_cleaning_fee', 'dg_extra_guest_fee', 'dg_gallery', 'dg_video_url',
             'dg_virtual_tour', 'dg_address', 'dg_latitude', 'dg_longitude', 'dg_checkin_time', 'dg_checkout_time',
-            'dg_blocked_dates', 'dg_featured', 'dg_airbnb_id', 'dg_ical_url'];
+            'dg_blocked_dates', 'dg_featured'];
         
         foreach ($fields as $field) {
             if (isset($_POST[$field])) {
@@ -1679,6 +1724,46 @@ class DG_Module_Accommodation {
             if (isset(DG_Acc_Listing_Status::labels()[$status])) {
                 update_post_meta($post_id, DG_Acc_Listing_Status::META, $status);
             }
+        }
+
+        if (isset($_POST['dg_landing_page_id'])) {
+            $old_page = (int) get_post_meta($post_id, 'dg_landing_page_id', true);
+            $new_page = (int) $_POST['dg_landing_page_id'];
+            update_post_meta($post_id, 'dg_landing_page_id', $new_page);
+            if ($old_page && $old_page !== $new_page) {
+                delete_post_meta($old_page, 'dg_linked_accommodation_id');
+            }
+            if ($new_page) {
+                update_post_meta($new_page, 'dg_linked_accommodation_id', $post_id);
+            }
+        }
+    }
+
+    public function save_booking_settings_meta($post_id) {
+        if (!isset($_POST['dg_booking_settings_nonce']) || !wp_verify_nonce($_POST['dg_booking_settings_nonce'], 'dg_booking_settings_nonce')) {
+            return;
+        }
+        if (defined('DOING_AUTOSAVE') && DOING_AUTOSAVE) {
+            return;
+        }
+        if (!current_user_can('edit_post', $post_id)) {
+            return;
+        }
+
+        $fields = [
+            'dg_airbnb_id' => 'sanitize_text_field',
+            'dg_ical_url' => 'esc_url_raw',
+            'dg_bookingcom_id' => 'sanitize_text_field',
+            'dg_bookingcom_ical_url' => 'esc_url_raw',
+        ];
+        foreach ($fields as $field => $sanitize) {
+            if (isset($_POST[$field])) {
+                update_post_meta($post_id, $field, call_user_func($sanitize, wp_unslash($_POST[$field])));
+            }
+        }
+
+        if (class_exists('DG_Acc_Ical_Export')) {
+            DG_Acc_Ical_Export::token_for($post_id);
         }
     }
     
@@ -1795,286 +1880,423 @@ class DG_Module_Accommodation {
     // ============================================================
     
     public function accommodation_display_shortcode($atts) {
-        $atts = shortcode_atts(['posts_per_page' => 6, 'columns' => 2, 'type' => '', 'featured' => ''], $atts);
-        
-        $args = ['post_type' => 'dg_accommodation', 'posts_per_page' => intval($atts['posts_per_page']), 'post_status' => 'publish'];
-        if (!empty($atts['type'])) {
-            $args['tax_query'] = [['taxonomy' => 'dg_accommodation_type', 'field' => 'slug', 'terms' => explode(',', $atts['type'])]];
+        if (class_exists('DG_Acc_Shortcode_Render')) {
+            return DG_Acc_Shortcode_Render::render_display($atts);
         }
-        if ($atts['featured'] === 'true') {
-            $args['meta_query'] = [['key' => 'dg_featured', 'value' => 1, 'type' => 'NUMERIC']];
-        }
-        
-        $query = new WP_Query($args);
-        if (!$query->have_posts()) return '<p style="text-align:center;padding:40px 0;color:#5A6B67;">No accommodation found.</p>';
-        
-        ob_start();
-        ?>
-        <div class="dg-accommodation-grid" style="display:grid;grid-template-columns:repeat(<?php echo intval($atts['columns']); ?>,1fr);gap:2rem;max-width:1200px;margin:0 auto;padding:2rem 0;">
-            <?php while ($query->have_posts()) : $query->the_post();
-                $price = floatval(get_post_meta(get_the_ID(), 'dg_weekday_rate', true));
-                $price_display = $price ? '$' . number_format($price, 0) . '/night' : 'Contact for Price';
-                $image = has_post_thumbnail() ? get_the_post_thumbnail_url(get_the_ID(), 'medium_large') : '';
-                $featured = get_post_meta(get_the_ID(), 'dg_featured', true);
-                $listing_label = class_exists('DG_Acc_Listing_Status') ? DG_Acc_Listing_Status::public_label(get_the_ID()) : '';
-                $bookable = class_exists('DG_Acc_Listing_Status') ? DG_Acc_Listing_Status::is_bookable(get_the_ID()) : true;
-            ?>
-            <div class="dg-accommodation-card" style="background:#fff;border-radius:24px;overflow:hidden;border:1px solid #E0D6CC;transition:all 0.3s ease;">
-                <div style="height:200px;overflow:hidden;position:relative;">
-                    <?php if ($image): ?>
-                        <img src="<?php echo esc_url($image); ?>" alt="<?php the_title_attribute(); ?>" style="width:100%;height:100%;object-fit:cover;">
-                    <?php else: ?>
-                        <div style="background:#E0D6CC;height:100%;display:flex;align-items:center;justify-content:center;color:#6B7A78;">No Image</div>
-                    <?php endif; ?>
-                    <?php if ($listing_label): ?>
-                        <span style="position:absolute;top:1rem;left:1rem;background:#1C2B2A;color:#fff;padding:0.3rem 0.8rem;border-radius:40px;font-size:0.7rem;"><?php echo esc_html($listing_label); ?></span>
-                    <?php elseif ($featured): ?>
-                        <span style="position:absolute;top:1rem;right:1rem;background:#B9A48A;color:#fff;padding:0.3rem 0.8rem;border-radius:40px;font-size:0.7rem;">⭐ Featured</span>
-                    <?php endif; ?>
-                    <?php if ($bookable): ?>
-                    <span style="position:absolute;bottom:1rem;left:1rem;background:rgba(44,62,80,0.9);color:#fff;padding:0.4rem 1rem;border-radius:40px;"><?php echo $price_display; ?></span>
-                    <?php endif; ?>
-                </div>
-                <div style="padding:1.5rem;text-align:center;">
-                    <h3 style="font-size:1.2rem;font-weight:600;color:#2F2F2F;margin:0 0 0.5rem 0;">
-                        <a href="<?php the_permalink(); ?>" style="color:#2F2F2F;text-decoration:none;"><?php the_title(); ?></a>
-                    </h3>
-                    <a href="<?php the_permalink(); ?>" style="display:inline-block;margin-top:0.5rem;background:#B9A48A;color:#fff;padding:0.6rem 1.5rem;border-radius:40px;text-decoration:none;font-weight:600;">View Details →</a>
-                </div>
-            </div>
-            <?php endwhile; ?>
-        </div>
-        <style>
-            .dg-accommodation-card:hover { transform: translateY(-5px); box-shadow: 0 20px 30px -12px rgba(0,0,0,0.1); }
-            @media (max-width: 768px) { .dg-accommodation-grid { grid-template-columns: 1fr !important; } }
-        </style>
-        <?php
-        wp_reset_postdata();
-        return ob_get_clean();
+        return '';
     }
     
+    public function accommodation_gallery_shortcode($atts) {
+        $atts = shortcode_atts(['id' => 0], $atts);
+        $post_id = class_exists('DG_Acc_Frontend')
+            ? DG_Acc_Frontend::resolve_accommodation_id($atts['id'])
+            : intval($atts['id']);
+        if (!$post_id || !class_exists('DG_Acc_Gallery')) {
+            return '';
+        }
+        return DG_Acc_Gallery::render($post_id);
+    }
+
+    public function accommodation_description_shortcode($atts) {
+        $atts = shortcode_atts(['id' => 0], $atts);
+        $post_id = class_exists('DG_Acc_Frontend')
+            ? DG_Acc_Frontend::resolve_accommodation_id($atts['id'])
+            : intval($atts['id']);
+        if (!$post_id || !class_exists('DG_Acc_Frontend')) {
+            return '';
+        }
+        return DG_Acc_Frontend::render_description($post_id);
+    }
+
+    public function booking_summary_shortcode($atts) {
+        $atts = shortcode_atts(['accommodation_id' => 0], $atts);
+        $accommodation_id = class_exists('DG_Acc_Frontend')
+            ? DG_Acc_Frontend::resolve_accommodation_id($atts['accommodation_id'])
+            : intval($atts['accommodation_id']);
+        if (!class_exists('DG_Acc_Frontend')) {
+            return '';
+        }
+        return DG_Acc_Frontend::render_booking_summary($accommodation_id);
+    }
+
     public function accommodation_details_shortcode($atts) {
-        $atts = shortcode_atts(['id' => get_the_ID()], $atts);
-        $post_id = intval($atts['id']);
-        if (!$post_id) return '<p>No accommodation specified.</p>';
-        
-        $post = get_post($post_id);
-        if (!$post || $post->post_type !== 'dg_accommodation') return '<p>Accommodation not found.</p>';
-        
-        $price = floatval(get_post_meta($post_id, 'dg_weekday_rate', true));
-        $price_display = $price ? '$' . number_format($price, 0) . '/night' : 'Contact for Price';
-        $sleeps = get_post_meta($post_id, 'dg_sleeps', true);
-        $beds = get_post_meta($post_id, 'dg_bedrooms', true);
-        $baths = get_post_meta($post_id, 'dg_bathrooms', true);
-        $description = get_post_meta($post_id, 'dg_description', true);
-        $image = has_post_thumbnail($post_id) ? get_the_post_thumbnail_url($post_id, 'large') : '';
-        $bookable = class_exists('DG_Acc_Listing_Status') ? DG_Acc_Listing_Status::is_bookable($post_id) : true;
-        $listing_label = class_exists('DG_Acc_Listing_Status') ? DG_Acc_Listing_Status::public_label($post_id) : '';
-        
-        ob_start();
-        ?>
-        <div style="max-width:1200px;margin:0 auto;padding:20px;">
-            <?php if ($image): ?>
-                <img src="<?php echo esc_url($image); ?>" alt="<?php echo esc_attr($post->post_title); ?>" style="width:100%;max-height:400px;object-fit:cover;border-radius:12px;">
-            <?php endif; ?>
-            <div style="display:grid;grid-template-columns:2fr 1fr;gap:2rem;padding:2rem 0;">
-                <div>
-                    <h1 style="font-size:2rem;color:#1C2B2A;"><?php echo esc_html($post->post_title); ?></h1>
-                    <div style="display:flex;gap:1rem;flex-wrap:wrap;margin:1rem 0;">
-                        <?php if ($sleeps): ?><span style="background:#f5f2ef;padding:0.3rem 0.8rem;border-radius:20px;">🛏️ Sleeps <?php echo esc_html($sleeps); ?></span><?php endif; ?>
-                        <?php if ($beds): ?><span style="background:#f5f2ef;padding:0.3rem 0.8rem;border-radius:20px;">🚪 <?php echo esc_html($beds); ?> beds</span><?php endif; ?>
-                        <?php if ($baths): ?><span style="background:#f5f2ef;padding:0.3rem 0.8rem;border-radius:20px;">🛁 <?php echo esc_html($baths); ?> baths</span><?php endif; ?>
-                    </div>
-                    <?php if ($description): ?>
-                        <div style="line-height:1.8;color:#4A5B59;"><?php echo wp_kses_post(nl2br($description)); ?></div>
-                    <?php endif; ?>
-                </div>
-                <div style="background:#fff;padding:1.5rem;border-radius:12px;border:1px solid #E0D6CC;height:fit-content;">
-                    <?php if ($listing_label): ?>
-                        <p style="text-align:center;color:#1C2B2A;font-weight:600;margin:0 0 1rem;">🔜 <?php echo esc_html($listing_label); ?></p>
-                    <?php else: ?>
-                        <h3 style="text-align:center;color:#1C2B2A;">💰 <?php echo $price_display; ?></h3>
-                        <a href="<?php echo home_url('/book-now/?accommodation=' . $post_id); ?>" style="display:block;width:100%;padding:0.8rem;background:#B9A48A;color:#fff;border:none;border-radius:40px;font-size:1rem;font-weight:600;text-align:center;text-decoration:none;cursor:pointer;">📅 Check Availability</a>
-                    <?php endif; ?>
-                </div>
-            </div>
-            <div style="padding:1rem 0;font-size:0.85rem;color:#999;border-top:1px solid #E0D6CC;text-align:center;">
-                📌 No check-ins or check-outs on Saturdays. Friday check-ins require 2-night minimum.
-            </div>
-        </div>
-        <style>
-            @media (max-width: 768px) { .dg-single-wrapper > div:first-child { grid-template-columns: 1fr !important; } }
-        </style>
-        <?php
-        return ob_get_clean();
+        $atts = shortcode_atts(['id' => 0], $atts);
+        $post_id = class_exists('DG_Acc_Frontend')
+            ? DG_Acc_Frontend::resolve_accommodation_id($atts['id'])
+            : intval($atts['id']);
+        if (!$post_id) {
+            return '<p style="text-align:center;padding:40px 0;color:#5A6B67;">No accommodation specified.</p>';
+        }
+        if (class_exists('DG_Acc_Shortcode_Render')) {
+            return DG_Acc_Shortcode_Render::render_details($post_id);
+        }
+        return '';
+    }
+
+    public function accommodation_page_shortcode($atts) {
+        return $this->accommodation_details_shortcode($atts);
     }
     
     public function accommodation_enquiry_shortcode($atts) {
-        $atts = shortcode_atts(['accommodation_id' => get_the_ID(), 'button_text' => 'Confirm Booking'], $atts);
-        $accommodation_id = intval($atts['accommodation_id']);
-        $checkin = isset($_GET['checkin']) ? sanitize_text_field($_GET['checkin']) : '';
-        $checkout = isset($_GET['checkout']) ? sanitize_text_field($_GET['checkout']) : '';
-        $accommodation = $accommodation_id ? get_the_title($accommodation_id) : '';
-        
+        $atts = shortcode_atts([
+            'accommodation_id' => 0,
+            'button_text' => 'Confirm Booking',
+            'layout' => 'default',
+        ], $atts);
+        $compact = ($atts['layout'] === 'compact');
+        $accommodation_id = class_exists('DG_Acc_Frontend')
+            ? DG_Acc_Frontend::resolve_accommodation_id($atts['accommodation_id'])
+            : intval($atts['accommodation_id']);
+        if (!$accommodation_id) {
+            return '<p>Please select an accommodation to book.</p>';
+        }
+        list($checkin, $checkout) = class_exists('DG_Acc_Frontend')
+            ? DG_Acc_Frontend::parse_request_dates()
+            : ['', ''];
+        $accommodation = get_the_title($accommodation_id);
+        $quote = class_exists('DG_Acc_Frontend') ? DG_Acc_Frontend::calculate_total($accommodation_id, $checkin, $checkout) : ['nights' => 0, 'total' => 0, 'subtotal' => 0, 'cleaning_fee' => 0, 'discount_amount' => 0, 'discount_type' => ''];
+        $has_dates = ($checkin && $checkout && $quote['nights'] > 0);
+        $wrap_style = $compact
+            ? 'background:#fff;border:1px solid #E8DFD3;border-radius:16px;padding:1.25rem;margin:0;'
+            : 'max-width:600px;margin:20px auto;background:#fff;padding:30px;border-radius:12px;border:1px solid #E0D6CC;';
+
+        $form_action = is_singular()
+            ? get_permalink(get_queried_object_id())
+            : (class_exists('DG_Acc_Frontend')
+                ? DG_Acc_Frontend::booking_page_url($accommodation_id)
+                : home_url('/'));
+        $booking_error = isset($_GET['booking_error']) ? sanitize_text_field(wp_unslash($_GET['booking_error'])) : '';
+
+        $stripe_enabled = get_option('dg_stripe_enabled', 'no') === 'yes' && (bool) get_option('dg_stripe_publishable_key', '');
+
+        if (class_exists('DG_Acc_Shortcode_Render')) {
+            DG_Acc_Shortcode_Render::enqueue_checkout_script();
+        }
+
         ob_start();
         ?>
-        <div style="max-width:600px;margin:20px auto;background:#fff;padding:30px;border-radius:12px;border:1px solid #E0D6CC;">
-            <h3 style="color:#1C2B2A;margin:0 0 20px 0;">📧 Complete Your Booking</h3>
-            <?php if ($checkin && $checkout): ?>
-            <div style="background:#f5f2ef;padding:12px;border-radius:8px;margin-bottom:20px;">
-                <p style="margin:0;font-size:0.9rem;">📅 <strong><?php echo date('d M Y', strtotime($checkin)); ?></strong> → <strong><?php echo date('d M Y', strtotime($checkout)); ?></strong></p>
-            </div>
+        <div id="dg-booking-form" class="dg-booking-form<?php echo $compact ? ' dg-booking-form-compact' : ''; ?>" style="<?php echo esc_attr($wrap_style); ?>">
+            <?php if (!$compact) : ?>
+            <h3 style="color:#1C2B2A;margin:0 0 8px 0;">Book Your Stay</h3>
+            <p style="margin:0 0 20px;color:#4A5B59;font-size:0.95rem;"><?php echo esc_html($accommodation); ?></p>
+            <?php else : ?>
+            <h3 class="dg-checkout-title" style="font-family:'Cormorant Garamond',serif;font-size:1.15rem;color:#1C2B2A;margin:0 0 1rem;">Book Your Stay</h3>
             <?php endif; ?>
-            <form method="post">
-                <input type="hidden" name="accommodation_id" value="<?php echo $accommodation_id; ?>">
-                <input type="hidden" name="booking_checkin" value="<?php echo esc_attr($checkin); ?>">
-                <input type="hidden" name="booking_checkout" value="<?php echo esc_attr($checkout); ?>">
+            <?php if ($booking_error) : ?>
+            <div id="dg-checkout-error" style="display:block;margin-bottom:12px;padding:12px;background:#fdecea;color:#9b1c1c;border-radius:8px;font-size:0.9rem;"><?php echo esc_html($booking_error); ?></div>
+            <?php else : ?>
+            <div id="dg-checkout-error" style="display:none;margin-bottom:12px;padding:12px;background:#fdecea;color:#9b1c1c;border-radius:8px;font-size:0.9rem;"></div>
+            <?php endif; ?>
+            <div id="dg-enquiry-date-summary" style="<?php echo $has_dates ? '' : 'display:none;'; ?>background:#f5f2ef;padding:12px;border-radius:8px;margin-bottom:16px;">
+                <?php if ($has_dates) : ?>
+                <p style="margin:0 0 8px;font-size:0.9rem;">📅 <strong><?php echo esc_html(date('d M Y', strtotime($checkin))); ?></strong> → <strong><?php echo esc_html(date('d M Y', strtotime($checkout))); ?></strong></p>
+                <p style="margin:0;font-size:0.9rem;"><?php echo (int) $quote['nights']; ?> night<?php echo $quote['nights'] > 1 ? 's' : ''; ?> · Subtotal $<?php echo number_format($quote['subtotal'], 2); ?>
+                <?php if (!empty($quote['discount_amount'])) : ?> · <?php echo esc_html($quote['discount_type']); ?> -$<?php echo number_format($quote['discount_amount'], 2); ?><?php endif; ?>
+                <?php if ($quote['cleaning_fee'] > 0) : ?> · Cleaning $<?php echo number_format($quote['cleaning_fee'], 2); ?><?php endif; ?>
+                · <strong>Total $<?php echo number_format($quote['total'], 2); ?></strong></p>
+                <?php else : ?>
+                <p style="margin:0;font-size:0.9rem;color:#6B7A78;">Select your dates on the calendar to unlock checkout.</p>
+                <?php endif; ?>
+            </div>
+            <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>" class="dg-checkout-form<?php echo $has_dates ? '' : ' is-disabled'; ?>">
+                <?php wp_nonce_field('dg_enquiry_action', 'dg_enquiry_nonce'); ?>
+                <input type="hidden" name="action" value="dg_payid_booking">
+                <input type="hidden" name="redirect_to" value="<?php echo esc_url($form_action); ?>">
+                <input type="hidden" id="dg-accommodation-id" name="accommodation_id" value="<?php echo (int) $accommodation_id; ?>">
+                <input type="hidden" id="dg-booking-checkin" name="booking_checkin" value="<?php echo esc_attr($checkin); ?>">
+                <input type="hidden" id="dg-booking-checkout" name="booking_checkout" value="<?php echo esc_attr($checkout); ?>">
+                <input type="hidden" id="dg-booking-nights" value="<?php echo (int) $quote['nights']; ?>">
+                <input type="hidden" id="dg-booking-total" value="<?php echo esc_attr(number_format($quote['total'], 2, '.', '')); ?>">
                 
                 <div style="display:grid;grid-template-columns:1fr 1fr;gap:15px;">
                     <div><label style="display:block;font-weight:600;margin-bottom:4px;">Name *</label>
-                        <input type="text" name="enquiry_name" required style="width:100%;padding:10px;border:1px solid #ddd;border-radius:4px;box-sizing:border-box;"></div>
+                        <input type="text" id="enquiry_name" name="enquiry_name" required style="width:100%;padding:10px;border:1px solid #ddd;border-radius:4px;box-sizing:border-box;"></div>
                     <div><label style="display:block;font-weight:600;margin-bottom:4px;">Email *</label>
-                        <input type="email" name="enquiry_email" required style="width:100%;padding:10px;border:1px solid #ddd;border-radius:4px;box-sizing:border-box;"></div>
+                        <input type="email" id="enquiry_email" name="enquiry_email" required style="width:100%;padding:10px;border:1px solid #ddd;border-radius:4px;box-sizing:border-box;"></div>
                 </div>
                 <div style="margin-top:10px;"><label style="display:block;font-weight:600;margin-bottom:4px;">Phone</label>
-                    <input type="tel" name="enquiry_phone" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:4px;box-sizing:border-box;"></div>
+                    <input type="tel" id="enquiry_phone" name="enquiry_phone" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:4px;box-sizing:border-box;"></div>
                 <div style="margin-top:10px;"><label style="display:block;font-weight:600;margin-bottom:4px;">Guests</label>
-                    <select name="enquiry_guests" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:4px;">
+                    <select id="enquiry_guests" name="enquiry_guests" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:4px;">
                         <?php for ($i = 1; $i <= 8; $i++): ?>
                             <option value="<?php echo $i; ?>"><?php echo $i; ?> Guest<?php echo $i > 1 ? 's' : ''; ?></option>
                         <?php endfor; ?>
                     </select></div>
                 <div style="margin-top:10px;"><label style="display:block;font-weight:600;margin-bottom:4px;">Special Requests</label>
-                    <textarea name="enquiry_message" rows="3" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:4px;box-sizing:border-box;resize:vertical;"></textarea></div>
-                <button type="submit" name="dg_payid_submit" value="1" style="width:100%;margin-top:15px;padding:12px;background:#B9A48A;color:#fff;border:none;border-radius:40px;font-size:16px;font-weight:600;cursor:pointer;">📱 Confirm Booking</button>
+                    <textarea id="enquiry_message" name="enquiry_message" rows="3" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:4px;box-sizing:border-box;resize:vertical;"></textarea></div>
+
+                <div class="dg-payment-section" style="margin-top:1.25rem;padding-top:1rem;border-top:1px solid #E8DFD3;">
+                    <p class="dg-payment-label" style="margin:0 0 0.75rem;font-size:0.85rem;color:#5A6B67;text-align:center;">Choose how to pay and confirm</p>
+                    <div class="dg-payment-buttons">
+                        <button type="button" id="dg-payid-submit" class="dg-btn-payid">📱 Pay with PayID</button>
+                        <?php if ($stripe_enabled) : ?>
+                        <button type="button" id="dg-stripe-submit" class="dg-btn-card">💳 Pay with Card</button>
+                        <?php endif; ?>
+                    </div>
+                    <?php if ($stripe_enabled) : ?>
+                    <div id="dg-stripe-panel" class="dg-stripe-panel" hidden>
+                        <p class="dg-stripe-panel-label">Card details</p>
+                        <div id="dg-stripe-card-element" class="dg-stripe-card-mount"></div>
+                        <div id="dg-stripe-card-errors" class="dg-stripe-errors" role="alert"></div>
+                        <p class="dg-stripe-panel-note">Secure payment via Stripe · Visa, Mastercard, Amex</p>
+                    </div>
+                    <?php else : ?>
+                    <p style="margin:10px 0 0;font-size:0.75rem;color:#6B7A78;text-align:center;">PayID preferred — bank transfer details on the next page</p>
+                    <?php endif; ?>
+                </div>
             </form>
         </div>
         <?php
         return ob_get_clean();
     }
-    
-    public function booking_confirmation_shortcode($atts) {
-        $ref = isset($_GET['ref']) ? sanitize_text_field($_GET['ref']) : '';
-        if (empty($ref)) return '<div style="text-align:center;padding:60px 20px;"><h2>Booking Not Found</h2></div>';
-        
-        $bookings = get_posts(['post_type' => 'dg_booking', 'posts_per_page' => 1, 'meta_query' => [['key' => 'dg_booking_ref', 'value' => $ref]]]);
-        if (empty($bookings)) return '<div style="text-align:center;padding:60px 20px;"><h2>Booking Not Found</h2><p>No booking with reference <strong>' . esc_html($ref) . '</strong>.</p></div>';
-        
-        $booking = $bookings[0];
-        $name = get_post_meta($booking->ID, 'dg_booking_name', true);
-        $accommodation = get_post_meta($booking->ID, 'dg_booking_accommodation_name', true);
-        $checkin = get_post_meta($booking->ID, 'dg_booking_checkin', true);
-        $checkout = get_post_meta($booking->ID, 'dg_booking_checkout', true);
-        $total = get_post_meta($booking->ID, 'dg_booking_total', true);
-        $status = get_post_meta($booking->ID, 'dg_booking_status', true);
-        $paid = get_post_meta($booking->ID, 'dg_booking_paid', true);
-        $is_confirmed = ($status == 'confirmed' || $paid == 'yes');
-        
+
+    public function book_now_calendar_shortcode($atts) {
+        $atts = shortcode_atts(['accommodation_id' => 0], $atts);
+        $accommodation_id = class_exists('DG_Acc_Frontend')
+            ? DG_Acc_Frontend::resolve_accommodation_id($atts['accommodation_id'])
+            : (int) $atts['accommodation_id'];
+        if (!$accommodation_id || !class_exists('DG_Acc_Calendar')) {
+            return '';
+        }
+        list($checkin, $checkout) = class_exists('DG_Acc_Frontend')
+            ? DG_Acc_Frontend::parse_request_dates()
+            : ['', ''];
+        if (class_exists('DG_Acc_Shortcode_Render')) {
+            DG_Acc_Shortcode_Render::enqueue_assets();
+        }
+        return DG_Acc_Calendar::render($accommodation_id, [
+            'mode' => 'inline',
+            'checkin' => $checkin,
+            'checkout' => $checkout,
+        ]);
+    }
+
+    public function book_now_checkout_shortcode($atts) {
+        $atts = shortcode_atts(['accommodation_id' => 0, 'button_text' => 'Confirm Booking'], $atts);
+        if (class_exists('DG_Acc_Shortcode_Render')) {
+            DG_Acc_Shortcode_Render::enqueue_assets();
+        }
+        return $this->accommodation_enquiry_shortcode(array_merge($atts, ['layout' => 'compact']));
+    }
+
+    public function book_now_sidebar_shortcode($atts) {
+        $atts = shortcode_atts(['accommodation_id' => 0], $atts);
+        $accommodation_id = class_exists('DG_Acc_Frontend')
+            ? DG_Acc_Frontend::resolve_accommodation_id($atts['accommodation_id'])
+            : (int) $atts['accommodation_id'];
+        if (!$accommodation_id) {
+            return '';
+        }
+        if (class_exists('DG_Acc_Shortcode_Render')) {
+            DG_Acc_Shortcode_Render::enqueue_assets();
+        }
         ob_start();
         ?>
-        <div style="max-width:500px;margin:40px auto;background:#fff;border-radius:16px;padding:30px;border:1px solid #E0D6CC;text-align:center;">
-            <div style="font-size:64px;margin-bottom:16px;"><?php echo $is_confirmed ? '✅' : '📋'; ?></div>
-            <h2 style="color:#1C2B2A;">Booking <?php echo $is_confirmed ? 'Confirmed!' : 'Received'; ?></h2>
-            <p>Reference: <strong><?php echo esc_html($ref); ?></strong></p>
-            <p>Status: <strong><?php echo $is_confirmed ? '✅ Confirmed' : '⏳ Pending Payment'; ?></strong></p>
-            <div style="text-align:left;margin:20px 0;padding:15px;background:#f5f2ef;border-radius:8px;">
-                <p style="margin:5px 0;"><strong>Guest:</strong> <?php echo esc_html($name); ?></p>
-                <p style="margin:5px 0;"><strong>Accommodation:</strong> <?php echo esc_html($accommodation); ?></p>
-                <?php if ($checkin && $checkout): ?>
-                <p style="margin:5px 0;"><strong>Dates:</strong> <?php echo date('d M Y', strtotime($checkin)); ?> → <?php echo date('d M Y', strtotime($checkout)); ?></p>
-                <?php endif; ?>
-                <?php if ($total): ?>
-                <p style="margin:5px 0;"><strong>Total:</strong> $<?php echo number_format(floatval($total), 2); ?></p>
-                <?php endif; ?>
+        <aside class="dg-book-now-sidebar">
+            <?php echo class_exists('DG_Acc_Frontend') ? DG_Acc_Frontend::render_rates($accommodation_id) : ''; ?>
+            <?php echo class_exists('DG_Acc_Frontend') ? DG_Acc_Frontend::render_features($accommodation_id) : ''; ?>
+            <?php echo class_exists('DG_Acc_Frontend') ? DG_Acc_Frontend::render_booking_summary($accommodation_id) : ''; ?>
+            <div id="dg-book-now-checkout" class="dg-book-now-checkout">
+                <?php echo $this->accommodation_enquiry_shortcode(['accommodation_id' => $accommodation_id, 'layout' => 'compact']); ?>
             </div>
-            <a href="/" style="display:inline-block;margin-top:10px;background:#B9A48A;color:#fff;padding:10px 30px;border-radius:40px;text-decoration:none;font-weight:600;">Return Home</a>
-        </div>
+            <?php echo class_exists('DG_Acc_Frontend') ? DG_Acc_Frontend::render_booking_rules() : ''; ?>
+        </aside>
         <?php
         return ob_get_clean();
     }
     
+    public function booking_confirmation_shortcode($atts) {
+        try {
+            $ref = isset($_GET['ref']) ? sanitize_text_field(wp_unslash($_GET['ref'])) : '';
+            if (class_exists('DG_Acc_Shortcode_Render')) {
+                return DG_Acc_Shortcode_Render::render_booking_confirmation($ref);
+            }
+        } catch (Throwable $e) {
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('DG booking confirmation shortcode: ' . $e->getMessage());
+            }
+            return '<div class="dg-booking-confirmed-wrap"><div class="dg-booking-confirmed-card"><p>We received your booking but could not display the confirmation page. Please check your email or contact us.</p><p><a href="' . esc_url(home_url('/')) . '">Return home</a></p></div></div>';
+        }
+        return '';
+    }
+    
     public function booking_calendar_shortcode($atts) {
-        $atts = shortcode_atts(['accommodation_id' => get_the_ID()], $atts);
-        $accommodation_id = intval($atts['accommodation_id']);
-        if (!$accommodation_id) return '<p>Accommodation not found.</p>';
-        
-        $blocked_dates = [];
-        $bookings = get_posts(['post_type' => 'dg_booking', 'posts_per_page' => -1, 'meta_query' => [['key' => 'dg_booking_accommodation_id', 'value' => $accommodation_id, 'compare' => '=']]]);
-        foreach ($bookings as $b) {
-            $checkin = get_post_meta($b->ID, 'dg_booking_checkin', true);
-            $checkout = get_post_meta($b->ID, 'dg_booking_checkout', true);
-            $status = get_post_meta($b->ID, 'dg_booking_status', true);
-            if ($status !== 'cancelled' && $checkin && $checkout) {
-                $current = strtotime($checkin);
-                $end = strtotime($checkout);
-                while ($current < $end) { $blocked_dates[] = date('Y-m-d', $current); $current = strtotime('+1 day', $current); }
+        $atts = shortcode_atts(['accommodation_id' => 0, 'mode' => 'redirect'], $atts);
+        $accommodation_id = class_exists('DG_Acc_Frontend')
+            ? DG_Acc_Frontend::resolve_accommodation_id($atts['accommodation_id'])
+            : intval($atts['accommodation_id']);
+        if (!$accommodation_id || !class_exists('DG_Acc_Calendar')) {
+            return '<p>Please select an accommodation to view availability.</p>';
+        }
+        $booking_page_id = (int) get_option('dg_booking_page_id', 0);
+        if ($atts['mode'] === 'redirect') {
+            $resolved = class_exists('DG_Acc_Frontend') ? DG_Acc_Frontend::resolve_accommodation_id((int) $atts['accommodation_id']) : 0;
+            if ($resolved && class_exists('DG_Acc_Frontend') && (
+                DG_Acc_Frontend::is_accommodation_landing_page()
+                || is_singular('dg_accommodation')
+                || (int) $atts['accommodation_id'] === $resolved
+            )) {
+                $atts['mode'] = 'inline';
             }
         }
-        $blocked_dates = array_unique($blocked_dates);
-        sort($blocked_dates);
-        ?>
-        <div style="background:#f8f5f0;padding:25px;border-radius:12px;max-width:1200px;margin:0 auto;">
-            <h3 style="margin:0 0 20px 0;color:#1C2B2A;">📅 Check Availability</h3>
-            <div id="dg-calendar-<?php echo $accommodation_id; ?>" style="background:#fff;padding:15px;border-radius:8px;min-height:400px;"></div>
-            <div style="margin-top:15px;font-size:13px;color:#666;">
-                <span style="display:inline-block;width:16px;height:16px;background:#dc3545;border-radius:3px;vertical-align:middle;margin-right:5px;"></span> Unavailable
-                <span style="display:inline-block;width:16px;height:16px;background:#28a745;border-radius:3px;vertical-align:middle;margin:0 5px 0 15px;"></span> Available
-                <span style="display:inline-block;width:16px;height:16px;background:#ffc107;border-radius:3px;vertical-align:middle;margin:0 5px 0 15px;"></span> Saturday
-            </div>
-            <div style="margin-top:10px;padding:10px 16px;background:#fef8e7;border-left:4px solid #f39c12;border-radius:4px;font-size:13px;color:#666;">📌 No check-ins or check-outs on Saturdays. Friday check-ins require 2-night minimum.</div>
-        </div>
-        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.5/main.min.css">
-        <script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.5/main.min.js"></script>
-        <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            var calendarEl = document.getElementById('dg-calendar-<?php echo $accommodation_id; ?>');
-            if (!calendarEl || typeof FullCalendar === 'undefined') return;
-            
-            var blockedDates = <?php echo json_encode($blocked_dates); ?>;
-            var today = new Date(); today.setHours(0,0,0,0);
-            
-            function isSaturday(date) { return date.getDay() === 6; }
-            function isDateBlocked(date) { return blockedDates.indexOf(date.toISOString().split('T')[0]) !== -1; }
-            
-            var events = [];
-            blockedDates.forEach(function(d) { events.push({ start: d, display: 'background', color: '#dc3545' }); });
-            
-            var d = new Date(today);
-            var end = new Date(today); end.setFullYear(end.getFullYear() + 1);
-            while (d <= end) { if (isSaturday(d)) { events.push({ start: new Date(d), display: 'background', color: '#ffc107' }); } d.setDate(d.getDate() + 1); }
-            
-            var calendar = new FullCalendar.Calendar(calendarEl, {
-                initialView: 'dayGridMonth',
-                selectable: true,
-                events: events,
-                selectAllow: function(info) {
-                    if (info.start < today) return false;
-                    if (isSaturday(info.start)) return false;
-                    if (isSaturday(info.end)) return false;
-                    return true;
-                },
-                select: function(info) {
-                    var start = info.start, end = info.end;
-                    if (isSaturday(start) || isSaturday(end)) {
-                        alert('❌ Check-in/out not available on Saturdays.');
-                        calendar.unselect(); return;
-                    }
-                    var hasBlocked = false;
-                    var d = new Date(start);
-                    while (d < end) { if (isDateBlocked(d)) { hasBlocked = true; break; } d.setDate(d.getDate() + 1); }
-                    if (hasBlocked) { alert('❌ Some dates are unavailable.'); calendar.unselect(); return; }
-                    
-                    var nights = Math.round((end - start) / (1000 * 60 * 60 * 24));
-                    var url = '<?php echo home_url('/book-now/'); ?>?accommodation=<?php echo $accommodation_id; ?>&checkin=' + start.toISOString().split('T')[0] + '&checkout=' + end.toISOString().split('T')[0];
-                    if (confirm('📅 Book ' + nights + ' nights?\n\nCheck-in: ' + start.toISOString().split('T')[0] + '\nCheck-out: ' + end.toISOString().split('T')[0])) {
-                        window.location.href = url;
-                    } else { calendar.unselect(); }
+        if ($atts['mode'] === 'redirect' && $booking_page_id && is_page($booking_page_id)) {
+            $atts['mode'] = 'inline';
+        }
+        list($checkin, $checkout) = class_exists('DG_Acc_Frontend')
+            ? DG_Acc_Frontend::parse_request_dates()
+            : ['', ''];
+        return DG_Acc_Calendar::render($accommodation_id, [
+            'mode' => $atts['mode'],
+            'checkin' => $checkin,
+            'checkout' => $checkout,
+        ]);
+    }
+
+    /**
+     * Strip legacy booking blocks on accommodation landing pages when needed.
+     */
+    public function filter_booking_page_content($content) {
+        if (!is_singular() || is_admin()) {
+            return $content;
+        }
+
+        try {
+            return $this->filter_booking_page_content_inner($content);
+        } catch (Throwable $e) {
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('DG Accommodation booking page filter: ' . $e->getMessage());
+            }
+            return $content;
+        }
+    }
+
+    private function filter_booking_page_content_inner($content) {
+        $has_acc_shortcode = has_shortcode($content, 'dg_accommodation_page')
+            || has_shortcode($content, 'dg_accommodation_details')
+            || has_shortcode($content, 'dg_book_now')
+            || has_shortcode($content, 'dg_calendar')
+            || has_shortcode($content, 'dg_accommodation_enquiry');
+
+        $hub_id = class_exists('DG_Acc_Frontend') ? DG_Acc_Frontend::get_hub_page_id() : 0;
+        $is_booking_page = $has_acc_shortcode
+            || (class_exists('DG_Acc_Frontend') && DG_Acc_Frontend::is_accommodation_landing_page())
+            || (class_exists('DG_Acc_Frontend') && DG_Acc_Frontend::resolve_accommodation_id(0))
+            || ($hub_id && is_page($hub_id))
+            || is_page('accommodation');
+
+        if (!$is_booking_page) {
+            return $content;
+        }
+
+        if (class_exists('DG_Acc_Frontend')) {
+            DG_Acc_Frontend::maybe_enqueue_legacy_cleanup();
+        }
+
+        $content = $this->strip_legacy_booking_blocks($content);
+
+        if (has_shortcode($content, 'dg_book_now')) {
+            return $content;
+        }
+
+        if (strpos($content, 'dg-booking-calendar-wrap') !== false) {
+            return $content;
+        }
+
+        $accommodation_id = class_exists('DG_Acc_Frontend') ? DG_Acc_Frontend::resolve_accommodation_id(0) : 0;
+        if (!$accommodation_id && class_exists('DG_Acc_Frontend')) {
+            $accommodation_id = DG_Acc_Frontend::default_accommodation_id();
+        }
+        if ($accommodation_id && class_exists('DG_Acc_Calendar')) {
+            list($checkin, $checkout) = class_exists('DG_Acc_Frontend')
+                ? DG_Acc_Frontend::parse_request_dates()
+                : ['', ''];
+            $calendar = DG_Acc_Calendar::render($accommodation_id, [
+                'mode' => 'inline',
+                'checkin' => $checkin,
+                'checkout' => $checkout,
+            ]);
+            $content = $calendar . $content;
+        }
+
+        return $content;
+    }
+
+    private function strip_legacy_booking_blocks($content) {
+        if (!is_string($content) || $content === '') {
+            return $content;
+        }
+
+        $needles = [
+            'No Booking Details Found',
+            'No booking details found',
+            'check-in or check-out on a Saturday',
+        ];
+
+        foreach ($needles as $needle) {
+            if (stripos($content, $needle) === false) {
+                continue;
+            }
+            $content = $this->remove_html_blocks_containing($content, $needle);
+        }
+
+        if (stripos($content, 'dg-legacy-booking-summary') !== false) {
+            $previous = null;
+            while ($previous !== $content) {
+                $previous = $content;
+                $content = preg_replace('/<div[^>]*class="[^"]*dg-legacy-booking-summary[^"]*"[^>]*>.*?<\/div>/is', '', $content, 1);
+            }
+        }
+
+        return $content;
+    }
+
+    /** Remove outer HTML blocks containing text without catastrophic backtracking. */
+    private function remove_html_blocks_containing($content, $needle) {
+        $tags = ['div', 'section', 'article', 'aside', 'p'];
+        foreach ($tags as $tag) {
+            $pattern = '/<' . $tag . '\\b[^>]*>/i';
+            if (!preg_match_all($pattern, $content, $open_matches, PREG_OFFSET_CAPTURE)) {
+                continue;
+            }
+
+            for ($i = count($open_matches[0]) - 1; $i >= 0; $i--) {
+                $start = $open_matches[0][$i][1];
+                $close = stripos($content, '</' . $tag . '>', $start);
+                if ($close === false) {
+                    continue;
                 }
-            });
-            calendar.render();
-        });
-        </script>
-        <?php
+                $close += strlen('</' . $tag . '>');
+                $block = substr($content, $start, $close - $start);
+                if (stripos($block, $needle) !== false) {
+                    $content = substr($content, 0, $start) . substr($content, $close);
+                }
+            }
+        }
+
+        return $content;
+    }
+
+    public function book_now_shortcode($atts) {
+        try {
+            $atts = shortcode_atts(['accommodation_id' => 0], $atts);
+            $preferred = (int) $atts['accommodation_id'];
+            $accommodation_id = class_exists('DG_Acc_Frontend')
+                ? DG_Acc_Frontend::resolve_accommodation_id($preferred)
+                : $preferred;
+
+            if (!$accommodation_id && class_exists('DG_Acc_Frontend')) {
+                $accommodation_id = DG_Acc_Frontend::default_accommodation_id();
+            }
+
+            if (class_exists('DG_Acc_Shortcode_Render')) {
+                return DG_Acc_Shortcode_Render::render_book_now($this, $accommodation_id);
+            }
+        } catch (Throwable $e) {
+            if (defined('WP_DEBUG') && WP_DEBUG) {
+                error_log('DG book_now shortcode: ' . $e->getMessage());
+            }
+            return '<p class="dg-muted">Booking is temporarily unavailable. Please call 0415 257 839.</p>';
+        }
         return '';
     }
     
@@ -2188,41 +2410,73 @@ class DG_Module_Accommodation {
     // ============================================================
     
     public function contact_form_shortcode($atts) {
+        $atts = shortcode_atts([
+            'title' => 'Send Us a Message',
+            'subtitle' => "We'll get back to you as soon as possible.",
+            'recipient' => 'stay@currumbinvalleyhideaway.com.au',
+        ], $atts);
+
         ob_start();
         ?>
-        <div style="max-width:480px;margin:0 auto;background:#fff;border-radius:16px;padding:32px;box-shadow:0 2px 12px rgba(0,0,0,0.08);">
-            <h3 style="font-family:'Cormorant Garamond',serif;color:#2D4A2E;font-size:1.6rem;">Get in Touch</h3>
-            <div id="dg-contact-success" style="display:none;padding:16px;background:#d4edda;color:#155724;border-radius:8px;">✅ Message sent!</div>
-            <div id="dg-contact-error" style="display:none;padding:16px;background:#f8d7da;color:#721c24;border-radius:8px;"></div>
-            <div style="display:grid;gap:14px;">
-                <div><label style="display:block;font-size:13px;font-weight:600;">Name *</label>
-                    <input type="text" id="dg-con-name" style="width:100%;padding:10px 12px;border:1px solid #ddd;border-radius:8px;"></div>
-                <div><label style="display:block;font-size:13px;font-weight:600;">Email *</label>
-                    <input type="email" id="dg-con-email" style="width:100%;padding:10px 12px;border:1px solid #ddd;border-radius:8px;"></div>
-                <div><label style="display:block;font-size:13px;font-weight:600;">Message *</label>
-                    <textarea id="dg-con-message" rows="5" style="width:100%;padding:10px 12px;border:1px solid #ddd;border-radius:8px;resize:vertical;"></textarea></div>
-                <button onclick="dgSubmitContact()" id="dg-con-submit" style="width:100%;padding:14px;background:#2D4A2E;color:#fff;border:none;border-radius:40px;font-size:16px;font-weight:600;cursor:pointer;">Send Message</button>
+        <div class="dg-contact-form-wrap" style="max-width:560px;margin:0 auto;">
+            <h3 style="font-family:'Cormorant Garamond',serif;color:#1C2B2A;font-size:1.6rem;margin:0 0 0.35rem;"><?php echo esc_html($atts['title']); ?></h3>
+            <?php if ($atts['subtitle']) : ?>
+                <p style="color:#4A5B59;margin:0 0 1.25rem;font-size:0.95rem;"><?php echo esc_html($atts['subtitle']); ?></p>
+            <?php endif; ?>
+            <div id="dg-contact-success" style="display:none;padding:16px;background:#d4edda;color:#155724;border-radius:8px;margin-bottom:1rem;">✅ Thank you — your message has been sent. We'll reply within 24 hours.</div>
+            <div id="dg-contact-error" style="display:none;padding:16px;background:#f8d7da;color:#721c24;border-radius:8px;margin-bottom:1rem;"></div>
+            <div id="dg-contact-fields" style="display:grid;gap:14px;">
+                <div><label style="display:block;font-size:13px;font-weight:600;margin-bottom:4px;">Full Name *</label>
+                    <input type="text" id="dg-con-name" placeholder="Your full name" style="width:100%;padding:10px 12px;border:1px solid #ddd;border-radius:8px;box-sizing:border-box;"></div>
+                <div><label style="display:block;font-size:13px;font-weight:600;margin-bottom:4px;">Email Address *</label>
+                    <input type="email" id="dg-con-email" placeholder="Your email address" style="width:100%;padding:10px 12px;border:1px solid #ddd;border-radius:8px;box-sizing:border-box;"></div>
+                <div><label style="display:block;font-size:13px;font-weight:600;margin-bottom:4px;">Phone Number</label>
+                    <input type="tel" id="dg-con-phone" placeholder="Your phone number (optional)" style="width:100%;padding:10px 12px;border:1px solid #ddd;border-radius:8px;box-sizing:border-box;"></div>
+                <div><label style="display:block;font-size:13px;font-weight:600;margin-bottom:4px;">Message *</label>
+                    <textarea id="dg-con-message" rows="5" placeholder="Tell us about your enquiry..." style="width:100%;padding:10px 12px;border:1px solid #ddd;border-radius:8px;resize:vertical;box-sizing:border-box;"></textarea></div>
+                <button type="button" onclick="dgSubmitContact()" id="dg-con-submit" style="width:100%;padding:14px;background:#B9A48A;color:#fff;border:none;border-radius:40px;font-size:16px;font-weight:600;cursor:pointer;">Send Message</button>
             </div>
         </div>
         <script>
         function dgSubmitContact() {
             var btn = document.getElementById('dg-con-submit');
+            var name = document.getElementById('dg-con-name').value.trim();
+            var email = document.getElementById('dg-con-email').value.trim();
+            var message = document.getElementById('dg-con-message').value.trim();
+            if (!name || !email || !message) {
+                document.getElementById('dg-contact-error').textContent = 'Please fill in name, email, and message.';
+                document.getElementById('dg-contact-error').style.display = 'block';
+                return;
+            }
             var data = new FormData();
-            data.append('action','dg_submit_contact'); data.append('nonce','<?php echo wp_create_nonce('dg_contact_nonce'); ?>');
-            data.append('name', document.getElementById('dg-con-name').value.trim());
-            data.append('email', document.getElementById('dg-con-email').value.trim());
-            data.append('message', document.getElementById('dg-con-message').value.trim());
-            btn.textContent = 'Sending...'; btn.disabled = true;
-            fetch('<?php echo admin_url('admin-ajax.php'); ?>', { method: 'POST', body: data })
-                .then(r => r.json()).then(res => {
+            data.append('action', 'dg_submit_contact');
+            data.append('nonce', '<?php echo esc_js(wp_create_nonce('dg_contact_nonce')); ?>');
+            data.append('name', name);
+            data.append('email', email);
+            data.append('phone', document.getElementById('dg-con-phone').value.trim());
+            data.append('message', message);
+            data.append('recipient', '<?php echo esc_js($atts['recipient']); ?>');
+            btn.textContent = 'Sending...';
+            btn.disabled = true;
+            document.getElementById('dg-contact-error').style.display = 'none';
+            fetch('<?php echo esc_url(admin_url('admin-ajax.php')); ?>', { method: 'POST', body: data, credentials: 'same-origin' })
+                .then(function(r) { return r.json(); })
+                .then(function(res) {
                     if (res.success) {
                         document.getElementById('dg-contact-success').style.display = 'block';
-                        document.querySelector('.dg-contact-form-wrap div:last-child').style.display = 'none';
+                        document.getElementById('dg-contact-fields').style.display = 'none';
                     } else {
-                        document.getElementById('dg-contact-error').textContent = res.data || 'Error.';
+                        document.getElementById('dg-contact-error').textContent = (res.data || 'Something went wrong. Please email us directly.');
                         document.getElementById('dg-contact-error').style.display = 'block';
-                        btn.textContent = 'Send Message'; btn.disabled = false;
+                        btn.textContent = 'Send Message';
+                        btn.disabled = false;
                     }
+                })
+                .catch(function() {
+                    document.getElementById('dg-contact-error').textContent = 'Network error — please try again or email stay@currumbinvalleyhideaway.com.au';
+                    document.getElementById('dg-contact-error').style.display = 'block';
+                    btn.textContent = 'Send Message';
+                    btn.disabled = false;
                 });
         }
         </script>
@@ -2257,11 +2511,12 @@ class DG_Module_Accommodation {
             cardElement.mount('#dg-stripe-card-element');
             
             document.getElementById('dg-stripe-submit').addEventListener('click', function(e) {
+                var btn = this;
                 var name = document.getElementById('enquiry_name')?.value.trim();
                 var email = document.getElementById('enquiry_email')?.value.trim();
                 if (!name || !email) { alert('Please fill in your name and email.'); return; }
                 
-                this.disabled = true; this.textContent = '⏳ Processing...';
+                btn.disabled = true; btn.textContent = '⏳ Processing...';
                 var bookingData = {
                     accommodation_id: document.getElementById('dg-accommodation-id')?.value || 0,
                     booking_total: document.getElementById('dg-booking-total')?.value || '0',
@@ -2278,14 +2533,27 @@ class DG_Module_Accommodation {
                     body: JSON.stringify(bookingData)
                 })
                 .then(r => r.json())
-                .then(data => stripe.confirmCardPayment(data.clientSecret, {
-                    payment_method: { card: cardElement, billing_details: { name: name, email: email } }
-                }))
-                .then(result => {
-                    if (result.error) throw new Error(result.error.message);
-                    window.location.href = '/booking-confirmed/?ref=' + result.paymentIntent.metadata.booking_ref;
+                .then(data => {
+                    if (data.error || !data.clientSecret) throw new Error(data.error || 'Could not start payment.');
+                    return stripe.confirmCardPayment(data.clientSecret, {
+                        payment_method: { card: cardElement, billing_details: { name: name, email: email } }
+                    }).then(result => ({ result: result, booking_ref: data.booking_ref }));
                 })
-                .catch(err => { alert('Payment error: ' + err.message); this.disabled = false; this.textContent = '💳 Pay Now'; });
+                .then(({ result, booking_ref }) => {
+                    if (result.error) throw new Error(result.error.message);
+                    return fetch('/wp-json/dg-stripe/v1/confirm-booking', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ payment_intent_id: result.paymentIntent.id })
+                    }).then(r => r.json()).then(data => {
+                        if (data.error) throw new Error(data.error);
+                        return data.booking_ref || booking_ref;
+                    });
+                })
+                .then(ref => {
+                    window.location.href = '/booking-confirmed/?ref=' + encodeURIComponent(ref) + '&payment_method=stripe';
+                })
+                .catch(err => { alert('Payment error: ' + err.message); btn.disabled = false; btn.textContent = '💳 Pay Now'; });
             });
         });
         </script>
@@ -2342,17 +2610,46 @@ class DG_Module_Accommodation {
     }
     
     public function handle_contact_submission() {
-        if (!check_ajax_referer('dg_contact_nonce', 'nonce', false)) wp_send_json_error('Security check failed.');
-        
+        if (!check_ajax_referer('dg_contact_nonce', 'nonce', false)) {
+            wp_send_json_error('Security check failed.');
+        }
+
         $name = sanitize_text_field($_POST['name'] ?? '');
         $email = sanitize_email($_POST['email'] ?? '');
+        $phone = sanitize_text_field($_POST['phone'] ?? '');
         $message = sanitize_textarea_field($_POST['message'] ?? '');
-        
-        if (!$name || !$email || !$message) wp_send_json_error('All fields required.');
-        
-        wp_mail(get_option('admin_email'), '📩 Contact form: ' . $name,
-            "Name: $name\nEmail: $email\n\nMessage:\n$message");
-        
+        $recipient = sanitize_email($_POST['recipient'] ?? '') ?: get_option('admin_email');
+
+        if (!$name || !$email || !$message) {
+            wp_send_json_error('All required fields must be filled in.');
+        }
+
+        $site_name = class_exists('DG_Site_Profile') ? DG_Site_Profile::label() : get_bloginfo('name');
+        $admin_body = "Name: $name\nEmail: $email\nPhone: " . ($phone ?: 'Not provided') . "\n\nMessage:\n$message";
+        $headers = ['Content-Type: text/plain; charset=UTF-8', 'Reply-To: ' . $name . ' <' . $email . '>'];
+
+        $sent = wp_mail($recipient, '📩 Contact form: ' . $name, $admin_body, $headers);
+
+        $first_name = class_exists('DG_Email_Names') ? DG_Email_Names::first_name($name) : $name;
+        $guest_body = "Dear $first_name,\n\nThank you for contacting $site_name.\n\nWe have received your message and will respond within 24 hours.\n\nYour message:\n$message\n\nWarm regards,\n$site_name Team";
+        wp_mail($email, 'Thank you for your message — ' . $site_name, $guest_body, [
+            'Content-Type: text/plain; charset=UTF-8',
+            'From: ' . $site_name . ' <' . $recipient . '>',
+        ]);
+
+        if (class_exists('DG_Activities')) {
+            DG_Activities::log([
+                'activity_type' => 'note',
+                'subject' => 'Website contact form',
+                'content' => $admin_body,
+                'metadata' => ['source' => 'contact_form', 'email' => $email],
+            ]);
+        }
+
+        if (!$sent) {
+            wp_send_json_error('Could not send email. Please contact us directly.');
+        }
+
         wp_send_json_success();
     }
     
@@ -2376,16 +2673,3 @@ class DG_Module_Accommodation {
     }
     
 }
-
-// ============================================================
-// INITIALIZE MODULE
-// ============================================================
-
-add_action('dg_platform_modules_loaded', function() {
-    $platform = DG_Platform::get_instance();
-    DG_Module_Accommodation::get_instance($platform);
-});
-
-// ============================================================
-// END OF MODULE
-// ============================================================

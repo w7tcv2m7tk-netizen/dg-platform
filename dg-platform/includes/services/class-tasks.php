@@ -102,6 +102,9 @@ class DG_Tasks {
         if ($fields) {
             $wpdb->update(self::table(), $fields, ['id' => $id]);
         }
+        if (isset($data['status']) && $data['status'] === 'completed') {
+            do_action('dg_task_completed', $id, self::get($id));
+        }
         return $id;
     }
 

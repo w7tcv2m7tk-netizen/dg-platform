@@ -15,3 +15,7 @@ if (!defined('ABSPATH')) {
 if (!defined('DG_PLATFORM_SAFE_MODE')) {
     define('DG_PLATFORM_SAFE_MODE', true);
 }
+
+if (!defined('DG_PLATFORM_DISABLE_SNIPPETS')) {
+    define('DG_PLATFORM_DISABLE_SNIPPETS', true);
+}

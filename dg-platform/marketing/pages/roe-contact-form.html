@@ -1,0 +1,130 @@
+<!--
+  Roe Realty — Contact page (Oxygen Code Block)
+
+  Paste everything BELOW into an Oxygen "Code Block" element.
+  Requires DG Platform v10.7.7+ (loads roe-frontend.css automatically).
+
+  Alternative: Oxygen "Shortcode" element:
+  [roe_contact_form recipient="hello@roerealty.com.au"]
+-->
+
+<div class="roe-form-wrap roe-contact-form-wrap" id="roe-contact-static">
+  <div class="roe-form-card">
+    <div class="roe-contact-header">
+      <h2>Contact Roe Realty</h2>
+      <p>Whether you're buying, selling, or exploring the market — we'd love to hear from you.</p>
+    </div>
+
+    <div class="roe-contact-success" style="display:none;"></div>
+    <div class="roe-contact-error" style="display:none;"></div>
+
+    <form class="roe-contact-fields" onsubmit="return roeSubmitContactForm(event);">
+      <input type="text" name="website" value="" tabindex="-1" autocomplete="off" aria-hidden="true" class="roe-honeypot">
+
+      <div class="roe-contact-row">
+        <div class="roe-form-field">
+          <label for="roe-contact-name">Full Name *</label>
+          <input type="text" id="roe-contact-name" name="name" required placeholder="Your name">
+        </div>
+        <div class="roe-form-field">
+          <label for="roe-contact-phone">Phone</label>
+          <input type="tel" id="roe-contact-phone" name="phone" placeholder="Your phone number">
+        </div>
+      </div>
+
+      <div class="roe-form-field">
+        <label for="roe-contact-email">Email *</label>
+        <input type="email" id="roe-contact-email" name="email" required placeholder="you@example.com">
+      </div>
+
+      <div class="roe-form-field">
+        <label for="roe-contact-subject">Subject</label>
+        <input type="text" id="roe-contact-subject" name="subject" placeholder="Buying, selling, appraisal…">
+      </div>
+
+      <div class="roe-form-field">
+        <label for="roe-contact-message">Message *</label>
+        <textarea id="roe-contact-message" name="message" rows="5" required placeholder="How can Roe Realty help you?"></textarea>
+      </div>
+
+      <button type="submit" class="roe-btn-primary roe-contact-submit">Send Message</button>
+    </form>
+  </div>
+</div>
+
+<style>
+  /* Fallback if theme overrides plugin CSS */
+  #roe-contact-static .roe-contact-header h2 {
+    font-family: 'Sora', sans-serif !important;
+    text-align: center;
+    color: #1C2B2A;
+  }
+  #roe-contact-static .roe-contact-header p {
+    text-align: center;
+    color: #6B7A78;
+  }
+  #roe-contact-static .roe-btn-primary {
+    background: #C9A46C !important;
+    color: #fff !important;
+    font-family: 'Sora', sans-serif !important;
+    border: none !important;
+    border-radius: 999px !important;
+    padding: 14px 24px !important;
+    font-weight: 600 !important;
+    width: 100%;
+    cursor: pointer;
+  }
+  #roe-contact-static .roe-btn-primary:hover {
+    background: #b8935a !important;
+    color: #fff !important;
+  }
+</style>
+
+<script>
+function roeSubmitContactForm(e) {
+  e.preventDefault();
+  var wrap = document.getElementById('roe-contact-static');
+  if (!wrap) return false;
+  var form = wrap.querySelector('.roe-contact-fields');
+  var btn = wrap.querySelector('.roe-contact-submit');
+  var successEl = wrap.querySelector('.roe-contact-success');
+  var errorEl = wrap.querySelector('.roe-contact-error');
+  var fd = new FormData(form);
+  if (!(fd.get('name') || '').trim() || !(fd.get('email') || '').trim() || !(fd.get('message') || '').trim()) {
+    errorEl.textContent = 'Please fill in name, email, and message.';
+    errorEl.style.display = 'block';
+    successEl.style.display = 'none';
+    return false;
+  }
+  fd.append('action', 'dg_re_submit_contact');
+  fd.append('recipient', 'hello@roerealty.com.au');
+  btn.disabled = true;
+  btn.textContent = 'Sending…';
+  errorEl.style.display = 'none';
+  fetch(window.location.origin + '/wp-admin/admin-ajax.php', {
+    method: 'POST',
+    body: fd,
+    credentials: 'same-origin'
+  })
+  .then(function (r) { return r.json(); })
+  .then(function (res) {
+    if (res.success) {
+      successEl.textContent = (res.data && res.data.message) ? res.data.message : 'Thank you — your message has been sent.';
+      successEl.style.display = 'block';
+      form.style.display = 'none';
+    } else {
+      errorEl.textContent = (res.data && res.data.message) ? res.data.message : 'Something went wrong. Please try again.';
+      errorEl.style.display = 'block';
+      btn.disabled = false;
+      btn.textContent = 'Send Message';
+    }
+  })
+  .catch(function () {
+    errorEl.textContent = 'Network error — please try again or call us directly.';
+    errorEl.style.display = 'block';
+    btn.disabled = false;
+    btn.textContent = 'Send Message';
+  });
+  return false;
+}
+</script>

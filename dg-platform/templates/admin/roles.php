@@ -20,7 +20,13 @@
     </div>
     <div class="dg-panel">
         <h3>Permission Levels</h3>
-        <p><strong>Level 1 — Business Licence:</strong> Controlled via Module Manager (which modules are enabled).</p>
+        <?php if (class_exists('DG_Plan_Registry')) :
+            $tier = DG_Plan_Registry::current_tier();
+            ?>
+            <p><strong>Level 1 — Platform Plan:</strong> <?php echo esc_html($tier['label'] ?? 'Business'); ?> (<?php echo esc_html($tier['price_label'] ?? ''); ?>) — controlled via Modules & Plan.</p>
+        <?php else : ?>
+            <p><strong>Level 1 — Business Licence:</strong> Controlled via Module Manager (which modules are enabled).</p>
+        <?php endif; ?>
         <p><strong>Level 2 — User Permissions:</strong> Controlled via WordPress roles above.</p>
     </div>
 </div>

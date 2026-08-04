@@ -1,0 +1,244 @@
+<!-- DASHBOARD HOME - paste into Oxygen PHP Code Block on /client-dashboard/ only. -->
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@100..800&family=Inter:opsz,wght@14..32,400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+
+<style>
+  .dg-client-dashboard { font-family: 'Inter', sans-serif; background: #0A0E17; color: #FFFFFF; line-height: 1.5; margin: 0; padding: 0; }
+  .dg-client-dashboard * { box-sizing: border-box; }
+  .dg-client-dashboard .dashboard-header { background: linear-gradient(135deg, #0A0E17 0%, #1A2A3A 100%); padding: 48px 0 32px; border-bottom: 1px solid rgba(59, 130, 246, 0.2); }
+  .dg-client-dashboard .dashboard-container { max-width: 1280px; margin: 0 auto; padding: 0 2rem; }
+  .dg-client-dashboard .header-flex { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; }
+  .dg-client-dashboard .welcome-text h1 { font-family: 'Sora', sans-serif; font-size: 1.75rem; margin: 0 0 0.25rem; color: #fff; }
+  .dg-client-dashboard .welcome-text p { color: #94A3B8; font-size: 0.95rem; margin: 0; }
+  .dg-client-dashboard .header-actions { display: flex; gap: 0.75rem; flex-wrap: wrap; }
+  .dg-client-dashboard .header-btn { background: #334155; color: #fff; padding: 0.5rem 1rem; border-radius: 40px; text-decoration: none; font-size: 0.8rem; font-weight: 600; }
+  .dg-client-dashboard .header-btn:hover { background: #475569; color: #fff; }
+  .dg-client-dashboard .header-btn.logout:hover { background: #EF4444; }
+  .dg-client-dashboard .container { max-width: 1280px; margin: 0 auto; padding: 2rem; }
+  .dg-client-dashboard .welcome-card { background: #1E293B; border-radius: 24px; padding: 1.75rem 2rem; margin-bottom: 2rem; border: 1px solid #334155; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 1rem; }
+  .dg-client-dashboard .welcome-card h2 { font-family: 'Sora', sans-serif; font-size: 1.35rem; margin: 0 0 0.35rem; color: #fff; }
+  .dg-client-dashboard .welcome-card p { color: #94A3B8; font-size: 0.9rem; max-width: 640px; margin: 0; }
+  .dg-client-dashboard .support-email { display: inline-flex; align-items: center; gap: 8px; color: #60A5FA; text-decoration: none; font-size: 0.85rem; font-weight: 600; }
+  .dg-client-dashboard .portal-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1.5rem; margin-bottom: 2rem; }
+  .dg-client-dashboard .portal-card { background: #1E293B; border-radius: 20px; padding: 1.5rem; text-align: center; border: 1px solid #334155; transition: all 0.3s ease; text-decoration: none; display: block; }
+  .dg-client-dashboard .portal-card:hover { transform: translateY(-5px); border-color: #3B82F6; background: #1A253A; }
+  .dg-client-dashboard .portal-card.primary { border-color: rgba(59, 130, 246, 0.45); }
+  .dg-client-dashboard .portal-icon { width: 64px; height: 64px; background: rgba(59, 130, 246, 0.15); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1rem; }
+  .dg-client-dashboard .portal-icon i { font-size: 1.8rem; color: #3B82F6; }
+  .dg-client-dashboard .portal-card h3 { font-size: 1rem; font-weight: 700; margin: 0 0 0.5rem; color: #FFFFFF; }
+  .dg-client-dashboard .portal-card p { font-size: 0.75rem; color: #94A3B8; margin: 0; }
+  .dg-client-dashboard .section-title { font-family: 'Sora', sans-serif; font-size: 1.2rem; font-weight: 700; margin: 0 0 1rem; display: flex; align-items: center; gap: 10px; color: #fff; }
+  .dg-client-dashboard .section-title i { color: #3B82F6; }
+  .dg-client-dashboard .actions-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin-bottom: 2rem; }
+  .dg-client-dashboard .action-btn { background: #0F172A; border: 1px solid #334155; border-radius: 12px; padding: 0.85rem 1rem; text-align: center; text-decoration: none; display: flex; align-items: center; justify-content: center; gap: 8px; color: #FFFFFF; font-size: 0.82rem; }
+  .dg-client-dashboard .action-btn i { color: #3B82F6; }
+  .dg-client-dashboard .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
+  .dg-client-dashboard .panel { background: #1E293B; border-radius: 20px; padding: 1.5rem; border: 1px solid #334155; }
+  .dg-client-dashboard .step-item { display: flex; align-items: flex-start; gap: 1rem; padding: 1rem 0; border-bottom: 1px solid #334155; }
+  .dg-client-dashboard .step-item:last-child { border-bottom: none; }
+  .dg-client-dashboard .step-icon { width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; background: rgba(100, 116, 139, 0.2); color: #94A3B8; }
+  .dg-client-dashboard .step-item.done .step-icon { background: rgba(16, 185, 129, 0.15); color: #10B981; }
+  .dg-client-dashboard .step-item.active .step-icon { background: rgba(59, 130, 246, 0.15); color: #3B82F6; }
+  .dg-client-dashboard .step-details { flex: 1; }
+  .dg-client-dashboard .step-title { font-size: 0.88rem; font-weight: 600; }
+  .dg-client-dashboard .step-desc { font-size: 0.75rem; color: #64748B; }
+  .dg-client-dashboard .step-badge { font-size: 0.68rem; padding: 0.2rem 0.55rem; border-radius: 20px; background: #334155; color: #CBD5E1; white-space: nowrap; }
+  .dg-client-dashboard .step-item.done .step-badge { background: #10B981; color: #fff; }
+  .dg-client-dashboard .step-item.active .step-badge { background: #3B82F6; color: #fff; }
+  .dg-client-dashboard .resource-item { background: #0F172A; border-radius: 12px; padding: 1rem; display: flex; align-items: center; gap: 12px; text-decoration: none; border: 1px solid #334155; margin-bottom: 0.75rem; color: inherit; }
+  .dg-client-dashboard .resource-item:last-child { margin-bottom: 0; }
+  .dg-client-dashboard .resource-item i { font-size: 1.1rem; color: #3B82F6; width: 24px; text-align: center; }
+  .dg-client-dashboard .resource-name { font-size: 0.85rem; font-weight: 600; color: #FFFFFF; }
+  .dg-client-dashboard .resource-size { font-size: 0.7rem; color: #64748B; }
+  .dg-client-dashboard .alert-banner { background: rgba(59, 130, 246, 0.12); border: 1px solid rgba(59, 130, 246, 0.35); color: #BFDBFE; padding: 1rem 1.25rem; border-radius: 12px; margin-bottom: 1.5rem; font-size: 0.88rem; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 1rem; }
+  .dg-client-dashboard .alert-banner a { color: #fff; background: #3B82F6; padding: 0.45rem 1rem; border-radius: 40px; text-decoration: none; font-size: 0.8rem; font-weight: 600; }
+  .dg-client-dashboard .header-btn.apps { background: #3B82F6; }
+  .dg-client-dashboard .header-btn.apps:hover { background: #2563EB; }
+  .dg-client-dashboard .apps-section { margin-bottom: 2.5rem; scroll-margin-top: 1rem; }
+  .dg-client-dashboard .apps-group { margin-bottom: 1.75rem; }
+  .dg-client-dashboard .apps-group-title { font-family: 'Sora', sans-serif; font-size: 0.95rem; font-weight: 700; color: #94A3B8; text-transform: uppercase; letter-spacing: 0.06em; margin: 0 0 0.85rem; }
+  .dg-client-dashboard .apps-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 0.85rem; }
+  .dg-client-dashboard .app-tile { background: #0F172A; border: 1px solid #334155; border-radius: 16px; padding: 1rem; text-decoration: none; color: #fff; display: flex; flex-direction: column; gap: 0.5rem; min-height: 108px; transition: border-color 0.2s, transform 0.2s; }
+  .dg-client-dashboard .app-tile:hover { border-color: #3B82F6; transform: translateY(-2px); background: #1A253A; }
+  .dg-client-dashboard .app-tile-icon { width: 40px; height: 40px; background: rgba(59, 130, 246, 0.15); border-radius: 12px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .dg-client-dashboard .app-tile-icon i { font-size: 1rem; color: #3B82F6; }
+  .dg-client-dashboard .app-tile-title { font-size: 0.82rem; font-weight: 700; line-height: 1.3; }
+  .dg-client-dashboard .app-tile-arrow { font-size: 0.75rem; color: #64748B; margin-top: auto; }
+  .dg-client-dashboard .apps-empty { color: #64748B; font-size: 0.88rem; padding: 1rem 0; }
+  .dg-client-dashboard .builder-note { background: rgba(59, 130, 246, 0.12); border: 1px solid rgba(59, 130, 246, 0.35); color: #BFDBFE; padding: 0.85rem 1rem; border-radius: 12px; margin-bottom: 1.5rem; font-size: 0.85rem; }
+  @media (max-width: 1000px) { .dg-client-dashboard .portal-grid { grid-template-columns: repeat(2, 1fr); } .dg-client-dashboard .actions-grid, .dg-client-dashboard .two-col { grid-template-columns: 1fr; } }
+  @media (max-width: 640px) { .dg-client-dashboard .portal-grid { grid-template-columns: 1fr; } .dg-client-dashboard .container { padding: 1rem; } }
+</style>
+
+<?php
+if (class_exists('DG_Client_Portal') && method_exists('DG_Client_Portal', 'dashboard_template_context')) {
+    extract(DG_Client_Portal::dashboard_template_context(), EXTR_SKIP);
+} else {
+    $client_name = 'Preview';
+    $client_email = 'client@example.com';
+    $payment_done = true;
+    $onboarding_done = false;
+    $setup_live = false;
+    $logout_url = function_exists('wp_logout_url') ? wp_logout_url(home_url('/client-portal/')) : '/wp-login.php?action=logout';
+    $account_url = home_url('/client-account/');
+    $reports_url = home_url('/client-reports/');
+    $onboarding_url = home_url('/onboarding/');
+    $strategy_session_url = home_url('/strategy-session/');
+    $app_groups = [];
+    $app_labels = [];
+    $is_builder = false;
+    $show_wp_admin = false;
+}
+?>
+<div class="dg-client-dashboard">
+
+<div class="dashboard-header">
+  <div class="dashboard-container header-flex">
+    <div class="welcome-text">
+      <h1>Welcome back, <?php echo esc_html($client_name); ?></h1>
+      <p>Your DigitalGate client hub — onboarding, apps, and support.</p>
+    </div>
+    <div class="header-actions">
+      <?php if (!empty($app_groups)) : ?>
+      <a href="#apps" class="header-btn apps"><i class="fas fa-th-large"></i> Your apps</a>
+      <?php endif; ?>
+      <?php if (!empty($show_wp_admin)) : ?>
+      <a href="<?php echo esc_url(admin_url()); ?>" class="header-btn"><i class="fas fa-cog"></i> WP Admin</a>
+      <?php endif; ?>
+      <a href="<?php echo esc_url($account_url); ?>" class="header-btn"><i class="fas fa-user-cog"></i> Account</a>
+      <a href="<?php echo esc_url($logout_url); ?>" class="header-btn logout"><i class="fas fa-sign-out-alt"></i> Log out</a>
+    </div>
+  </div>
+</div>
+
+<div class="container">
+
+  <?php if (!empty($is_builder)) : ?>
+  <div class="builder-note">Dashboard preview in Oxygen. Save and view the front end while signed in to see live client data and apps.</div>
+  <?php endif; ?>
+
+  <?php if (!$onboarding_done) : ?>
+  <div class="alert-banner">
+    <span><i class="fas fa-clipboard-list"></i> <strong>Next step:</strong> complete your onboarding form so we can configure your platform.</span>
+    <a href="<?php echo esc_url($onboarding_url); ?>">Complete onboarding</a>
+  </div>
+  <?php endif; ?>
+
+  <div class="welcome-card">
+    <div>
+      <h2>You are all set to get started</h2>
+      <p>Our team configures your DG Platform after you submit onboarding. Most clients go live within <strong>2–3 business days</strong>.</p>
+      <?php if ($client_email) : ?><p style="margin-top:0.5rem;font-size:0.8rem;color:#64748B;">Signed in as <?php echo esc_html($client_email); ?></p><?php endif; ?>
+    </div>
+    <a href="#" class="support-email dg-support-open"><i class="fas fa-headset"></i> Live support chat</a>
+  </div>
+
+  <div class="portal-grid">
+    <a href="<?php echo esc_url($onboarding_url); ?>" class="portal-card primary">
+      <div class="portal-icon"><i class="fas fa-clipboard-list"></i></div>
+      <h3>Onboarding</h3>
+      <p>Business details, branding, apps &amp; access</p>
+    </a>
+    <a href="<?php echo esc_url($strategy_session_url); ?>" class="portal-card">
+      <div class="portal-icon"><i class="fas fa-calendar-alt"></i></div>
+      <h3>Book a call</h3>
+      <p>Strategy sessions and project reviews</p>
+    </a>
+    <a href="#" class="portal-card dg-support-open">
+      <div class="portal-icon"><i class="fas fa-life-ring"></i></div>
+      <h3>Get support</h3>
+      <p>Live chat for questions, changes and technical help</p>
+    </a>
+    <a href="#apps" class="portal-card">
+      <div class="portal-icon"><i class="fas fa-th-large"></i></div>
+      <h3>Your apps</h3>
+      <p>CRM, industry tools and add-ons</p>
+    </a>
+    <a href="<?php echo esc_url($reports_url); ?>" class="portal-card primary">
+      <div class="portal-icon"><i class="fas fa-chart-pie"></i></div>
+      <h3>Progress reports</h3>
+      <p>Charts and metrics across your apps</p>
+    </a>
+    <a href="<?php echo esc_url($account_url); ?>" class="portal-card">
+      <div class="portal-icon"><i class="fas fa-user-circle"></i></div>
+      <h3>My account</h3>
+      <p>Profile, password &amp; billing details</p>
+    </a>
+  </div>
+
+  <div id="apps" class="apps-section panel">
+    <div class="section-title"><i class="fas fa-th-large"></i> Your apps</div>
+    <p style="color:#94A3B8;font-size:0.88rem;margin:-0.25rem 0 1.25rem;">Open platform tools. You will stay in a branded workspace with a link back here.</p>
+    <?php if (!$app_groups) : ?>
+      <p class="apps-empty">Apps will appear here once your platform modules are activated. Complete onboarding or contact support if you expect access now.</p>
+    <?php else : ?>
+      <?php foreach ($app_groups as $group_key => $apps) : ?>
+        <div class="apps-group">
+          <h3 class="apps-group-title"><?php echo esc_html($app_labels[$group_key] ?? ucfirst($group_key)); ?></h3>
+          <div class="apps-grid">
+            <?php foreach ($apps as $app) :
+                $icon = !empty($app['icon']) ? (string) $app['icon'] : 'fa-cube';
+                if (strpos($icon, 'fa-') !== 0) {
+                    $icon = 'fa-' . $icon;
+                }
+            ?>
+              <a href="<?php echo esc_url($app['url']); ?>" class="app-tile">
+                <span class="app-tile-icon"><i class="fas <?php echo esc_attr($icon); ?>"></i></span>
+                <span class="app-tile-title"><?php echo esc_html($app['title']); ?></span>
+                <span class="app-tile-arrow">Open →</span>
+              </a>
+            <?php endforeach; ?>
+          </div>
+        </div>
+      <?php endforeach; ?>
+    <?php endif; ?>
+  </div>
+
+  <div class="section-title"><i class="fas fa-bolt"></i> Quick actions</div>
+  <div class="actions-grid">
+    <a href="<?php echo esc_url($reports_url); ?>" class="action-btn"><i class="fas fa-chart-line"></i> View progress reports</a>
+    <a href="<?php echo esc_url($onboarding_url); ?>" class="action-btn"><i class="fas fa-edit"></i> Update onboarding info</a>
+    <a href="<?php echo esc_url($strategy_session_url); ?>" class="action-btn"><i class="fas fa-video"></i> Schedule a call</a>
+  </div>
+  <div class="actions-grid" style="grid-template-columns: 1fr; max-width: 360px;">
+    <a href="#" class="action-btn dg-support-open"><i class="fas fa-comment-dots"></i> Open live support</a>
+  </div>
+
+  <div class="two-col">
+    <div class="panel">
+      <div class="section-title"><i class="fas fa-route"></i> Setup progress</div>
+      <div class="step-item <?php echo $payment_done ? 'done' : 'active'; ?>">
+        <div class="step-icon"><i class="fas fa-<?php echo $payment_done ? 'check' : 'credit-card'; ?>"></i></div>
+        <div class="step-details"><div class="step-title">Payment received</div><div class="step-desc">Stripe checkout completed.</div></div>
+        <span class="step-badge"><?php echo $payment_done ? 'Done' : 'Pending'; ?></span>
+      </div>
+      <div class="step-item <?php echo $onboarding_done ? 'done' : ($payment_done ? 'active' : ''); ?>">
+        <div class="step-icon"><i class="fas fa-<?php echo $onboarding_done ? 'check' : 'clipboard-list'; ?>"></i></div>
+        <div class="step-details"><div class="step-title">Onboarding submitted</div><div class="step-desc">Business &amp; platform requirements.</div></div>
+        <span class="step-badge"><?php echo $onboarding_done ? 'Done' : 'Action needed'; ?></span>
+      </div>
+      <div class="step-item <?php echo ($onboarding_done && !$setup_live) ? 'active' : ($setup_live ? 'done' : ''); ?>">
+        <div class="step-icon"><i class="fas fa-<?php echo $setup_live ? 'check' : 'cogs'; ?>"></i></div>
+        <div class="step-details"><div class="step-title">Platform configuration</div><div class="step-desc">Modules &amp; integrations setup.</div></div>
+        <span class="step-badge"><?php echo $setup_live ? 'Live' : 'In progress'; ?></span>
+      </div>
+      <div class="step-item <?php echo $setup_live ? 'done' : ''; ?>">
+        <div class="step-icon"><i class="fas fa-<?php echo $setup_live ? 'check' : 'rocket'; ?>"></i></div>
+        <div class="step-details"><div class="step-title">Go live</div><div class="step-desc">Training &amp; ongoing support.</div></div>
+        <span class="step-badge"><?php echo $setup_live ? 'Done' : 'Upcoming'; ?></span>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="section-title"><i class="fas fa-book-open"></i> Helpful links</div>
+      <a href="<?php echo esc_url($onboarding_url); ?>" class="resource-item"><i class="fas fa-clipboard-list"></i><div><div class="resource-name">Client onboarding form</div><div class="resource-size">Required after purchase</div></div></a>
+      <a href="https://digitalgate.com.au/pricing/" class="resource-item"><i class="fas fa-layer-group"></i><div><div class="resource-name">Plans &amp; add-ons</div><div class="resource-size">Upgrade modules anytime</div></div></a>
+      <a href="https://digitalgate.com.au/terms-conditions/" class="resource-item"><i class="fas fa-file-contract"></i><div><div class="resource-name">Terms &amp; conditions</div><div class="resource-size">Service agreement</div></div></a>
+      <a href="#" class="resource-item dg-support-open"><i class="fas fa-headset"></i><div><div class="resource-name">Live support chat</div><div class="resource-size">Message us. Replies here and by email.</div></div></a>
+    </div>
+  </div>
+
+</div>
+</div>

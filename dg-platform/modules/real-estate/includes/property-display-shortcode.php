@@ -192,7 +192,9 @@ function roe_property_display_shortcode() {
             font-size: 2.2rem; 
             font-weight: 700; 
             margin: 0 0 5px 0; 
-            font-family: 'Sora', sans-serif; 
+            font-family: 'Sora', sans-serif;
+            color: #ffffff;
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.35);
         }
         .property-hero .price { 
             color: #C9A46C; 
@@ -926,7 +928,7 @@ function roe_property_display_shortcode() {
                 
                 <!-- Brochure Download Button -->
                 <div class="brochure-box">
-                    <a href="/brochure/?property=<?php echo $post_id; ?>" target="_blank" class="btn-brochure">
+                    <a href="<?php echo esc_url(class_exists('DG_RE_Property_Brochure') ? DG_RE_Property_Brochure::url($post_id) : home_url('/brochure/?property=' . $post_id . '&download=1')); ?>" target="_blank" rel="noopener" class="btn-brochure">
                         <i class="fas fa-file-pdf"></i> Download Brochure
                     </a>
                     <p class="brochure-note">PDF brochure with full property details</p>

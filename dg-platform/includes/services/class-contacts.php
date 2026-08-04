@@ -149,6 +149,8 @@ class DG_Contacts {
         ]);
         DG_Permissions::log_audit('contact_created', 'contact', $id, null, $data);
 
+        do_action('dg_contact_created', $id, $data);
+
         return $id;
     }
 
@@ -174,6 +176,13 @@ class DG_Contacts {
 
     public static function delete($id) {
         global $wpdb;
+        $id = (int) $id;
+
+        $wpdb->delete(self::meta_table(), [
+            'entity_type' => 'contact',
+            'entity_id' => $id,
+        ]);
+
         DG_Permissions::log_audit('contact_deleted', 'contact', $id);
         return $wpdb->delete(self::table(), ['id' => $id]);
     }

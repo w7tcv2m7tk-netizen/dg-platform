@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>DigitalGate | Client Onboarding Portal</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@100..800&family=Inter:opsz,wght@14..32,400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Inter', sans-serif; background: #0A0E17; color: #FFFFFF; line-height: 1.5; }
+    .onboarding-header { background: linear-gradient(135deg, #0A0E17 0%, #1A2A3A 100%); padding: 60px 0 40px; text-align: center; border-bottom: 1px solid rgba(59, 130, 246, 0.2); }
+    .onboarding-header h1 { font-family: 'Sora', sans-serif; font-size: 2.5rem; font-weight: 800; background: linear-gradient(135deg, #FFFFFF 0%, #3B82F6 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; margin-bottom: 1rem; }
+    .onboarding-header p { color: #94A3B8; max-width: 600px; margin: 0 auto; }
+    .container { max-width: 900px; margin: 0 auto; padding: 2rem; }
+    .form-section { background: #1E293B; border-radius: 24px; padding: 2rem; margin-bottom: 2rem; border: 1px solid #334155; transition: all 0.3s ease; }
+    .form-section:hover { border-color: #3B82F6; }
+    .section-title { font-family: 'Sora', sans-serif; font-size: 1.3rem; font-weight: 700; color: #FFFFFF; margin-bottom: 1.5rem; display: flex; align-items: center; gap: 10px; padding-bottom: 0.75rem; border-bottom: 1px solid #334155; }
+    .section-title i { color: #3B82F6; font-size: 1.2rem; }
+    .form-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1.25rem; }
+    .form-group-full { grid-column: span 2; }
+    .form-group { display: flex; flex-direction: column; }
+    label { font-size: 0.8rem; font-weight: 600; color: #CBD5E1; margin-bottom: 0.5rem; }
+    label .required { color: #EF4444; }
+    input, select, textarea { background: #0F172A; border: 1px solid #334155; border-radius: 12px; padding: 0.75rem 1rem; font-family: 'Inter', sans-serif; font-size: 0.9rem; color: #FFFFFF; transition: all 0.2s; }
+    input:focus, select:focus, textarea:focus { outline: none; border-color: #3B82F6; box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2); }
+    input::placeholder, textarea::placeholder { color: #64748B; }
+    .file-upload { background: #0F172A; border: 1px dashed #3B82F6; border-radius: 12px; padding: 1.5rem; text-align: center; cursor: pointer; transition: all 0.2s; }
+    .file-upload:hover { background: #1A253A; border-color: #60A5FA; }
+    .file-upload i { font-size: 2rem; color: #3B82F6; margin-bottom: 0.5rem; }
+    .file-upload p { font-size: 0.8rem; color: #94A3B8; }
+    .checkbox-group { display: flex; flex-wrap: wrap; gap: 1rem; margin-top: 0.5rem; }
+    .checkbox-label { display: flex; align-items: center; gap: 8px; font-size: 0.85rem; font-weight: normal; cursor: pointer; }
+    .checkbox-label input { width: auto; margin: 0; }
+    .radio-group { display: flex; flex-wrap: wrap; gap: 1.5rem; margin-top: 0.5rem; }
+    .radio-label { display: flex; align-items: center; gap: 8px; font-size: 0.85rem; cursor: pointer; }
+    .radio-label input { width: auto; margin: 0; }
+    .priority-buttons { display: flex; flex-wrap: wrap; gap: 0.75rem; margin-top: 0.5rem; }
+    .priority-btn { background: #0F172A; border: 1px solid #334155; border-radius: 40px; padding: 0.5rem 1.25rem; font-size: 0.8rem; color: #CBD5E1; cursor: pointer; transition: all 0.2s; }
+    .priority-btn:hover, .priority-btn.active { background: #3B82F6; border-color: #3B82F6; color: #FFFFFF; }
+    .email-row { display: grid; grid-template-columns: 1fr auto; gap: 0.75rem; align-items: center; margin-bottom: 0.75rem; }
+    .remove-email { background: #EF4444; border: none; border-radius: 8px; padding: 0 1rem; color: white; cursor: pointer; font-size: 0.8rem; }
+    .add-email { background: #3B82F6; border: none; border-radius: 8px; padding: 0.5rem 1rem; color: white; cursor: pointer; font-size: 0.8rem; margin-top: 0.5rem; width: fit-content; }
+    .terms-section { background: #0F172A; border-radius: 16px; padding: 1.5rem; margin: 1.5rem 0; }
+    .terms-checkbox { display: flex; align-items: flex-start; gap: 12px; margin-bottom: 1rem; }
+    .terms-checkbox input { margin-top: 2px; width: auto; }
+    .terms-checkbox label { font-size: 0.85rem; line-height: 1.4; }
+    .submit-btn { width: 100%; background: linear-gradient(105deg, #3B82F6, #2563EB); color: #FFFFFF; font-weight: 700; font-size: 1rem; padding: 1rem 2rem; border: none; border-radius: 56px; cursor: pointer; transition: all 0.25s ease; margin-top: 1rem; }
+    .submit-btn:hover { background: linear-gradient(105deg, #5695ff, #3B82F6); transform: translateY(-2px); }
+    .submit-btn i { margin-right: 8px; }
+    .payment-note { text-align: center; margin-top: 1.5rem; font-size: 0.75rem; color: #64748B; }
+    .payment-note a { color: #60A5FA; text-decoration: none; }
+    .progress-bar { background: #1E293B; border-radius: 40px; height: 8px; margin: 2rem auto; max-width: 600px; overflow: hidden; }
+    .progress-fill { background: #3B82F6; width: 0%; height: 100%; border-radius: 40px; transition: width 0.3s ease; }
+    @media (max-width: 768px) { .form-grid { grid-template-columns: 1fr; } .form-group-full { grid-column: span 1; } .container { padding: 1rem; } .form-section { padding: 1.5rem; } }
+  </style>
+</head>
+<body>
+
+  <div class="onboarding-header">
+    <h1>Client Onboarding Portal</h1>
+    <p>Tell us about your business so we can configure your DG Platform, apps, and integrations. Setup usually takes 2–3 business days after we receive this form.</p>
+  </div>
+
+  <div class="container">
+    <div id="purchaseBanner" style="display:none;background:rgba(16,185,129,0.12);border:1px solid rgba(16,185,129,0.35);color:#A7F3D0;padding:1rem 1.25rem;border-radius:12px;margin-bottom:1.5rem;font-size:0.9rem;"></div>
+    <div class="progress-bar">
+      <div class="progress-fill" id="progressFill"></div>
+    </div>
+
+    <form id="onboardingForm" action="/wp-admin/admin-post.php" method="POST" enctype="multipart/form-data">
+
+      <!-- DG Platform onboarding handler -->
+      <input type="hidden" name="action" value="dg_submit_onboarding">
+      <input type="hidden" name="source" value="onboarding">
+      <!-- Honeypot — leave blank -->
+      <input type="text" name="website" value="" tabindex="-1" autocomplete="off" aria-hidden="true" style="position:absolute;left:-9999px;width:0;height:0;opacity:0;pointer-events:none">
+
+      <!-- SECTION 1: Business Details -->
+      <div class="form-section" data-section="1">
+        <div class="section-title"><i class="fas fa-building"></i><span>1. Business Details</span></div>
+        <div class="form-grid">
+          <div class="form-group form-group-full"><label>Business / Company Name <span class="required">*</span></label><input type="text" name="business_name" required></div>
+          <div class="form-group form-group-full"><label>Street Address <span class="required">*</span></label><input type="text" name="street_address" required></div>
+          <div class="form-group"><label>City <span class="required">*</span></label><input type="text" name="city" required></div>
+          <div class="form-group"><label>State <span class="required">*</span></label><input type="text" name="state" required></div>
+          <div class="form-group"><label>Postcode <span class="required">*</span></label><input type="text" name="postcode" required></div>
+          <div class="form-group"><label>Country <span class="required">*</span></label><select name="country" required><option value="">Select Country</option><option value="Australia">Australia</option><option value="New Zealand">New Zealand</option><option value="United Kingdom">United Kingdom</option><option value="United States">United States</option></select></div>
+          <div class="form-group"><label>Phone <span class="required">*</span></label><input type="tel" name="phone" required></div>
+          <div class="form-group"><label>Email <span class="required">*</span></label><input type="email" name="business_email" required></div>
+          <div class="form-group"><label>Business Hours</label><input type="text" name="business_hours" placeholder="e.g., Mon-Fri 9am-5pm"></div>
+        </div>
+      </div>
+
+      <!-- SECTION 2: Contact Person -->
+      <div class="form-section" data-section="2">
+        <div class="section-title"><i class="fas fa-user-circle"></i><span>2. Contact Person</span></div>
+        <div class="form-grid">
+          <div class="form-group form-group-full"><label>Full Name <span class="required">*</span></label><input type="text" name="contact_name" required></div>
+          <div class="form-group"><label>Position / Role <span class="required">*</span></label><input type="text" name="position" required></div>
+          <div class="form-group"><label>Best Contact Number <span class="required">*</span></label><input type="tel" name="contact_phone" required></div>
+          <div class="form-group"><label>Best Email Address <span class="required">*</span></label><input type="email" name="contact_email" required></div>
+          <div class="form-group form-group-full"><label>Preferred Contact Method</label><div class="radio-group"><label class="radio-label"><input type="radio" name="contact_method" value="Phone"> Phone</label><label class="radio-label"><input type="radio" name="contact_method" value="Email"> Email</label><label class="radio-label"><input type="radio" name="contact_method" value="SMS"> SMS</label></div></div>
+        </div>
+      </div>
+
+      <!-- SECTION 3: Plan & Products -->
+      <div class="form-section" data-section="3">
+        <div class="section-title"><i class="fas fa-layer-group"></i><span>3. Your DigitalGate Plan</span></div>
+        <div class="form-grid">
+          <div class="form-group form-group-full"><label>Industry / business type</label>
+            <select name="industry_vertical">
+              <option value="">Select industry</option>
+              <option value="real-estate">Real Estate</option>
+              <option value="accommodation">Accommodation &amp; Hospitality</option>
+              <option value="finance">Finance &amp; Lending</option>
+              <option value="services">Services &amp; Trades</option>
+              <option value="automotive">Automotive / Dealership</option>
+              <option value="commercial">Commercial Property</option>
+              <option value="agency">Marketing / Creative Agency</option>
+              <option value="other">Other</option>
+            </select>
+          </div>
+          <div class="form-group"><label>DG Platform tier</label>
+            <select name="platform_tier">
+              <option value="">Not purchased / unsure</option>
+              <option value="starter">Starter ($99/mo)</option>
+              <option value="professional">Professional ($249/mo)</option>
+              <option value="business">Business ($499/mo)</option>
+              <option value="enterprise">Enterprise (custom)</option>
+            </select>
+          </div>
+          <div class="form-group"><label>Growth Systems tier (if applicable)</label>
+            <select name="growth_tier">
+              <option value="">Not applicable</option>
+              <option value="foundation">Foundation ($497/mo)</option>
+              <option value="growth">Growth ($997/mo)</option>
+              <option value="authority">Authority ($1,997/mo)</option>
+              <option value="partner">Growth Partner ($2,997/mo)</option>
+            </select>
+          </div>
+          <div class="form-group form-group-full"><label>Industry apps purchased (+$99/mo each)</label>
+            <div class="checkbox-group">
+              <label class="checkbox-label"><input type="checkbox" name="purchased_apps[]" value="real-estate"> Real Estate</label>
+              <label class="checkbox-label"><input type="checkbox" name="purchased_apps[]" value="accommodation"> Accommodation</label>
+              <label class="checkbox-label"><input type="checkbox" name="purchased_apps[]" value="finance"> Finance</label>
+              <label class="checkbox-label"><input type="checkbox" name="purchased_apps[]" value="services"> Services</label>
+              <label class="checkbox-label"><input type="checkbox" name="purchased_apps[]" value="automotive"> Automotive</label>
+              <label class="checkbox-label"><input type="checkbox" name="purchased_apps[]" value="commercial"> Commercial</label>
+            </div>
+          </div>
+          <div class="form-group form-group-full"><label>Premium apps purchased</label>
+            <div class="checkbox-group">
+              <label class="checkbox-label"><input type="checkbox" name="purchased_premium[]" value="seo_pro"> SEO Pro</label>
+              <label class="checkbox-label"><input type="checkbox" name="purchased_premium[]" value="social_pro"> Social Pro</label>
+              <label class="checkbox-label"><input type="checkbox" name="purchased_premium[]" value="analytics_pro"> Analytics Pro</label>
+              <label class="checkbox-label"><input type="checkbox" name="purchased_premium[]" value="ai_visibility_pro"> AI Visibility Pro</label>
+              <label class="checkbox-label"><input type="checkbox" name="purchased_premium[]" value="automation_pro"> Automation Pro</label>
+            </div>
+          </div>
+          <div class="form-group form-group-full"><label>Add-ons</label>
+            <div class="checkbox-group">
+              <label class="checkbox-label"><input type="checkbox" name="purchased_addons[]" value="voice_ai"> Voice AI</label>
+              <label class="checkbox-label"><input type="checkbox" name="purchased_addons[]" value="training"> Training &amp; Onboarding ($497)</label>
+              <label class="checkbox-label"><input type="checkbox" name="purchased_addons[]" value="white_label"> White Label</label>
+              <label class="checkbox-label"><input type="checkbox" name="purchased_addons[]" value="extra_users"> Extra users</label>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SECTION 4: Branding & Visual Assets -->
+      <div class="form-section" data-section="4">
+        <div class="section-title"><i class="fas fa-palette"></i><span>4. Branding & Visual Assets</span></div>
+        <div class="form-grid">
+          <div class="form-group form-group-full"><label>Upload Your Logo</label><div class="file-upload" onclick="document.getElementById('logo').click()"><i class="fas fa-cloud-upload-alt"></i><p>Click to upload</p><input type="file" id="logo" name="logo" accept="image/*" style="display: none;"></div></div>
+          <div class="form-group"><label>Brand Colours (Hex codes)</label><input type="text" name="brand_colours" placeholder="#FFFFFF, #3B82F6, #1E293B"></div>
+          <div class="form-group form-group-full"><label>Upload team / property / service photos</label><div class="file-upload" onclick="document.getElementById('photos').click()"><i class="fas fa-images"></i><p>Click to upload (multiple files OK)</p><input type="file" id="photos" name="photos[]" accept="image/*" multiple style="display:none;"></div></div>
+        </div>
+      </div>
+
+      <!-- SECTION 5: About Your Business -->
+      <div class="form-section" data-section="5">
+        <div class="section-title"><i class="fas fa-briefcase"></i><span>5. About Your Business</span></div>
+        <div class="form-grid">
+          <div class="form-group form-group-full"><label>What does your business do?</label><textarea name="about_business" rows="3" placeholder="Brief overview — who you serve and what makes you different"></textarea></div>
+          <div class="form-group form-group-full"><label>Main services or offerings</label><textarea name="services" rows="2" placeholder="e.g., Property sales, buyer advocacy, holiday rentals, mortgage broking"></textarea></div>
+          <div class="form-group form-group-full"><label>Areas / regions you serve</label><textarea name="service_areas" rows="2" placeholder="e.g., Gold Coast, Northern Rivers, Australia-wide"></textarea></div>
+          <div class="form-group form-group-full"><label>Ideal customer</label><textarea name="ideal_customer" rows="3" placeholder="Who are they? What problems do they have? Why choose you?"></textarea></div>
+        </div>
+      </div>
+
+      <!-- SECTION 6: Competitors -->
+      <div class="form-section" data-section="6">
+        <div class="section-title"><i class="fas fa-trophy"></i><span>6. Competitors</span></div>
+        <div class="form-group form-group-full"><label>Your Top 3 Competitors</label><div id="competitorsList"><div class="competitor-row" style="display:flex;gap:0.75rem;margin-bottom:0.75rem;"><input type="text" name="competitors[]" placeholder="Competitor name" style="flex:1;"><input type="url" name="competitor_urls[]" placeholder="Website URL (optional)" style="flex:1;"></div></div><button type="button" class="add-email" onclick="addCompetitor()">+ Add Another Competitor</button></div>
+      </div>
+
+      <!-- SECTION 7: Social Media -->
+      <div class="form-section" data-section="7">
+        <div class="section-title"><i class="fas fa-hashtag"></i><span>7. Social Media Accounts</span></div>
+        <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:1rem;">
+          <div class="form-group"><label>Facebook</label><input type="url" name="facebook" placeholder="https://facebook.com/yourpage"></div>
+          <div class="form-group"><label>Instagram</label><input type="url" name="instagram" placeholder="https://instagram.com/yourhandle"></div>
+          <div class="form-group"><label>LinkedIn</label><input type="url" name="linkedin" placeholder="https://linkedin.com/company/yourcompany"></div>
+          <div class="form-group"><label>TikTok</label><input type="url" name="tiktok" placeholder="https://tiktok.com/@yourhandle"></div>
+          <div class="form-group"><label>YouTube</label><input type="url" name="youtube" placeholder="https://youtube.com/@yourchannel"></div>
+        </div>
+      </div>
+
+      <!-- SECTION 8: Website, Domain & Hosting -->
+      <div class="form-section" data-section="8">
+        <div class="section-title"><i class="fas fa-globe"></i><span>8. Website, Domain & Hosting</span></div>
+        <div class="form-grid">
+          <div class="form-group"><label>Current website URL</label><input type="url" name="website_url" placeholder="https://"></div>
+          <div class="form-group"><label>Desired domain (if new site)</label><input type="text" name="desired_domain" placeholder="yourbusiness.com.au"></div>
+          <div class="form-group"><label>Domain registrar</label><input type="text" name="domain_registrar" placeholder="e.g., GoDaddy, VentraIP, Cloudflare"></div>
+          <div class="form-group"><label>Website platform</label><select name="website_platform"><option value="">Select platform</option><option value="WordPress">WordPress</option><option value="DG Platform">DG Platform (new build)</option><option value="Wix">Wix</option><option value="Squarespace">Squarespace</option><option value="Shopify">Shopify</option><option value="Other">Other</option></select></div>
+          <div class="form-group"><label>Hosting company</label><input type="text" name="hosting_company" placeholder="e.g., SiteGround, WP Engine, DigitalGate"></div>
+          <div class="form-group"><label>Website login URL</label><input type="url" name="website_login_url" placeholder="https://yourdomain.com/wp-admin"></div>
+          <div class="form-group"><label>Username / email for access</label><input type="text" name="website_username" placeholder="We will send secure access instructions — no passwords here"></div>
+        </div>
+        <div class="security-note" style="background:rgba(59,130,246,0.1);border-left:3px solid #3B82F6;padding:1rem;border-radius:12px;margin:1rem 0;font-size:0.8rem;color:#94A3B8;"><i class="fas fa-shield-alt" style="color:#3B82F6;margin-right:8px;"></i> We will send secure access instructions after onboarding. Please do not submit passwords through this form.</div>
+      </div>
+
+      <!-- SECTION 9: Google, Analytics & SEO -->
+      <div class="form-section" data-section="9">
+        <div class="section-title"><i class="fab fa-google"></i><span>9. Google, Analytics & SEO</span></div>
+        <div class="form-grid">
+          <div class="form-group form-group-full"><label>Do you currently have?</label><div class="checkbox-group"><label class="checkbox-label"><input type="checkbox" name="google_assets[]" value="Google Business Profile"> Google Business Profile</label><label class="checkbox-label"><input type="checkbox" name="google_assets[]" value="Google Analytics"> Google Analytics</label><label class="checkbox-label"><input type="checkbox" name="google_assets[]" value="Google Search Console"> Google Search Console</label><label class="checkbox-label"><input type="checkbox" name="google_assets[]" value="Google Tag Manager"> Google Tag Manager</label><label class="checkbox-label"><input type="checkbox" name="google_assets[]" value="Google Ads Account"> Google Ads Account</label></div></div>
+          <div class="form-group form-group-full"><label>Google Account Email (for GMB access)</label><input type="email" name="gmb_email" placeholder="email@gmail.com"></div>
+          <div class="form-group form-group-full"><label>Google Business Profile Link</label><input type="url" name="gmb_link" placeholder="https://g.page/your-business"></div>
+        </div>
+        <div class="security-note" style="background:rgba(59,130,246,0.1);border-left:3px solid #3B82F6;padding:1rem;border-radius:12px;margin:1rem 0;font-size:0.8rem;color:#94A3B8;"><i class="fas fa-shield-alt" style="color:#3B82F6;margin-right:8px;"></i> We will send secure access instructions for Google account access. Please do not submit passwords.</div>
+      </div>
+
+      <!-- SECTION 10: Tools & Integrations -->
+      <div class="form-section" data-section="10">
+        <div class="section-title"><i class="fas fa-plug"></i><span>10. Tools & Integrations</span></div>
+        <div class="form-group form-group-full"><label>What are you currently using?</label><div class="checkbox-group"><label class="checkbox-label"><input type="checkbox" name="systems[]" value="DG Platform"> DG Platform (existing)</label><label class="checkbox-label"><input type="checkbox" name="systems[]" value="Stripe"> Stripe</label><label class="checkbox-label"><input type="checkbox" name="systems[]" value="Xero"> Xero</label><label class="checkbox-label"><input type="checkbox" name="systems[]" value="MYOB"> MYOB</label><label class="checkbox-label"><input type="checkbox" name="systems[]" value="Mailchimp"> Mailchimp</label><label class="checkbox-label"><input type="checkbox" name="systems[]" value="ActiveCampaign"> ActiveCampaign</label><label class="checkbox-label"><input type="checkbox" name="systems[]" value="HubSpot"> HubSpot</label><label class="checkbox-label"><input type="checkbox" name="systems[]" value="GoHighLevel"> GoHighLevel</label><label class="checkbox-label"><input type="checkbox" name="systems[]" value="ServiceM8"> ServiceM8</label><label class="checkbox-label"><input type="checkbox" name="systems[]" value="Jobber"> Jobber</label><label class="checkbox-label"><input type="checkbox" name="systems[]" value="Rank Math"> Rank Math / Yoast</label><label class="checkbox-label"><input type="checkbox" name="systems[]" value="None"> Starting fresh</label></div></div>
+        <p style="font-size:0.8rem;color:#94A3B8;margin-top:0.5rem;">We configure CRM, automations, SEO Pro, Social Pro, and Analytics Pro inside DG Platform — tell us what to migrate or replace.</p>
+      </div>
+
+      <!-- SECTION 11: Primary Business Goals -->
+      <div class="form-section" data-section="11">
+        <div class="section-title"><i class="fas fa-bullseye"></i><span>11. Primary Business Goals</span></div>
+        <div class="form-group form-group-full"><label>Select your main priorities</label><div class="checkbox-group"><label class="checkbox-label"><input type="checkbox" name="goals[]" value="More leads"> More leads</label><label class="checkbox-label"><input type="checkbox" name="goals[]" value="More sales"> More sales / bookings</label><label class="checkbox-label"><input type="checkbox" name="goals[]" value="More website traffic"> More website traffic</label><label class="checkbox-label"><input type="checkbox" name="goals[]" value="Better Google rankings"> Better Google rankings (SEO Pro)</label><label class="checkbox-label"><input type="checkbox" name="goals[]" value="AI visibility"> AI / ChatGPT visibility</label><label class="checkbox-label"><input type="checkbox" name="goals[]" value="Social media presence"> Social media growth (Social Pro)</label><label class="checkbox-label"><input type="checkbox" name="goals[]" value="Automate follow-ups"> Automate follow-ups &amp; workflows</label><label class="checkbox-label"><input type="checkbox" name="goals[]" value="More reviews"> More reviews</label><label class="checkbox-label"><input type="checkbox" name="goals[]" value="Better conversion rates"> Better conversion rates</label><label class="checkbox-label"><input type="checkbox" name="goals[]" value="Brand awareness"> Brand awareness</label></div></div>
+      </div>
+
+      <!-- SECTION 12: Assets & Access -->
+      <div class="form-section" data-section="12">
+        <div class="section-title"><i class="fas fa-check-circle"></i><span>12. Assets & Access to Provide</span></div>
+        <div class="form-group form-group-full"><div class="checkbox-group"><label class="checkbox-label"><input type="checkbox" name="deliverables[]" value="Logo files"> Logo files (vector preferred)</label><label class="checkbox-label"><input type="checkbox" name="deliverables[]" value="Brand colours"> Brand guidelines / colours</label><label class="checkbox-label"><input type="checkbox" name="deliverables[]" value="Team photos"> Team headshots</label><label class="checkbox-label"><input type="checkbox" name="deliverables[]" value="Service photos"> Product / property / service photos</label><label class="checkbox-label"><input type="checkbox" name="deliverables[]" value="Existing marketing materials"> Brochures / existing marketing</label><label class="checkbox-label"><input type="checkbox" name="deliverables[]" value="Google account access"> Google / Meta account access</label><label class="checkbox-label"><input type="checkbox" name="deliverables[]" value="DNS access"> Domain / DNS access</label><label class="checkbox-label"><input type="checkbox" name="deliverables[]" value="Content copy"> Website copy / page content</label></div></div>
+      </div>
+
+      <!-- SECTION 13: Team & Platform Users -->
+      <div class="form-section" data-section="13">
+        <div class="section-title"><i class="fas fa-users"></i><span>13. Team & Platform Users</span></div>
+        <div class="form-group form-group-full"><label>Who needs access to the DG Platform admin? (name, email, role)</label><textarea name="team_members" rows="4" placeholder="e.g.&#10;Jane Smith, jane@business.com, Admin&#10;Tom Lee, tom@business.com, Sales agent"></textarea></div>
+      </div>
+
+      <!-- SECTION 14: Additional Information -->
+      <div class="form-section" data-section="14">
+        <div class="section-title"><i class="fas fa-pen"></i><span>14. Additional Information</span></div>
+        <div class="form-group form-group-full"><label>Anything else we should know?</label><textarea name="special_requests" rows="3" placeholder="e.g., Specific goals, challenges, timeline expectations..."></textarea></div>
+        <div class="form-group"><label>How did you hear about us?</label><input type="text" name="referral_source" placeholder="e.g., Google, Facebook, Referral"></div>
+      </div>
+
+      <!-- Terms & Project Confirmation -->
+      <div class="terms-section">
+        <div class="terms-checkbox"><input type="checkbox" id="accuracyCheckbox" required><label for="accuracyCheckbox">I confirm that all information provided is accurate and understand that delays in providing required information, content, approvals or access may impact project timelines.</label></div>
+        <div class="terms-checkbox"><input type="checkbox" id="termsCheckbox" required><label for="termsCheckbox">I agree to the <a href="https://digitalgate.com.au/terms-conditions" target="_blank" style="color: #60A5FA;">Terms & Conditions</a> provided by DigitalGate.</label></div>
+        <div class="terms-checkbox"><input type="checkbox" id="smsCheckbox" required><label for="smsCheckbox">By providing my phone number, I agree to receive text messages about my project.</label></div>
+      </div>
+
+      <button type="submit" class="submit-btn"><i class="fas fa-paper-plane"></i> Submit Onboarding Information</button>
+
+      <div class="payment-note">
+        <p><i class="fas fa-clock"></i> After you submit, our team reviews your details and begins platform setup. Most projects go live within 2–3 business days once we have access and assets.</p>
+        <p style="margin-top:0.75rem;"><i class="fas fa-lock"></i> Already paid? You're in the right place — complete this form to start setup. Access your <a href="/client-portal/">client portal</a> anytime for updates.</p>
+      </div>
+    </form>
+  </div>
+
+  <script>
+    function addCompetitor() {
+      const container = document.getElementById('competitorsList');
+      const newRow = document.createElement('div');
+      newRow.className = 'competitor-row';
+      newRow.style.cssText = 'display:flex;gap:0.75rem;margin-bottom:0.75rem;';
+      newRow.innerHTML = `<input type="text" name="competitors[]" placeholder="Competitor name" style="flex:1;background:#0F172A;border:1px solid #334155;border-radius:12px;padding:0.75rem 1rem;color:#FFFFFF;"><input type="url" name="competitor_urls[]" placeholder="Website URL (optional)" style="flex:1;background:#0F172A;border:1px solid #334155;border-radius:12px;padding:0.75rem 1rem;color:#FFFFFF;"><button type="button" class="remove-email" onclick="this.parentElement.remove()" style="background:#EF4444;border:none;border-radius:8px;padding:0 1rem;color:white;cursor:pointer;">Remove</button>`;
+      container.appendChild(newRow);
+    }
+
+    // File upload visual feedback
+    document.getElementById('logo').addEventListener('change', function(e) {
+      if (e.target.files.length > 0) { const div = e.target.parentElement; div.innerHTML = `<i class="fas fa-check-circle" style="color: #10B981;"></i><p>${e.target.files[0].name}</p>`; }
+    });
+
+    const sections = document.querySelectorAll('.form-section');
+    const progressFill = document.getElementById('progressFill');
+    function updateProgress() {
+      let completed = 0;
+      sections.forEach(section => {
+        const inputs = section.querySelectorAll('input[required], select[required], textarea[required]');
+        let complete = true;
+        inputs.forEach(input => { if (!input.value.trim()) complete = false; });
+        if (complete) completed++;
+      });
+      progressFill.style.width = (completed / sections.length) * 100 + '%';
+    }
+    document.querySelectorAll('input, select, textarea').forEach(f => f.addEventListener('change', updateProgress));
+    updateProgress();
+  </script>
+</body>
+</html>

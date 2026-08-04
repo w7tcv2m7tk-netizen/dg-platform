@@ -11,15 +11,30 @@ if (!defined('ABSPATH')) {
 
 class DG_Reports {
 
+    private static function safe_count(callable $fn) {
+        try {
+            return (int) call_user_func($fn);
+        } catch (Throwable $e) {
+            return 0;
+        }
+    }
+
     public static function get_dashboard_stats() {
+        if (class_exists('DG_Activator')) {
+            DG_Activator::maybe_upgrade_schema();
+        }
         return [
-            'organisations' => DG_Organisations::count(),
-            'contacts' => DG_Contacts::count(),
-            'tasks_pending' => DG_Tasks::count('pending'),
-            'tasks_completed' => DG_Tasks::count('completed'),
-            'calendar_upcoming' => DG_Calendar::count_upcoming(),
-            'activities' => DG_Activities::count(),
-            'documents' => DG_Documents::count(),
+            'organisations' => self::safe_count([DG_Organisations::class, 'count']),
+            'contacts' => self::safe_count([DG_Contacts::class, 'count']),
+            'tasks_pending' => self::safe_count(function () {
+                return DG_Tasks::count('pending');
+            }),
+            'tasks_completed' => self::safe_count(function () {
+                return DG_Tasks::count('completed');
+            }),
+            'calendar_upcoming' => self::safe_count([DG_Calendar::class, 'count_upcoming']),
+            'activities' => self::safe_count([DG_Activities::class, 'count']),
+            'documents' => self::safe_count([DG_Documents::class, 'count']),
         ];
     }
 
@@ -28,24 +43,30 @@ class DG_Reports {
             [
                 'id' => 'core_contacts',
                 'label' => 'Contacts',
-                'value' => DG_Contacts::count(),
+                'value' => self::safe_count([DG_Contacts::class, 'count']),
                 'color' => '#1565C0',
             ],
             [
                 'id' => 'core_tasks',
                 'label' => 'Pending Tasks',
-                'value' => DG_Tasks::count('pending'),
+                'value' => self::safe_count(function () {
+                    return DG_Tasks::count('pending');
+                }),
                 'color' => '#F57C00',
             ],
             [
                 'id' => 'core_calendar',
                 'label' => 'Upcoming Events',
-                'value' => DG_Calendar::count_upcoming(),
+                'value' => self::safe_count([DG_Calendar::class, 'count_upcoming']),
                 'color' => '#7B1FA2',
             ],
         ];
 
-        return apply_filters('dg_platform_dashboard_widgets', $widgets);
+        try {
+            return apply_filters('dg_platform_dashboard_widgets', $widgets);
+        } catch (Throwable $e) {
+            return $widgets;
+        }
     }
 
     public static function export_csv($rows, $filename = 'report.csv') {

@@ -18,7 +18,19 @@ class DG_Legacy_Notices {
         ],
         'fluent-snippets/fluent-snippets.php' => [
             'label' => 'Fluent Snippets',
-            'reason' => 'Property/agent snippets are replaced by the DG Platform Real Estate module. Disable conflicting snippets or deactivate this plugin.',
+            'reason' => 'Use DG Platform → Site Tools → Snippets, or migrate logic into DG modules. Deactivate once migrated.',
+        ],
+        'fluent-smtp/fluent-smtp.php' => [
+            'label' => 'Fluent SMTP',
+            'reason' => 'SMTP is built into DG Platform → Site Tools → Email. Running both may conflict.',
+        ],
+        'wp-smushit/wp-smush.php' => [
+            'label' => 'Smush',
+            'reason' => 'Image compression is built into DG Platform → Site Tools → Images.',
+        ],
+        'google-site-kit/google-site-kit.php' => [
+            'label' => 'Google Site Kit',
+            'reason' => 'PageSpeed, SEO, and Analytics Pro cover most Site Kit features. Use Site Tools → Analytics.',
         ],
     ];
 

@@ -138,8 +138,9 @@ class DG_Marketing_Emails {
     }
 
     public static function initial_audit_email($name, $company_name, $audit_data, $audit_url) {
+        $first_name = class_exists('DG_Email_Names') ? DG_Email_Names::first_name($name) : $name;
         $inner = '<h1 style="color:#FFFFFF;font-size:24px;font-weight:700;margin:0 0 16px;letter-spacing:-0.02em;">Your Agency Visibility Audit</h1>';
-        $inner .= '<p style="color:#E2E8F0;font-size:16px;line-height:1.65;margin:0 0 16px;">Hi ' . esc_html($name) . ',</p>';
+        $inner .= '<p style="color:#E2E8F0;font-size:16px;line-height:1.65;margin:0 0 16px;">Hi ' . esc_html($first_name) . ',</p>';
         $inner .= '<p style="color:#E2E8F0;font-size:16px;line-height:1.65;margin:0 0 16px;">Thank you for requesting a Visibility Audit for <strong style="color:#60A5FA;">' . esc_html($company_name) . '</strong>.</p>';
         $inner .= self::score_table([
             'Overall Score' => $audit_data['overall_score'] . '%',

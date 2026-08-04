@@ -126,6 +126,12 @@ class DG_Admin_Dark_Mode {
     }
 
     public static function theme_css_vars() {
+        if (class_exists('DG_Site_Profile') && DG_Site_Profile::is_currumbin_hideaway()) {
+            return ':root,.admin-dark-mode{--dg-accent:#34D399;--dg-accent-muted:#6EE7B7;--dg-adminbar-icon:#34D399;--dg-bg-base:#0A0F1A;--dg-bg-panel:#141B2B;--dg-bg-elevated:#1E293B;--dg-border:#334155;--dg-text:#E2E8F0;--dg-text-muted:#94A3B8;}';
+        }
+        if (class_exists('DG_Site_Profile') && DG_Site_Profile::is_aetherra()) {
+            return ':root,.admin-dark-mode{--dg-accent:#A78BFA;--dg-accent-muted:#C4B5FD;--dg-adminbar-icon:#A78BFA;--dg-bg-base:#0A0A0F;--dg-bg-panel:#14141B;--dg-bg-elevated:#1E1E28;--dg-border:#334155;--dg-text:#E2E8F0;--dg-text-muted:#94A3B8;}';
+        }
         if (class_exists('DG_Site_Profile') && DG_Site_Profile::is_digitalgate()) {
             return ':root,.admin-dark-mode{--dg-accent:#3B82F6;--dg-accent-muted:#60A5FA;--dg-adminbar-icon:#60A5FA;--dg-bg-base:#0A0F1A;--dg-bg-panel:#141B2B;--dg-bg-elevated:#1E293B;--dg-border:#334155;--dg-text:#E2E8F0;--dg-text-muted:#94A3B8;}';
         }

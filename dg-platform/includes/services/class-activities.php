@@ -65,10 +65,15 @@ class DG_Activities {
 
     public static function recent($limit = 20) {
         global $wpdb;
-        return $wpdb->get_results($wpdb->prepare(
-            'SELECT * FROM ' . self::table() . ' ORDER BY created_at DESC LIMIT %d',
+        $table = self::table();
+        if ($wpdb->get_var($wpdb->prepare('SHOW TABLES LIKE %s', $table)) !== $table) {
+            return [];
+        }
+        $results = $wpdb->get_results($wpdb->prepare(
+            'SELECT * FROM ' . $table . ' ORDER BY created_at DESC LIMIT %d',
             $limit
         ));
+        return is_array($results) ? $results : [];
     }
 
     public static function count() {

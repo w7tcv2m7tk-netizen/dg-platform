@@ -316,7 +316,23 @@ const ACCOMMODATION_TOOLS = [
 
 
 
-const TOOLS = [...REAL_ESTATE_TOOLS, ...MARKETING_TOOLS, ...ACCOMMODATION_TOOLS];
+const CREATOR_TOOLS = [
+
+  {
+
+    name: "get_creator_summary",
+
+    description: "Aetherra: published content, drafts, pages, contacts.",
+
+    inputSchema: { type: "object", properties: {} },
+
+  },
+
+];
+
+
+
+const TOOLS = [...REAL_ESTATE_TOOLS, ...MARKETING_TOOLS, ...ACCOMMODATION_TOOLS, ...CREATOR_TOOLS];
 
 
 
@@ -482,6 +498,10 @@ async function handleTool(name, args) {
 
       return dgFetch("/accommodation/guests", { limit: args.limit || 25 });
 
+    case "get_creator_summary":
+
+      return dgFetch("/creator/summary");
+
     default:
 
       throw new Error(`Unknown tool: ${name}`);
@@ -494,7 +514,7 @@ async function handleTool(name, args) {
 
 const server = new Server(
 
-  { name: "dg-platform", version: "1.2.0" },
+  { name: "dg-platform", version: "1.3.0" },
 
   { capabilities: { tools: {} } }
 

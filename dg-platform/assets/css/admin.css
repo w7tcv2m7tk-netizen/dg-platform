@@ -204,3 +204,58 @@
     padding: 30px 0;
     color: var(--dg-text-muted);
 }
+
+.dg-app-launcher {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 14px;
+    margin: 0 0 24px;
+}
+
+.dg-launcher-group-title {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--dg-text-subtle);
+    margin: 24px 0 10px;
+}
+
+.dg-launcher-group-title:first-of-type {
+    margin-top: 8px;
+}
+
+.dg-app-card {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 18px;
+    background: var(--dg-bg-panel);
+    border: 1px solid var(--dg-border);
+    border-radius: 10px;
+    text-decoration: none;
+    color: var(--dg-text);
+    box-shadow: var(--dg-shadow);
+    transition: border-color 0.15s, transform 0.15s;
+}
+
+.dg-app-card:hover {
+    border-color: var(--dg-accent);
+    transform: translateY(-1px);
+    color: var(--dg-text);
+}
+
+.dg-app-card-title {
+    font-weight: 600;
+    font-size: 14px;
+}
+
+.dg-app-card-arrow {
+    color: var(--dg-accent);
+    font-size: 18px;
+}
+
+.dg-checkout-form.is-disabled {
+    opacity: 0.55;
+    pointer-events: none;
+}

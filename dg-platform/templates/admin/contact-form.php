@@ -40,8 +40,20 @@
                 </div>
                 <div class="full-width">
                     <label>Notes</label>
-                    <textarea name="notes" rows="4" class="large-text"><?php echo esc_textarea($contact->notes ?? ''); ?></textarea>
+                    <textarea name="notes" id="dg_contact_notes" rows="4" class="large-text"><?php echo esc_textarea($contact->notes ?? ''); ?></textarea>
                 </div>
+                <?php if ($contact && class_exists('DG_AI_Assist')) : ?>
+                <div class="full-width dg-ai-actions" style="margin-top:8px;">
+                    <label>Draft message with AI</label>
+                    <p>
+                        <button type="button" class="button button-secondary dg-ai-btn" data-ai-task="contact_draft" data-ai-contact-id="<?php echo (int) $contact->id; ?>" data-ai-channel="email" data-ai-purpose="follow_up" data-ai-target="#dg_ai_draft_body" data-ai-target-subject="dg_ai_draft_subject" data-ai-modal="1" data-ai-modal-title="Email draft">✨ Draft email</button>
+                        <button type="button" class="button button-secondary dg-ai-btn" data-ai-task="contact_draft" data-ai-contact-id="<?php echo (int) $contact->id; ?>" data-ai-channel="sms" data-ai-purpose="follow_up" data-ai-target="#dg_ai_draft_body" data-ai-modal="1" data-ai-modal-title="SMS draft">✨ Draft SMS</button>
+                        <span class="dg-ai-status"></span>
+                    </p>
+                    <input type="text" id="dg_ai_draft_subject" class="regular-text" placeholder="Email subject (for drafts)" style="margin-bottom:8px;">
+                    <textarea id="dg_ai_draft_body" rows="4" class="large-text" placeholder="AI draft appears here — copy into your email tool or log as activity."></textarea>
+                </div>
+                <?php endif; ?>
                 <?php if (!empty($custom_fields)) : ?>
                     <?php foreach ($custom_fields as $field) :
                         $key = $field['key'] ?? '';
@@ -59,7 +71,12 @@
                     <?php endforeach; ?>
                 <?php endif; ?>
             </div>
-            <p class="submit"><button type="submit" class="button button-primary">Save Contact</button></p>
+            <p class="submit">
+                <button type="submit" class="button button-primary">Save Contact</button>
+                <?php if ($contact && DG_Permissions::current_user_can('dg_manage_contacts')) : ?>
+                    <?php echo DG_Admin_Delete::link('dg_delete_contact', (int) $contact->id, 'Delete Contact'); ?>
+                <?php endif; ?>
+            </p>
         </form>
     </div>
 </div>

@@ -1,0 +1,593 @@
+/* CVH accommodation front-end — book-now & booking-confirmed shared styles */
+
+.dg-book-now-page,
+.dg-booking-confirmed-wrap {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 2rem 1.25rem 3rem;
+    font-family: 'Inter', system-ui, sans-serif;
+    color: #2F2F2F;
+}
+
+.dg-book-now-header,
+.dg-booking-confirmed-header {
+    text-align: center;
+    margin-bottom: 2rem;
+}
+
+.dg-cvh-badge {
+    display: inline-block;
+    background: rgba(185, 164, 138, 0.15);
+    padding: 4px 16px;
+    border-radius: 40px;
+    font-size: 11px;
+    font-weight: 600;
+    color: #B9A48A;
+    letter-spacing: 1px;
+    margin-bottom: 12px;
+}
+
+.dg-book-now-header h1,
+.dg-booking-confirmed-header h1 {
+    font-family: 'Cormorant Garamond', Georgia, serif;
+    font-size: clamp(2rem, 4vw, 2.6rem);
+    font-weight: 600;
+    color: #2F2F2F;
+    margin: 0 0 0.5rem;
+}
+
+.dg-book-now-header p,
+.dg-booking-confirmed-header p {
+    color: #5A6B67;
+    font-size: 15px;
+    margin: 0;
+}
+
+.dg-property-tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    justify-content: center;
+    margin-bottom: 1.5rem;
+}
+
+.dg-property-tab {
+    padding: 0.55rem 1.2rem;
+    border-radius: 999px;
+    border: 1px solid #E8DFD3;
+    background: #fff;
+    color: #4A5B59;
+    text-decoration: none;
+    font-size: 0.9rem;
+    font-weight: 600;
+    transition: all 0.2s;
+}
+
+.dg-property-tab.is-active,
+.dg-property-tab:hover {
+    background: #B9A48A;
+    border-color: #B9A48A;
+    color: #fff;
+}
+
+.dg-book-now-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 340px;
+    gap: 2rem;
+    align-items: start;
+}
+
+.dg-book-now-property h2 {
+    font-family: 'Cormorant Garamond', Georgia, serif;
+    font-size: 1.6rem;
+    margin: 0 0 1rem;
+    color: #1C2B2A;
+}
+
+.dg-book-now-main .dg-booking-calendar-wrap,
+.dg-book-now-main #dg-booking-form {
+    background: #fff;
+    border: 1px solid #E8DFD3;
+    border-radius: 20px;
+    padding: 1.25rem;
+    margin-bottom: 1rem;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
+}
+
+.dg-book-now-sidebar .dg-booking-summary-panel,
+.dg-book-now-sidebar .dg-acc-rates,
+.dg-book-now-sidebar .dg-acc-features,
+.dg-book-now-sidebar .dg-booking-rules {
+    margin-bottom: 1rem;
+}
+
+.dg-book-now-checkout .dg-booking-form-compact {
+    box-shadow: none;
+}
+
+.dg-booking-form-compact .dg-checkout-title {
+    text-align: left;
+}
+
+.dg-checkout-form.is-disabled {
+    opacity: 0.55;
+    pointer-events: none;
+}
+
+.dg-payment-buttons {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+}
+
+.dg-btn-payid,
+.dg-btn-card {
+    width: 100%;
+    padding: 12px 10px;
+    border: none;
+    border-radius: 40px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: opacity 0.2s ease, transform 0.15s ease;
+}
+
+.dg-btn-payid {
+    background: #2D4A2E;
+    color: #fff;
+}
+
+.dg-btn-card {
+    background: #B9A48A;
+    color: #fff;
+}
+
+.dg-btn-payid:hover,
+.dg-btn-card:hover {
+    opacity: 0.92;
+    transform: translateY(-1px);
+}
+
+.dg-btn-payid:disabled,
+.dg-btn-card:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.dg-stripe-panel {
+    background: #fff;
+    border: 1px solid #E0D6CC;
+    border-radius: 14px;
+    padding: 16px;
+    margin-top: 14px;
+    box-shadow: 0 2px 8px rgba(28, 43, 42, 0.06);
+}
+
+.dg-stripe-panel[hidden] {
+    display: none !important;
+}
+
+.dg-stripe-panel-label {
+    margin: 0 0 10px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: #1C2B2A;
+    letter-spacing: 0.02em;
+}
+
+.dg-stripe-card-mount,
+#dg-stripe-card-element {
+    padding: 14px 16px;
+    border: 2px solid #D8CEC4;
+    border-radius: 12px;
+    background: #fff;
+    min-height: 52px;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.dg-stripe-card-mount:focus-within,
+#dg-stripe-card-element:focus-within {
+    border-color: #B9A48A;
+    box-shadow: 0 0 0 3px rgba(185, 164, 138, 0.2);
+}
+
+.dg-stripe-panel-note {
+    margin: 10px 0 0;
+    font-size: 0.72rem;
+    color: #6B7A78;
+    text-align: center;
+}
+
+.dg-stripe-errors {
+    color: #9b1c1c;
+    font-size: 0.85rem;
+    margin-top: 8px;
+    min-height: 1em;
+}
+
+.dg-payment-buttons .dg-btn-card.is-active {
+    box-shadow: inset 0 0 0 2px #fff, 0 0 0 2px #B9A48A;
+}
+
+@media (max-width: 480px) {
+    .dg-payment-buttons {
+        grid-template-columns: 1fr;
+    }
+}
+
+.dg-book-now-main .dg-booking-calendar-wrap,
+.dg-book-now-main #dg-booking-form {
+    background: #fff;
+    border: 1px solid #E8DFD3 !important;
+    border-radius: 20px !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
+}
+
+.dg-booking-confirmed-wrap {
+    max-width: 700px;
+}
+
+.dg-booking-confirmed-card {
+    background: #fff;
+    border-radius: 24px;
+    padding: 24px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
+    border: 1px solid #E8DFD3;
+    margin-bottom: 20px;
+}
+
+.dg-booking-details-card h3 {
+    font-family: 'Cormorant Garamond', Georgia, serif;
+    font-size: 18px;
+    font-weight: 600;
+    color: #2F2F2F;
+    margin: 0 0 14px;
+    border-left: 3px solid #B9A48A;
+    padding-left: 12px;
+}
+
+.dg-booking-details-list p {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    font-size: 13px;
+    color: #2F2F2F;
+    padding: 8px 0;
+    border-bottom: 1px solid #E8DFD3;
+    margin: 0;
+}
+
+.dg-booking-details-list strong {
+    color: #B9A48A;
+    min-width: 110px;
+}
+
+.dg-booking-total {
+    font-size: 18px;
+    font-weight: 700;
+    color: #B9A48A !important;
+}
+
+.dg-payid-card {
+    position: relative;
+    border: 2px solid #B9A48A;
+    border-radius: 20px;
+    padding: 20px;
+    margin-bottom: 16px;
+    background: linear-gradient(135deg, #FDF9F2 0%, #F7F4EE 100%);
+}
+
+.dg-payid-preferred {
+    position: absolute;
+    top: -12px;
+    right: 20px;
+    background: #B9A48A;
+    color: #fff;
+    font-size: 10px;
+    font-weight: 700;
+    padding: 4px 12px;
+    border-radius: 30px;
+}
+
+.dg-payid-head {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 16px;
+}
+
+.dg-payid-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: #B9A48A;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 22px;
+}
+
+.dg-payid-head strong {
+    display: block;
+    font-size: 17px;
+    color: #2F2F2F;
+}
+
+.dg-payid-head p {
+    margin: 2px 0 0;
+    font-size: 11px;
+    color: #5A6B67;
+}
+
+.dg-payid-body {
+    background: #fff;
+    border-radius: 14px;
+    padding: 16px;
+    border: 1px solid #E8DFD3;
+}
+
+.dg-payid-highlight,
+.dg-payid-row {
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-bottom: 12px;
+}
+
+.dg-payid-body span {
+    display: block;
+    font-size: 10px;
+    color: #8FA3A0;
+    text-transform: uppercase;
+}
+
+.dg-payid-body strong {
+    display: block;
+    font-size: 15px;
+    color: #B9A48A;
+    font-family: monospace;
+}
+
+.dg-payid-ref {
+    background: rgba(185, 164, 138, 0.1);
+    border-radius: 10px;
+    padding: 10px;
+    border-left: 3px solid #B9A48A;
+}
+
+.dg-copy-payid {
+    margin-top: 14px;
+    width: 100%;
+    background: transparent;
+    border: 1px solid #B9A48A;
+    color: #B9A48A;
+    font-weight: 600;
+    font-size: 13px;
+    padding: 10px;
+    border-radius: 50px;
+    cursor: pointer;
+}
+
+.dg-stripe-card {
+    border: 1px solid #E8DFD3;
+    border-radius: 20px;
+    padding: 18px;
+    opacity: 0.9;
+    margin-bottom: 16px;
+}
+
+.dg-stripe-head {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+}
+
+.dg-stripe-alt {
+    font-size: 9px;
+    background: #E8DFD3;
+    padding: 2px 8px;
+    border-radius: 20px;
+}
+
+.dg-stripe-note {
+    font-size: 12px;
+    color: #5A6B67;
+    margin: 0;
+}
+
+.dg-booking-info-note {
+    background: rgba(185, 164, 138, 0.08);
+    border-radius: 14px;
+    padding: 12px;
+    margin: 16px 0;
+    text-align: center;
+}
+
+.dg-booking-info-note p {
+    font-size: 11px;
+    color: #5A6B67;
+    margin: 0;
+}
+
+.dg-booking-footer-bar {
+    background: #F7F4EE;
+    border-radius: 16px;
+    padding: 14px;
+    font-size: 11px;
+    color: #5A6B67;
+    margin-bottom: 1rem;
+}
+
+.dg-booking-footer-bar div {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 8px;
+}
+
+.dg-booking-footer-bar p {
+    border-top: 1px solid #E8DFD3;
+    margin: 10px 0 0;
+    padding-top: 10px;
+    text-align: center;
+}
+
+.dg-booking-confirmed-actions {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+.dg-btn-home,
+.dg-btn-secondary {
+    display: inline-block;
+    padding: 12px 28px;
+    border-radius: 999px;
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 14px;
+}
+
+.dg-btn-home {
+    background: #B9A48A;
+    color: #fff;
+}
+
+.dg-btn-secondary {
+    background: transparent;
+    color: #B9A48A;
+    border: 1px solid #B9A48A;
+}
+
+@media (max-width: 900px) {
+    .dg-book-now-layout {
+        grid-template-columns: 1fr;
+    }
+    .dg-booking-details-list p {
+        flex-direction: column;
+        gap: 4px;
+    }
+    .dg-booking-details-list strong {
+        min-width: auto;
+    }
+}
+
+/* Stay page cards + Airbnb reviews */
+.dg-accommodation-grid-wrapper {
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.dg-accommodation-card {
+    background: #fff;
+    border-radius: 24px;
+    overflow: hidden;
+    border: 1px solid #E0D6CC;
+    display: flex;
+    flex-direction: column;
+}
+
+.dg-card-reviews-wrap {
+    padding: 0 1.5rem 1.5rem;
+}
+
+.dg-airbnb-reviews {
+    margin-top: 0.5rem;
+    padding-top: 1rem;
+    border-top: 1px solid #E8DFD3;
+}
+
+.dg-airbnb-reviews-header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 0.75rem;
+}
+
+.dg-airbnb-reviews-badge {
+    background: #ff5a5f;
+    color: #fff;
+    font-size: 0.65rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 0.25rem 0.6rem;
+    border-radius: 999px;
+}
+
+.dg-airbnb-reviews-title {
+    font-family: 'Cormorant Garamond', Georgia, serif;
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #1C2B2A;
+    margin: 0;
+}
+
+.dg-airbnb-reviews-grid {
+    display: grid;
+    gap: 0.75rem;
+}
+
+.dg-airbnb-review-card {
+    background: #F7F4EE;
+    border-radius: 12px;
+    padding: 0.85rem 1rem;
+    text-align: left;
+}
+
+.dg-airbnb-review-top {
+    display: flex;
+    justify-content: space-between;
+    gap: 0.5rem;
+    align-items: start;
+    margin-bottom: 0.35rem;
+}
+
+.dg-airbnb-review-author {
+    color: #1C2B2A;
+    font-size: 0.9rem;
+}
+
+.dg-airbnb-review-stars {
+    color: #B9A48A;
+    font-size: 0.85rem;
+    white-space: nowrap;
+}
+
+.dg-airbnb-review-date {
+    font-size: 0.75rem;
+    color: #6B7A78;
+    margin-bottom: 0.35rem;
+}
+
+.dg-airbnb-review-text {
+    font-size: 0.85rem;
+    line-height: 1.55;
+    color: #4A5B59;
+}
+
+.dg-airbnb-review-text p {
+    margin: 0;
+}
+
+.dg-checkin-details-card .dg-checkin-instructions {
+    line-height: 1.6;
+    margin: 12px 0;
+}
+
+.dg-checkin-details-card .dg-checkin-wifi,
+.dg-checkin-details-card .dg-checkin-times,
+.dg-checkin-details-card .dg-checkin-email-note {
+    font-size: 0.9rem;
+    color: #4A5B59;
+}
+
+.dg-checkin-details-card .dg-checkin-email-note {
+    margin-top: 16px;
+    padding-top: 12px;
+    border-top: 1px solid #E8DFD3;
+}

@@ -125,6 +125,7 @@ class DG_Acc_Dev_API {
                 'housekeeping_status' => get_post_meta($p->ID, 'dg_housekeeping_status', true) ?: 'unknown',
                 'listing_status' => class_exists('DG_Acc_Listing_Status') ? DG_Acc_Listing_Status::get($p->ID) : 'bookable',
                 'checkin_slug' => get_post_meta($p->ID, 'dg_checkin_slug', true),
+                'cleaning_form_url' => class_exists('DG_Acc_Cleaning') ? DG_Acc_Cleaning::cleaning_url_for_property($p->ID) : '',
             ];
         }
         return rest_ensure_response(['properties' => $properties, 'total' => count($properties)]);
@@ -167,9 +168,3 @@ class DG_Acc_Dev_API {
         return $out;
     }
 }
-
-add_action('rest_api_init', function () {
-    if (class_exists('DG_Acc_Dev_API')) {
-        DG_Acc_Dev_API::register_routes();
-    }
-});

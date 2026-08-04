@@ -45,6 +45,9 @@ $automations = DG_Automation::list();
                             <input type="hidden" name="is_active" value="<?php echo $auto->is_active ? '0' : '1'; ?>">
                             <button type="submit" class="button button-small"><?php echo $auto->is_active ? 'Deactivate' : 'Activate'; ?></button>
                         </form>
+                        <?php if (DG_Permissions::current_user_can('dg_manage_automations')) : ?>
+                            <?php echo DG_Admin_Delete::link('dg_delete_automation', (int) $auto->id); ?>
+                        <?php endif; ?>
                     </td>
                 </tr>
             <?php endforeach; else : ?>
