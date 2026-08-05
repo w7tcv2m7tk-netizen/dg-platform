@@ -1121,6 +1121,128 @@ class DG_Client_Portal {
 
 
 
+    /**
+     * Resolve portal profile for Next.js / Clerk by email (server-to-server).
+     *
+     * @return array<string,mixed>
+     */
+    public static function profile_for_portal_email($email, $clerk_user_id = '') {
+        $email = sanitize_email($email);
+        $clerk_user_id = sanitize_text_field($clerk_user_id);
+
+        $result = [
+            'linked' => false,
+            'email' => $email,
+            'name' => '',
+            'contact_id' => 0,
+            'organisation_id' => 0,
+            'org_name' => '',
+            'purchase_label' => '',
+            'clerk_user_id' => $clerk_user_id,
+            'setup' => [
+                'account_created' => true,
+                'payment_done' => false,
+                'onboarding_done' => false,
+                'platform_live' => false,
+            ],
+        ];
+
+        if ($email === '' || !class_exists('DG_Contacts')) {
+            return $result;
+        }
+
+        $contact = null;
+        $contact_id = 0;
+
+        if ($clerk_user_id !== '') {
+            $users = get_users([
+                'meta_key' => 'clerk_user_id',
+                'meta_value' => $clerk_user_id,
+                'number' => 1,
+                'fields' => 'ID',
+            ]);
+            if (!empty($users)) {
+                $contact_id = (int) get_user_meta((int) $users[0], 'dg_contact_id', true);
+                if ($contact_id) {
+                    $contact = DG_Contacts::get($contact_id);
+                }
+            }
+        }
+
+        if (!$contact) {
+            $wp_user_id = email_exists($email);
+            if ($wp_user_id) {
+                $contact_id = (int) get_user_meta((int) $wp_user_id, 'dg_contact_id', true);
+                if ($contact_id) {
+                    $contact = DG_Contacts::get($contact_id);
+                }
+            }
+        }
+
+        if (!$contact) {
+            $contact = DG_Contacts::get_by_email($email);
+            if ($contact) {
+                $contact_id = (int) $contact->id;
+            }
+        }
+
+        if (!$contact || !$contact_id) {
+            return $result;
+        }
+
+        if ($clerk_user_id !== '' && class_exists('DG_Entity_Meta')) {
+            DG_Entity_Meta::set('contact', $contact_id, 'clerk_user_id', $clerk_user_id);
+        }
+
+        $org_id = !empty($contact->organisation_id) ? (int) $contact->organisation_id : 0;
+        $display_name = trim((string) ($contact->first_name ?? '') . ' ' . (string) ($contact->last_name ?? ''));
+        if ($display_name === '') {
+            $display_name = explode('@', $email)[0];
+        }
+
+        $ensure = self::ensure_user($email, $display_name, $contact_id, $org_id);
+        if (!empty($ensure['user_id']) && $clerk_user_id !== '') {
+            update_user_meta((int) $ensure['user_id'], 'clerk_user_id', $clerk_user_id);
+        }
+
+        $tags = is_string($contact->tags ?? null) ? $contact->tags : '';
+        $org_name = '';
+        if ($org_id && class_exists('DG_Organisations')) {
+            $org = DG_Organisations::get($org_id);
+            if ($org && !empty($org->name)) {
+                $org_name = (string) $org->name;
+            }
+        }
+
+        $purchase_label = '';
+        if (class_exists('DG_Entity_Meta')) {
+            $meta = DG_Entity_Meta::get('contact', $contact_id);
+            $stripe = is_array($meta['stripe_purchase'] ?? null) ? $meta['stripe_purchase'] : [];
+            if (!empty($stripe['purchase_label'])) {
+                $purchase_label = (string) $stripe['purchase_label'];
+            }
+        }
+
+        return [
+            'linked' => true,
+            'email' => $email,
+            'name' => $display_name,
+            'contact_id' => $contact_id,
+            'organisation_id' => $org_id,
+            'org_name' => $org_name,
+            'purchase_label' => $purchase_label,
+            'clerk_user_id' => $clerk_user_id,
+            'setup' => [
+                'account_created' => true,
+                'payment_done' => stripos($tags, 'Payment Received') !== false,
+                'onboarding_done' => stripos($tags, 'Onboarding Complete') !== false,
+                'platform_live' => stripos($tags, 'Platform Live') !== false,
+            ],
+        ];
+    }
+
+
+
     public static function password_set_link($user_id, $email) {
 
         $reset_key = get_password_reset_key(get_userdata($user_id));

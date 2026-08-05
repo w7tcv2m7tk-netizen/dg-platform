@@ -31,6 +31,7 @@ class DG_Site_Tools {
         self::require_file('class-site-tools-cloudflare.php');
         self::require_file('class-site-tools-google.php');
         self::require_file('class-site-tools-health.php');
+        self::require_file('class-site-tools-dev-api.php');
 
         if (!self::require_file('class-site-tools-admin.php')) {
             return;
