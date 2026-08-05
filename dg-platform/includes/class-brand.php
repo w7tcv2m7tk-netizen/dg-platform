@@ -23,6 +23,31 @@ class DG_Brand {
         return self::asset_url('icon-light.png');
     }
 
+    /**
+     * Icon Light Door — canonical mark for all HTML email templates.
+     * Always icon-light.png (never icon-dark / icon-navy).
+     */
+    public static function icon_email_url() {
+        return self::icon_light_url();
+    }
+
+    /**
+     * Standard &lt;img&gt; for Icon Light Door in HTML email (table-safe inline styles).
+     *
+     * @param int    $width       Pixel width.
+     * @param string $extra_style Additional CSS (no trailing semicolon required).
+     */
+    public static function email_icon_img($width = 48, $extra_style = '') {
+        $url = self::icon_email_url();
+        $w = max(16, (int) $width);
+        $style = 'max-width:' . $w . 'px;height:auto;display:inline-block;vertical-align:middle;';
+        if ($extra_style !== '') {
+            $style .= $extra_style;
+        }
+
+        return '<img src="' . esc_url($url) . '" alt="" width="' . $w . '" style="' . esc_attr($style) . '">';
+    }
+
     public static function logo_light_url() {
         return self::asset_url('logo-light.png');
     }
@@ -60,5 +85,17 @@ class DG_Brand {
             'icon' => self::icon_light_url(),
             'logo' => self::logo_light_url(),
         ];
+    }
+
+    /** Email header lockup — Icon Light Door beside wordmark. */
+    public static function email_header_lockup($logo_width = 200, $icon_width = 36) {
+        $logo_w = max(80, (int) $logo_width);
+        $icon = self::email_icon_img($icon_width, 'margin:0;');
+        $logo = '<img src="' . esc_url(self::logo_light_url()) . '" alt="DigitalGate" width="' . $logo_w . '" style="max-width:' . $logo_w . 'px;height:auto;display:block;margin:0;">';
+
+        return '<table role="presentation" cellpadding="0" cellspacing="0" align="center" style="margin:0 auto 12px;">'
+            . '<tr><td style="padding-right:10px;vertical-align:middle;">' . $icon . '</td>'
+            . '<td style="vertical-align:middle;text-align:left;">' . $logo . '</td></tr>'
+            . '</table>';
     }
 }

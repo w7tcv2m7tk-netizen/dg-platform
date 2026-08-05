@@ -54,12 +54,12 @@ class DG_Marketing_Emails {
             . '<table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="background:#0A0F1A;padding:32px 16px;"><tr><td align="center">'
             . '<table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="max-width:600px;background:#141B2B;border:1px solid rgba(59,130,246,0.12);border-radius:24px;overflow:hidden;">'
             . '<tr><td style="padding:32px 32px 24px;text-align:center;border-bottom:1px solid rgba(255,255,255,0.06);">'
-            . '<img src="' . esc_url(class_exists('DG_Brand') ? DG_Brand::logo_light_url() : '') . '" alt="DigitalGate" width="200" style="max-width:200px;height:auto;display:block;margin:0 auto 12px;">'
+            . (class_exists('DG_Brand') ? DG_Brand::email_header_lockup(200, 36) : '')
             . '<div style="font-size:12px;font-weight:600;color:#94A3B8;letter-spacing:0.12em;text-transform:uppercase;">AI Visibility &amp; Lead Generation</div>'
             . '</td></tr>'
             . '<tr><td style="padding:32px;font-family:Inter,-apple-system,BlinkMacSystemFont,\'Segoe UI\',sans-serif;color:#E2E8F0;">' . $inner_html . '</td></tr>'
             . '<tr><td style="padding:24px 32px 32px;background:#0A0F1A;border-top:1px solid rgba(255,255,255,0.06);text-align:center;">'
-            . '<img src="' . esc_url(class_exists('DG_Brand') ? DG_Brand::icon_light_url() : '') . '" alt="" width="48" style="max-width:48px;height:auto;opacity:0.7;margin-bottom:12px;">'
+            . (class_exists('DG_Brand') ? DG_Brand::email_icon_img(48, 'opacity:0.85;margin-bottom:12px;display:block;margin-left:auto;margin-right:auto;') : '')
             . '<p style="margin:0 0 6px;font-size:13px;line-height:1.6;color:#64748B;">'
             . '© ' . date('Y') . ' DigitalGate. All rights reserved.'
             . '</p>'
