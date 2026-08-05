@@ -31,6 +31,11 @@ class DG_Brand {
         return self::icon_light_url();
     }
 
+    /** Icon Light Door for dark UI — transparent background, visible on slate/navy shells */
+    public static function icon_ui_url() {
+        return self::asset_url('icon-light-ui.png');
+    }
+
     /**
      * Standard &lt;img&gt; for Icon Light Door in HTML email (table-safe inline styles).
      *

@@ -75,7 +75,7 @@ $is_builder = !empty($ctx['is_builder']);
 
     <div class="portal-logo">
         <?php if (class_exists('DG_Brand')) : ?>
-            <img src="<?php echo esc_url(DG_Brand::icon_email_url()); ?>" alt="" class="portal-logo-mark" aria-hidden="true">
+            <img src="<?php echo esc_url(DG_Brand::icon_ui_url()); ?>" alt="" class="portal-logo-mark" aria-hidden="true">
             <img src="<?php echo esc_url(DG_Brand::logo_light_url()); ?>" alt="DigitalGate" class="portal-logo-wordmark">
         <?php else : ?>
             <h1>DigitalGate</h1>
