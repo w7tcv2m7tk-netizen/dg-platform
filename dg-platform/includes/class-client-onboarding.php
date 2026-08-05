@@ -19,7 +19,7 @@ class DG_Client_Onboarding {
 
     /** @var array<string,string> */
     private static $scalar_fields = [
-        'business_name', 'street_address', 'city', 'state', 'postcode', 'country',
+        'business_name', 'abn', 'gst_number', 'industry_license_number', 'street_address', 'city', 'state', 'postcode', 'country',
         'phone', 'business_email', 'business_hours',
         'contact_name', 'position', 'contact_phone', 'contact_email', 'contact_method',
         'services', 'packages', 'service_areas', 'about_business', 'ideal_customer',

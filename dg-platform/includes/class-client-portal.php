@@ -1122,6 +1122,66 @@ class DG_Client_Portal {
 
 
     /**
+     * Onboarding submission + logo for Gen 2 platform preconfiguration.
+     *
+     * @return array<string,mixed>
+     */
+    public static function onboarding_profile_for_contact($contact_id, $org_id = 0) {
+        $data = [];
+        if (class_exists('DG_Entity_Meta')) {
+            $contact_meta = DG_Entity_Meta::get('contact', (int) $contact_id);
+            if (!empty($contact_meta['onboarding_submission']) && is_array($contact_meta['onboarding_submission'])) {
+                $data = $contact_meta['onboarding_submission'];
+            } elseif ($org_id && class_exists('DG_Entity_Meta')) {
+                $org_meta = DG_Entity_Meta::get('organisation', (int) $org_id);
+                if (!empty($org_meta['onboarding_submission']) && is_array($org_meta['onboarding_submission'])) {
+                    $data = $org_meta['onboarding_submission'];
+                }
+            }
+        }
+
+        $logo_url = '';
+        if (class_exists('DG_Documents')) {
+            $docs = DG_Documents::get_for_entity('contact', (int) $contact_id);
+            foreach ($docs as $doc) {
+                if (!empty($doc->attachment_id) && stripos((string) $doc->title, 'logo') !== false) {
+                    $url = wp_get_attachment_url((int) $doc->attachment_id);
+                    if ($url) {
+                        $logo_url = $url;
+                        break;
+                    }
+                }
+            }
+        }
+
+        return [
+            'business_name' => $data['business_name'] ?? '',
+            'contact_name' => $data['contact_name'] ?? '',
+            'contact_email' => $data['contact_email'] ?? '',
+            'contact_phone' => $data['contact_phone'] ?? '',
+            'phone' => $data['phone'] ?? '',
+            'business_email' => $data['business_email'] ?? '',
+            'abn' => $data['abn'] ?? '',
+            'gst_number' => $data['gst_number'] ?? '',
+            'industry_license_number' => $data['industry_license_number'] ?? '',
+            'position' => $data['position'] ?? '',
+            'street_address' => $data['street_address'] ?? '',
+            'city' => $data['city'] ?? '',
+            'state' => $data['state'] ?? '',
+            'postcode' => $data['postcode'] ?? '',
+            'country' => $data['country'] ?? '',
+            'website_url' => $data['current_website_url'] ?? ($data['website_url'] ?? ''),
+            'industry_vertical' => $data['industry_vertical'] ?? '',
+            'platform_tier' => $data['platform_tier'] ?? '',
+            'purchased_apps' => is_array($data['purchased_apps'] ?? null) ? $data['purchased_apps'] : [],
+            'purchased_premium' => is_array($data['purchased_premium'] ?? null) ? $data['purchased_premium'] : [],
+            'purchased_addons' => is_array($data['purchased_addons'] ?? null) ? $data['purchased_addons'] : [],
+            'logo_url' => $logo_url,
+            'brand_colours' => $data['brand_colours'] ?? '',
+        ];
+    }
+
+    /**
      * Resolve portal profile for Next.js / Clerk by email (server-to-server).
      *
      * @return array<string,mixed>
@@ -1238,6 +1298,7 @@ class DG_Client_Portal {
                 'onboarding_done' => stripos($tags, 'Onboarding Complete') !== false,
                 'platform_live' => stripos($tags, 'Platform Live') !== false,
             ],
+            'onboarding' => self::onboarding_profile_for_contact($contact_id, $org_id),
         ];
     }
 
