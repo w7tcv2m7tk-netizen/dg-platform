@@ -55,6 +55,16 @@ class DG_RE_Vendor_Leads {
         }
 
         $property_address = sanitize_text_field($data['property_address'] ?? '');
+        if (class_exists('DG_Address_Resolver') && $property_address !== '') {
+            $resolved = DG_Address_Resolver::resolve($property_address);
+            if (!is_wp_error($resolved)) {
+                $property_address = $resolved['formatted'];
+                $data['property_suburb'] = $resolved['suburb'];
+                $data['property_state'] = $resolved['state'];
+                $data['property_postcode'] = $resolved['postcode'];
+                $data['property_address_metadata'] = $resolved['metadata'];
+            }
+        }
         $source = sanitize_text_field($data['source'] ?? 'website');
         $status = sanitize_text_field($data['status'] ?? 'new');
         $notes = sanitize_textarea_field($data['notes'] ?? '');
@@ -76,10 +86,14 @@ class DG_RE_Vendor_Leads {
             'contact_id' => $contact_id,
             'title' => $title,
             'status' => 'active',
-            'metadata' => wp_json_encode([
+            'metadata' => wp_json_encode(array_filter([
                 'source' => $source,
                 'property_address' => $property_address,
-            ]),
+                'property_suburb' => $data['property_suburb'] ?? null,
+                'property_state' => $data['property_state'] ?? null,
+                'property_postcode' => $data['property_postcode'] ?? null,
+                'property_address_metadata' => $data['property_address_metadata'] ?? null,
+            ])),
         ]);
         $pipeline_id = (int) $wpdb->insert_id;
 

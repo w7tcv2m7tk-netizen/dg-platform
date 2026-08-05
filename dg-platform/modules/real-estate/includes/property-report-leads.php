@@ -197,10 +197,40 @@ function roe_crm_property_report_form_shortcode() {
             statusEl.className = 'roe-form-status is-visible is-' + type;
         }
 
-        addressForm.addEventListener('submit', function(e) {
+        addressForm.addEventListener('submit', async function(e) {
             e.preventDefault();
-            propertyAddress = document.getElementById('roePropertyAddress').value.trim();
-            if (!propertyAddress) return;
+            let raw = document.getElementById('roePropertyAddress').value.trim();
+            if (!raw) return;
+
+            const findBtn = addressForm.querySelector('button[type="submit"]');
+            if (findBtn) {
+                findBtn.disabled = true;
+                findBtn.textContent = 'Finding address…';
+            }
+
+            try {
+                const resolvePayload = new URLSearchParams();
+                resolvePayload.append('action', 'dg_resolve_address');
+                resolvePayload.append('rawAddress', raw);
+                const resolveRes = await fetch(<?php echo wp_json_encode($ajax_url); ?>, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' },
+                    body: resolvePayload.toString()
+                });
+                const resolveJson = await resolveRes.json();
+                if (resolveJson && resolveJson.success && resolveJson.data && resolveJson.data.data) {
+                    raw = resolveJson.data.data.formatted || raw;
+                    document.getElementById('roePropertyAddress').value = raw;
+                }
+            } catch (err) {
+                // Keep typed address if lookup fails
+            }
+
+            propertyAddress = raw;
+            if (findBtn) {
+                findBtn.disabled = false;
+                findBtn.textContent = 'Get My Free Report';
+            }
             stepAddress.style.display = 'none';
             stepContact.style.display = 'block';
         });

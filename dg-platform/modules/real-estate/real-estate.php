@@ -50,6 +50,7 @@ class DG_Module_RealEstate {
         add_action('admin_post_dg_re_delete_vendor_lead', [$this, 'handle_delete_vendor_lead']);
         add_action('admin_post_dg_re_delete_buyer_lead', [$this, 'handle_delete_buyer_lead']);
         add_action('wp_enqueue_scripts', [$this, 'enqueue_frontend_assets']);
+        add_action('admin_enqueue_scripts', [$this, 'enqueue_admin_assets']);
         
         // AJAX handlers
         add_action('wp_ajax_roe_realty_save_lead', [$this, 'save_lead_callback']);
@@ -503,6 +504,37 @@ class DG_Module_RealEstate {
             'ajaxUrl' => admin_url('admin-ajax.php'),
         ]);
         wp_enqueue_script('roe-frontend');
+
+        wp_register_script(
+            'dg-address-finder',
+            DG_PLATFORM_URL . 'assets/js/dg-address-finder.js',
+            [],
+            DG_PLATFORM_VERSION,
+            true
+        );
+        wp_enqueue_script('dg-address-finder');
+    }
+
+    public function enqueue_admin_assets($hook) {
+        if (!in_array($hook, ['post.php', 'post-new.php'], true)) {
+            return;
+        }
+
+        $screen = function_exists('get_current_screen') ? get_current_screen() : null;
+        if (!$screen || $screen->post_type !== 'property') {
+            return;
+        }
+
+        wp_enqueue_script(
+            'dg-address-finder',
+            DG_PLATFORM_URL . 'assets/js/dg-address-finder.js',
+            [],
+            DG_PLATFORM_VERSION,
+            true
+        );
+        wp_localize_script('dg-address-finder', 'dgReForms', [
+            'ajaxUrl' => admin_url('admin-ajax.php'),
+        ]);
     }
 
     public function form_nonces_callback() {
@@ -720,6 +752,16 @@ class DG_Module_RealEstate {
         foreach ($fields as $field) {
             if (isset($_POST[$field])) {
                 update_post_meta($post_id, $field, in_array($field, ['roe_property_description', 'roe_property_features']) ? wp_kses_post(wp_unslash($_POST[$field])) : sanitize_text_field(wp_unslash($_POST[$field])));
+            }
+        }
+
+        if (class_exists('DG_Address_Resolver')) {
+            $address = get_post_meta($post_id, 'roe_property_address', true);
+            $suburb = get_post_meta($post_id, 'roe_property_suburb', true);
+            $state = get_post_meta($post_id, 'roe_property_state', true);
+            $postcode = get_post_meta($post_id, 'roe_property_postcode', true);
+            if ($address) {
+                DG_Address_Resolver::apply_to_property_meta($post_id, $address, $suburb, $state, $postcode);
             }
         }
     }

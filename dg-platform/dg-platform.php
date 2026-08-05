@@ -3,7 +3,7 @@
  * Plugin Name: DG Platform
  * Plugin URI: https://digitalgate.com.au
  * Description: DigitalGate Business Platform Core - Modular CRM with Industry Modules
- * Version: 10.45.0
+ * Version: 10.46.0
  * Author: DigitalGate
  * Author URI: https://digitalgate.com.au
  * Text Domain: dg-platform
@@ -27,6 +27,7 @@ define('DG_MODULES_PATH', DG_PLATFORM_PATH . 'modules/');
 define('DG_INCLUDES_PATH', DG_PLATFORM_PATH . 'includes/');
 define('DG_REST_NAMESPACE', 'digitalgate/v1');
 
+require_once DG_INCLUDES_PATH . 'class-brand.php';
 require_once DG_INCLUDES_PATH . 'class-activator.php';
 require_once DG_INCLUDES_PATH . 'class-site-profile.php';
 require_once DG_INCLUDES_PATH . 'class-site-portal-config.php';
@@ -36,6 +37,8 @@ require_once DG_INCLUDES_PATH . 'class-permissions.php';
 require_once DG_INCLUDES_PATH . 'services/class-email-names.php';
 require_once DG_INCLUDES_PATH . 'services/class-email-brand.php';
 require_once DG_INCLUDES_PATH . 'services/class-contacts.php';
+require_once DG_INCLUDES_PATH . 'services/class-address-resolver.php';
+require_once DG_INCLUDES_PATH . 'class-address-api.php';
 require_once DG_INCLUDES_PATH . 'services/class-contacts-vcard.php';
 require_once DG_INCLUDES_PATH . 'services/class-organisations.php';
 require_once DG_INCLUDES_PATH . 'services/class-activities.php';

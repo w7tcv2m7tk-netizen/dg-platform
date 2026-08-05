@@ -402,8 +402,9 @@ class DG_Module_Marketing {
     // ============================================================
     
     private function generate_audit_html($company, $data) {
-        $logo_url = 'https://digitalgate.com.au/wp-content/uploads/2026/05/DigitalGate-Banner-Light.png';
-        $icon_url = 'https://digitalgate.com.au/wp-content/uploads/2026/05/Gate-Icon-Light-Door-scaled.png';
+        $brand = class_exists('DG_Brand') ? DG_Brand::for_theme('on-dark') : ['logo' => '', 'icon' => ''];
+        $logo_url = $brand['logo'];
+        $icon_url = $brand['icon'];
         
         $html = '<!DOCTYPE html>
         <html>

@@ -36,8 +36,9 @@ $is_builder = !empty($ctx['is_builder']);
         .dg-client-portal * { box-sizing: border-box; }
         .dg-client-portal .portal-wrap { max-width: 440px; margin: 0 auto; padding: 3rem 1.5rem; }
         .dg-client-portal .portal-logo { text-align: center; margin-bottom: 2rem; }
-        .dg-client-portal .portal-logo h1 { font-family: 'Sora', sans-serif; font-size: 1.5rem; margin: 0 0 0.35rem; color: #fff; }
-        .dg-client-portal .portal-logo p { color: #94A3B8; margin: 0; font-size: 0.9rem; }
+        .dg-client-portal .portal-logo img.portal-logo-mark { height: 40px; width: auto; margin-bottom: 0.75rem; }
+        .dg-client-portal .portal-logo img.portal-logo-wordmark { height: 28px; width: auto; max-width: 220px; }
+        .dg-client-portal .portal-logo p { color: #94A3B8; margin: 0.75rem 0 0; font-size: 0.9rem; }
         .dg-client-portal .login-card { background: #1E293B; border: 1px solid #334155; border-radius: 24px; padding: 2rem; }
         .dg-client-portal .alert { padding: 0.85rem 1rem; border-radius: 12px; margin-bottom: 1.25rem; font-size: 0.85rem; }
         .dg-client-portal .alert-error { background: rgba(239, 68, 68, 0.12); border: 1px solid rgba(239, 68, 68, 0.35); color: #FCA5A5; }
@@ -73,7 +74,12 @@ $is_builder = !empty($ctx['is_builder']);
 <div class="portal-wrap">
 
     <div class="portal-logo">
-        <h1><i class="fas fa-layer-group" style="color:#3B82F6;"></i> DigitalGate</h1>
+        <?php if (class_exists('DG_Brand')) : ?>
+            <img src="<?php echo esc_url(DG_Brand::icon_light_url()); ?>" alt="" class="portal-logo-mark" aria-hidden="true">
+            <img src="<?php echo esc_url(DG_Brand::logo_light_url()); ?>" alt="DigitalGate" class="portal-logo-wordmark">
+        <?php else : ?>
+            <h1>DigitalGate</h1>
+        <?php endif; ?>
         <p><?php esc_html_e('Sign in to your platform dashboard', 'dg-platform'); ?></p>
     </div>
 
