@@ -114,8 +114,8 @@ const STRIPE_PAYMENT_LINKS = {
     authority:     'https://buy.stripe.com/...',  // was Market Authority
     partner:       'https://buy.stripe.com/...',  // NEW $2,997 link
   },
-  hero_trial: '/free-agency-audit/',
-  cta_trial: '/free-agency-audit/',
+  hero_trial: 'https://digitalgate.com.au/onboarding/',
+  cta_trial: 'https://digitalgate.com.au/onboarding/',
 };
 ```
 

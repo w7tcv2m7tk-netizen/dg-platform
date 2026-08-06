@@ -29,8 +29,8 @@ class DG_SEO_Settings {
             'digitalgate.com.au' => [
                 'organization_name' => 'DigitalGate',
                 'organization_type' => 'Organization',
-                'home_title' => 'DigitalGate | Business Operating Platform & Growth Systems',
-                'home_description' => 'AI-powered Business Operating Platform with optional Growth Systems for Australian businesses.',
+                'home_title' => 'DigitalGate | The Gateway to Your Digital World™',
+                'home_description' => 'AI-powered Business Operating Platform. Connect website, CRM, AI, automation, payments and customer data into one intelligent platform.',
                 'title_separator' => '|',
             ],
             'roerealty.com.au' => [

@@ -1,0 +1,322 @@
+<!-- ============================================================ -->
+<!-- ===== DIGITALGATE FOOTER — PLATFORM NAV (Aug 2026) ===== -->
+<!-- Paste into Oxygen footer template (site-wide) -->
+<!-- ============================================================ -->
+
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@100..800&family=Inter:opsz,wght@14..32,400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+
+<style>
+  .dg-footer {
+    background: #05070A;
+    padding: 80px 0 40px;
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
+    font-family: Inter, system-ui, sans-serif;
+  }
+  .dg-footer-container { max-width: 1280px; margin: 0 auto; padding: 0 2rem; }
+  .dg-footer-grid {
+    display: grid;
+    grid-template-columns: 1.4fr repeat(4, 1fr);
+    gap: 40px;
+    margin-bottom: 48px;
+  }
+
+  .dg-footer-col { text-align: left; }
+  .dg-footer-col h4 {
+    font-family: Sora, Inter, sans-serif;
+    font-size: 0.88rem;
+    font-weight: 600;
+    color: #F9FAFB;
+    margin-bottom: 1.1rem;
+    letter-spacing: -0.2px;
+  }
+
+  .dg-footer-logo {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    text-decoration: none;
+    margin-bottom: 1.2rem;
+  }
+  .dg-footer .dg-gate-icon { width: 22px; height: 22px; object-fit: contain; display: block; }
+  .dg-footer .dg-full-logo { height: 20px; width: auto; display: block; }
+  .dg-logo-fallback {
+    display: none;
+    font-family: Sora, Inter, sans-serif;
+    font-size: 1rem;
+    font-weight: 600;
+    color: #F9FAFB;
+  }
+  .dg-logo-fallback span {
+    background: linear-gradient(135deg, #3B82F6, #2DD4BF);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  .dg-contact-details p {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 0.75rem;
+    font-size: 0.8rem;
+    color: #CBD5E1;
+  }
+  .dg-contact-details i { width: 18px; font-size: 0.8rem; color: #3B82F6; flex-shrink: 0; }
+  .dg-contact-details a { color: #CBD5E1; text-decoration: none; }
+  .dg-contact-details a:hover { color: #93C5FD; }
+
+  .dg-social-wrapper { margin-top: 1.25rem; }
+  .dg-social-links { display: flex; gap: 1rem; margin-top: 0.5rem; }
+  .dg-social-links a { color: #94A3B8; font-size: 1.1rem; transition: all 0.2s; }
+  .dg-social-links a:hover { color: #93C5FD; transform: translateY(-2px); }
+
+  .dg-tagline {
+    margin-top: 1rem;
+    font-size: 0.78rem;
+    color: #94A3B8;
+    line-height: 1.65;
+  }
+  .dg-tagline strong { color: #E2E8F0; font-weight: 600; display: block; margin-bottom: 0.25rem; }
+
+  .dg-footer-links { list-style: none; padding: 0; margin: 0; }
+  .dg-footer-links li { margin-bottom: 0.55rem; }
+  .dg-footer-links a {
+    color: #94A3B8;
+    text-decoration: none;
+    font-size: 0.8rem;
+    transition: color 0.2s;
+    display: inline-block;
+  }
+  .dg-footer-links a:hover { color: #93C5FD; }
+  .dg-footer-links a.dg-link-accent { color: #BFDBFE; font-weight: 500; }
+  .dg-footer-links a.dg-link-accent:hover { color: #F9FAFB; }
+
+  .dg-client-portal { margin-top: 1.25rem; }
+  .dg-client-portal a {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    background: rgba(59, 130, 246, 0.12);
+    border: 1px solid rgba(59, 130, 246, 0.25);
+    border-radius: 40px;
+    padding: 0.6rem 1.2rem;
+    color: #BFDBFE;
+    font-size: 0.8rem;
+    font-weight: 600;
+    text-decoration: none;
+    transition: all 0.25s ease;
+  }
+  .dg-client-portal a:hover {
+    background: rgba(59, 130, 246, 0.2);
+    border-color: #3B82F6;
+    color: #F9FAFB;
+    transform: translateY(-2px);
+  }
+
+  .dg-pillars {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+    margin-top: 0.75rem;
+  }
+  .dg-pillars span {
+    font-size: 0.65rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: #64748B;
+    padding: 0.2rem 0.5rem;
+    border: 1px solid #1E293B;
+    border-radius: 999px;
+  }
+
+  .dg-card-link {
+    text-align: center;
+    margin-top: 0;
+    margin-bottom: 1.5rem;
+    padding-top: 0;
+    border-top: none;
+  }
+  .dg-card-link a { color: #64748B; text-decoration: none; font-size: 0.7rem; transition: color 0.2s; }
+  .dg-card-link a:hover { color: #93C5FD; }
+
+  .dg-footer-bottom {
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
+    padding-top: 1.5rem;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+    font-size: 0.7rem;
+    color: #64748B;
+  }
+  .dg-legal-links { display: flex; gap: 1.25rem; flex-wrap: wrap; }
+  .dg-legal-links a { color: #64748B; text-decoration: none; transition: color 0.2s; }
+  .dg-legal-links a:hover { color: #94A3B8; }
+
+  @media (max-width: 1100px) {
+    .dg-footer-grid { grid-template-columns: repeat(3, 1fr); }
+    .dg-footer-col:first-child { grid-column: 1 / -1; }
+  }
+  @media (max-width: 768px) {
+    .dg-footer { padding: 60px 0 30px; }
+    .dg-footer-grid { grid-template-columns: 1fr 1fr; gap: 32px; }
+    .dg-footer-col:first-child { grid-column: 1 / -1; text-align: center; }
+    .dg-footer-logo { justify-content: center; }
+    .dg-contact-details p { justify-content: center; }
+    .dg-social-links { justify-content: center; }
+    .dg-tagline { text-align: center; }
+    .dg-client-portal { text-align: center; }
+    .dg-pillars { justify-content: center; }
+    .dg-footer-bottom { flex-direction: column; text-align: center; }
+    .dg-legal-links { justify-content: center; }
+  }
+  @media (max-width: 480px) {
+    .dg-footer-grid { grid-template-columns: 1fr; }
+  }
+</style>
+
+<footer class="dg-footer">
+  <div class="dg-footer-container">
+    <div class="dg-footer-grid">
+
+      <!-- Brand + contact -->
+      <div class="dg-footer-col">
+        <a href="https://digitalgate.com.au/" class="dg-footer-logo">
+          <img src="https://digitalgate.com.au/wp-content/uploads/2026/05/Gate-Icon-Light-Door-scaled.png" alt="DigitalGate Icon" class="dg-gate-icon" id="dgGateIcon">
+          <img src="https://digitalgate.com.au/wp-content/uploads/2026/05/DigitalGate-Banner-Light.png" alt="DigitalGate" class="dg-full-logo" id="dgFullLogo">
+          <span class="dg-logo-fallback" id="dgLogoFallback">Digital<span>Gate</span></span>
+        </a>
+        <div class="dg-contact-details">
+          <p><i class="fas fa-map-marker-alt"></i> Gold Coast, Queensland, Australia</p>
+          <p><i class="fas fa-phone-alt"></i> <a href="tel:0405227227">0405 227 227</a></p>
+          <p><i class="fas fa-envelope"></i> <a href="mailto:hello@digitalgate.com.au">hello@digitalgate.com.au</a></p>
+        </div>
+        <div class="dg-social-wrapper">
+          <div class="dg-social-links">
+            <a href="https://www.facebook.com/DigitalGateAu" target="_blank" rel="noopener noreferrer" aria-label="Facebook"><i class="fab fa-facebook-f"></i></a>
+            <a href="https://www.instagram.com/digitalgateau/" target="_blank" rel="noopener noreferrer" aria-label="Instagram"><i class="fab fa-instagram"></i></a>
+            <a href="https://www.linkedin.com/company/digitalgateau/" target="_blank" rel="noopener noreferrer" aria-label="LinkedIn"><i class="fab fa-linkedin-in"></i></a>
+          </div>
+          <p class="dg-tagline">
+            <strong>The Gateway to Your Digital World™</strong>
+            AI-powered Business Operating Platform for Australian businesses — with optional professional services and customer success plans.
+          </p>
+          <div class="dg-pillars" aria-label="Platform pillars">
+            <span>Connect</span><span>Centralise</span><span>Understand</span><span>Automate</span><span>Grow</span>
+          </div>
+        </div>
+        <div class="dg-client-portal">
+          <a href="https://app.digitalgate.com.au/login">
+            <i class="fas fa-user-lock"></i> Client Portal
+          </a>
+        </div>
+      </div>
+
+      <!-- Platform -->
+      <div class="dg-footer-col">
+        <h4>Platform</h4>
+        <ul class="dg-footer-links">
+          <li><a href="https://digitalgate.com.au/#platform-overview">Platform Overview</a></li>
+          <li><a href="https://digitalgate.com.au/#platform-core">Platform Core</a></li>
+          <li><a href="https://digitalgate.com.au/#digital-twin">Digital Twin™</a></li>
+          <li><a href="https://digitalgate.com.au/#ai">AI Throughout</a></li>
+          <li><a href="https://digitalgate.com.au/pricing#platform">Plans &amp; Pricing</a></li>
+          <li><a href="https://digitalgate.com.au/onboarding/" class="dg-link-accent">Start Free Trial</a></li>
+        </ul>
+      </div>
+
+      <!-- Apps -->
+      <div class="dg-footer-col">
+        <h4>Apps</h4>
+        <ul class="dg-footer-links">
+          <li><a href="https://digitalgate.com.au/pricing#apps">Industry Apps</a></li>
+          <li><a href="https://digitalgate.com.au/pricing#apps">Growth &amp; Intelligence</a></li>
+          <li><a href="https://digitalgate.com.au/pricing#apps">Website Builder</a></li>
+          <li><a href="https://digitalgate.com.au/pricing#apps">Commerce</a></li>
+          <li><a href="https://digitalgate.com.au/pricing#apps">Infrastructure</a></li>
+          <li><a href="https://digitalgate.com.au/pricing#addons">Platform Add-ons</a></li>
+        </ul>
+      </div>
+
+      <!-- Industries -->
+      <div class="dg-footer-col">
+        <h4>Industries</h4>
+        <ul class="dg-footer-links">
+          <li><a href="https://digitalgate.com.au/#industries">Real Estate</a></li>
+          <li><a href="https://digitalgate.com.au/#industries">Accommodation</a></li>
+          <li><a href="https://digitalgate.com.au/#industries">Finance</a></li>
+          <li><a href="https://digitalgate.com.au/#industries">Professional Services</a></li>
+          <li><a href="https://digitalgate.com.au/#industries">Commercial</a></li>
+          <li><a href="https://digitalgate.com.au/#industries">Creator &amp; Automotive</a></li>
+        </ul>
+      </div>
+
+      <!-- Company & Resources -->
+      <div class="dg-footer-col">
+        <h4>Company</h4>
+        <ul class="dg-footer-links">
+          <li><a href="https://digitalgate.com.au/about/">About</a></li>
+          <li><a href="https://digitalgate.com.au/contact/">Contact</a></li>
+          <li><a href="https://digitalgate.com.au/pricing/">Pricing</a></li>
+          <li><a href="https://digitalgate.com.au/pricing#professional-services">Professional Services</a></li>
+          <li><a href="https://digitalgate.com.au/pricing#support-plans">Support Plans</a></li>
+          <li><a href="https://digitalgate.com.au/insights/">Insights</a></li>
+          <li><a href="https://digitalgate.com.au/free-agency-audit/">Free Platform Audit</a></li>
+        </ul>
+        <h4 style="margin-top:1.5rem;">Frameworks</h4>
+        <ul class="dg-footer-links">
+          <li><a href="https://digitalgate.com.au/ai-visibility-framework/">AI Visibility Framework™</a></li>
+          <li><a href="https://digitalgate.com.au/appraisal-magnet-system/">Appraisal Magnet System™</a></li>
+          <li><a href="https://digitalgate.com.au/listing-pipeline-framework/">Listing Pipeline Framework™</a></li>
+          <li><a href="https://digitalgate.com.au/vendor-velocity-system/">Vendor Velocity System™</a></li>
+        </ul>
+      </div>
+
+    </div>
+
+    <div class="dg-card-link">
+      <a href="https://digitalgate.com.au/card/"><i class="fas fa-id-card"></i> Digital Business Card</a>
+    </div>
+
+    <div class="dg-footer-bottom">
+      <div>© 2026 DigitalGate. All rights reserved.</div>
+      <div class="dg-legal-links">
+        <a href="https://digitalgate.com.au/privacy-policy/">Privacy Policy</a>
+        <a href="https://digitalgate.com.au/terms-conditions/">Terms &amp; Conditions</a>
+        <a href="https://digitalgate.com.au/legal-notice/">Legal Notice</a>
+        <a href="https://digitalgate.com.au/sitemap/">Sitemap</a>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<script>
+  (function() {
+    var gateIcon = document.getElementById('dgGateIcon');
+    var fullLogo = document.getElementById('dgFullLogo');
+    var fallback = document.getElementById('dgLogoFallback');
+    var gateFailed = false;
+    var logoFailed = false;
+
+    function showFallback() {
+      if (gateFailed && logoFailed && fallback) {
+        if (gateIcon) gateIcon.style.display = 'none';
+        if (fullLogo) fullLogo.style.display = 'none';
+        fallback.style.display = 'inline-block';
+      }
+    }
+
+    if (gateIcon) {
+      gateIcon.addEventListener('error', function() { gateFailed = true; showFallback(); });
+      if (gateIcon.complete && gateIcon.naturalWidth === 0) { gateFailed = true; }
+    }
+    if (fullLogo) {
+      fullLogo.addEventListener('error', function() { logoFailed = true; showFallback(); });
+      if (fullLogo.complete && fullLogo.naturalWidth === 0) { logoFailed = true; }
+    }
+    showFallback();
+  })();
+</script>

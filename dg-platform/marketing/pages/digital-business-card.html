@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Ben Roe — DigitalGate | Founder &amp; Platform Architect</title>
+  <meta name="description" content="Ben Roe — Founder of DigitalGate, the AI-powered Business Operating Platform. Connect, centralise and grow your digital business.">
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@100..800&family=Inter:opsz,wght@14..32,400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background-color: #F1F5F9;
+      font-family: Inter, system-ui, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .card-container { max-width: 500px; width: 100%; margin: 0 auto; padding: 1rem; }
+
+    .black-card {
+      background: #0F111A;
+      border-radius: 40px;
+      padding: 2rem;
+      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3);
+      border: 1px solid rgba(59, 130, 246, 0.15);
+    }
+
+    h1 {
+      font-family: Sora, Inter, sans-serif;
+      font-size: 1.8rem;
+      font-weight: 700;
+      color: #FFFFFF;
+      text-align: center;
+      margin-bottom: 0.25rem;
+    }
+
+    .title {
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: #93C5FD;
+      text-align: center;
+      margin-bottom: 0.35rem;
+    }
+
+    .subtitle {
+      font-size: 0.72rem;
+      font-weight: 600;
+      color: #64748B;
+      text-align: center;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      margin-bottom: 1.5rem;
+    }
+
+    .hero-image { text-align: center; margin-bottom: 1.5rem; }
+
+    .hero-image img {
+      width: 100px;
+      height: 100px;
+      object-fit: cover;
+      object-position: center top;
+      border-radius: 50%;
+      border: 3px solid #3B82F6;
+      box-shadow: 0 0 30px rgba(59, 130, 246, 0.2);
+      display: inline-block;
+    }
+
+    .logo-row {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      margin-bottom: 1.5rem;
+    }
+    .logo-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      text-decoration: none;
+    }
+    .logo-row img:first-child { width: 22px; height: 22px; object-fit: contain; }
+    .logo-row img:last-child { height: 20px; width: auto; object-fit: contain; }
+
+    .divider {
+      height: 2px;
+      width: 40px;
+      background: #3B82F6;
+      margin: 0 auto 1rem;
+    }
+
+    .authority-text {
+      font-size: 1rem;
+      color: #CBD5E1;
+      line-height: 1.55;
+      text-align: center;
+      margin-bottom: 1.25rem;
+    }
+
+    .tagline-sm {
+      font-size: 0.82rem;
+      color: #94A3B8;
+      text-align: center;
+      line-height: 1.5;
+      margin-bottom: 2rem;
+    }
+
+    .btn-primary {
+      display: block;
+      width: 100%;
+      background: linear-gradient(105deg, #3B82F6, #2563EB);
+      color: #FFFFFF !important;
+      font-weight: 700;
+      font-size: 1rem;
+      text-align: center;
+      padding: 1rem;
+      border-radius: 60px;
+      text-decoration: none;
+      margin-bottom: 0.75rem;
+      border: none;
+      transition: all 0.2s ease;
+    }
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(59, 130, 246, 0.35);
+    }
+
+    .btn-secondary {
+      display: block;
+      width: 100%;
+      background: transparent;
+      border: 1.5px solid #3B82F6;
+      color: #93C5FD !important;
+      font-weight: 600;
+      font-size: 0.9rem;
+      text-align: center;
+      padding: 0.8rem;
+      border-radius: 60px;
+      text-decoration: none;
+      margin-bottom: 0.75rem;
+      transition: all 0.2s ease;
+    }
+    .btn-secondary:hover {
+      background: rgba(59, 130, 246, 0.1);
+      color: #BFDBFE !important;
+      transform: translateY(-2px);
+    }
+
+    .btn-contact {
+      display: block;
+      width: 100%;
+      background: transparent;
+      border: 1.5px solid #64748B;
+      color: #94A3B8;
+      font-weight: 600;
+      font-size: 0.9rem;
+      text-align: center;
+      padding: 0.8rem;
+      border-radius: 60px;
+      text-decoration: none;
+      margin-bottom: 0.75rem;
+      transition: all 0.2s ease;
+      cursor: pointer;
+    }
+    .btn-contact:hover {
+      border-color: #3B82F6;
+      color: #93C5FD;
+      background: rgba(59, 130, 246, 0.05);
+      transform: translateY(-2px);
+    }
+    .btn-contact i { margin-right: 8px; }
+
+    .btn-group { display: flex; flex-direction: column; gap: 0.25rem; margin-bottom: 1rem; }
+
+    .divider-light {
+      height: 1px;
+      background: rgba(255, 255, 255, 0.08);
+      margin: 1.5rem 0;
+    }
+
+    h2 {
+      font-family: Sora, Inter, sans-serif;
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: #FFFFFF;
+      margin-bottom: 0.5rem;
+    }
+
+    .value-text {
+      font-size: 0.85rem;
+      color: #CBD5E1;
+      line-height: 1.55;
+      margin-bottom: 1.5rem;
+    }
+
+    .pillars {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.35rem;
+      justify-content: center;
+      margin-bottom: 1.25rem;
+    }
+    .pillars span {
+      font-size: 0.62rem;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      color: #64748B;
+      padding: 0.25rem 0.55rem;
+      border: 1px solid #1E293B;
+      border-radius: 999px;
+    }
+
+    .trust-box {
+      background: rgba(255, 255, 255, 0.05);
+      padding: 1rem;
+      border-radius: 20px;
+      border-left: 3px solid #3B82F6;
+      margin-bottom: 1.5rem;
+    }
+    .trust-box p {
+      font-size: 0.85rem;
+      color: #E2E8F0;
+      font-weight: 500;
+      line-height: 1.5;
+    }
+
+    .social-links {
+      display: flex;
+      justify-content: center;
+      gap: 1.2rem;
+      margin-bottom: 0.75rem;
+    }
+    .social-links a { color: #64748B; font-size: 1.2rem; transition: color 0.2s; }
+    .social-links a:hover { color: #3B82F6; }
+
+    .footer-text {
+      font-size: 0.7rem;
+      color: #64748B;
+      text-align: center;
+      margin-bottom: 0.25rem;
+    }
+
+    @media (max-width: 768px) {
+      body { align-items: flex-start; padding-top: 1rem; }
+      .card-container { padding: 0 1rem; }
+      .black-card { padding: 1.5rem; }
+      h1 { font-size: 1.5rem; }
+      .authority-text { font-size: 0.9rem; }
+      .hero-image img { width: 80px; height: 80px; }
+    }
+    @media (max-width: 480px) {
+      .card-container { padding: 0 0.75rem; }
+      .hero-image img { width: 70px; height: 70px; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="card-container">
+    <div class="black-card">
+
+      <h1>Ben Roe</h1>
+      <div class="title">Founder · Software Architect · Business Strategist</div>
+      <div class="subtitle">The Gateway to Your Digital World™</div>
+
+      <div class="hero-image">
+        <img
+          src="https://digitalgate.com.au/wp-content/uploads/2026/06/ben-roe-real-estate-agent-gold-coast-03.jpeg"
+          alt="Ben Roe — Founder of DigitalGate"
+          width="200"
+          height="200"
+          loading="lazy"
+        >
+      </div>
+
+      <div class="logo-row">
+        <a href="https://digitalgate.com.au/" class="logo-link">
+          <img src="https://digitalgate.com.au/wp-content/uploads/2026/05/Gate-Icon-Light-Door-scaled.png" alt="DigitalGate icon" id="dgCardGateIcon">
+          <img src="https://digitalgate.com.au/wp-content/uploads/2026/05/DigitalGate-Banner-Light.png" alt="DigitalGate" id="dgCardFullLogo">
+        </a>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="authority-text">
+        DigitalGate is an AI-powered Business Operating Platform — connecting websites, CRM, AI, automation and industry systems into one intelligent platform.
+      </div>
+      <p class="tagline-sm">One platform · One login · One source of truth</p>
+
+      <div class="btn-group">
+        <a href="https://digitalgate.com.au/onboarding/" class="btn-primary">Start Free Trial →</a>
+        <a href="https://digitalgate.com.au/contact/" class="btn-secondary">Book a Strategy Call</a>
+        <a href="tel:0405227227" class="btn-secondary"><i class="fas fa-phone-alt"></i> Call / Message</a>
+        <a href="https://digitalgate.com.au/wp-content/uploads/DigitalGate.vcf" download class="btn-contact">
+          <i class="fas fa-address-card"></i> Add To Contacts
+        </a>
+      </div>
+
+      <div class="divider-light"></div>
+
+      <h2>What DigitalGate is</h2>
+      <div class="value-text">
+        A Business Operating Platform — not a marketing agency. Connect your digital world through modular Apps, AI intelligence, and optional professional services when you want expert help implementing the platform.
+      </div>
+
+      <div class="pillars" aria-label="Platform pillars">
+        <span>Connect</span><span>Centralise</span><span>Understand</span><span>Automate</span><span>Grow</span>
+      </div>
+
+      <div class="trust-box">
+        <p>Built and proven through Roe Realty, Currumbin Valley Hideaway and DigitalGate — live businesses refining the platform before broader rollout.</p>
+      </div>
+
+      <div class="social-links">
+        <a href="https://www.facebook.com/DigitalGateAu" target="_blank" rel="noopener noreferrer" aria-label="Facebook"><i class="fab fa-facebook-f"></i></a>
+        <a href="https://www.instagram.com/digitalgateau/" target="_blank" rel="noopener noreferrer" aria-label="Instagram"><i class="fab fa-instagram"></i></a>
+        <a href="https://www.linkedin.com/company/digitalgateau/" target="_blank" rel="noopener noreferrer" aria-label="LinkedIn"><i class="fab fa-linkedin-in"></i></a>
+      </div>
+
+      <div class="footer-text">DigitalGate © 2026</div>
+      <div class="footer-text">Gold Coast, Queensland, Australia</div>
+
+    </div>
+  </div>
+
+  <script>
+    (function() {
+      var gateIcon = document.getElementById('dgCardGateIcon');
+      var fullLogo = document.getElementById('dgCardFullLogo');
+      if (gateIcon) gateIcon.addEventListener('error', function() { gateIcon.style.display = 'none'; });
+      if (fullLogo) fullLogo.addEventListener('error', function() { fullLogo.style.display = 'none'; });
+    })();
+  </script>
+</body>
+</html>
