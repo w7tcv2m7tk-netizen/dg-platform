@@ -732,14 +732,20 @@
 
     .shot-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.25rem; max-width: 1100px; margin: 2rem auto 0; }
     .shot-frame {
-      aspect-ratio: 16/10; border-radius: 14px; border: 1px solid #334155; overflow: hidden;
-      background: linear-gradient(145deg, #1E293B 0%, #0F172A 50%, #111827 100%);
-      display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.5rem;
-      padding: 1rem; text-align: center;
+      position: relative; aspect-ratio: 16/10; border-radius: 14px; border: 1px solid #334155; overflow: hidden;
+      background: #0F172A;
     }
-    .shot-frame .shot-label { font-size: 0.7rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: #93C5FD; }
-    .shot-frame .shot-title { font-size: 1rem; font-weight: 700; color: #F1F5F9; }
-    .shot-frame .shot-sub { font-size: 0.75rem; color: #64748B; }
+    .shot-frame img {
+      width: 100%; height: 100%; object-fit: cover; object-position: top center; display: block;
+    }
+    .shot-frame .shot-caption {
+      position: absolute; inset: auto 0 0 0; padding: 0.85rem 1rem;
+      background: linear-gradient(180deg, transparent, rgba(2, 6, 23, 0.92) 35%);
+      text-align: left;
+    }
+    .shot-frame .shot-label { font-size: 0.7rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: #93C5FD; display: block; }
+    .shot-frame .shot-title { font-size: 0.95rem; font-weight: 700; color: #F1F5F9; display: block; }
+    .shot-frame .shot-sub { font-size: 0.72rem; color: #94A3B8; display: block; margin-top: 0.15rem; }
 
     .trust-logos { display: flex; flex-wrap: wrap; gap: 1.25rem; justify-content: center; margin-top: 2rem; }
     .trust-logo {
@@ -1026,12 +1032,30 @@
         <p>Polished software — proven in production on real businesses.</p>
       </div>
       <div class="shot-grid">
-        <div class="shot-frame"><span class="shot-label">Dashboard</span><span class="shot-title">Business Overview</span><span class="shot-sub">Health score, priorities, AI briefing</span></div>
-        <div class="shot-frame"><span class="shot-label">CRM</span><span class="shot-title">Contacts &amp; Timeline</span><span class="shot-sub">Unified activity across your business</span></div>
-        <div class="shot-frame"><span class="shot-label">AI</span><span class="shot-title">AI Assistant</span><span class="shot-sub">Context-aware support and actions</span></div>
-        <div class="shot-frame"><span class="shot-label">Real Estate</span><span class="shot-title">Vendor Pipeline</span><span class="shot-sub">Live on Roe Realty</span></div>
-        <div class="shot-frame"><span class="shot-label">SEO</span><span class="shot-title">Website Health</span><span class="shot-sub">Audits, schema, performance</span></div>
-        <div class="shot-frame"><span class="shot-label">AI Visibility</span><span class="shot-title">Visibility Score™</span><span class="shot-sub">AI search and recommendation readiness</span></div>
+        <div class="shot-frame">
+          <img src="https://app.digitalgate.com.au/marketing/screenshots/dashboard-overview.png" alt="DigitalGate Business Overview dashboard with Business Health score and AI briefing" loading="lazy" width="640" height="400">
+          <div class="shot-caption"><span class="shot-label">Dashboard</span><span class="shot-title">Business Overview</span><span class="shot-sub">Health score, priorities, AI briefing</span></div>
+        </div>
+        <div class="shot-frame">
+          <img src="https://app.digitalgate.com.au/marketing/screenshots/crm-contacts.png" alt="DigitalGate CRM contacts and universal timeline" loading="lazy" width="640" height="400">
+          <div class="shot-caption"><span class="shot-label">CRM</span><span class="shot-title">Contacts &amp; Timeline</span><span class="shot-sub">Unified activity across your business</span></div>
+        </div>
+        <div class="shot-frame">
+          <img src="https://app.digitalgate.com.au/marketing/screenshots/ai-assistant.png" alt="DigitalGate AI Studio business advisor" loading="lazy" width="640" height="400">
+          <div class="shot-caption"><span class="shot-label">AI</span><span class="shot-title">AI Assistant</span><span class="shot-sub">Context-aware support and actions</span></div>
+        </div>
+        <div class="shot-frame">
+          <img src="https://app.digitalgate.com.au/marketing/screenshots/vendor-pipeline.png" alt="DigitalGate real estate vendor lead pipeline" loading="lazy" width="640" height="400">
+          <div class="shot-caption"><span class="shot-label">Real Estate</span><span class="shot-title">Vendor Pipeline</span><span class="shot-sub">Live on Roe Realty</span></div>
+        </div>
+        <div class="shot-frame">
+          <img src="https://app.digitalgate.com.au/marketing/screenshots/website-health.png" alt="DigitalGate Website Health Centre audit scores" loading="lazy" width="640" height="400">
+          <div class="shot-caption"><span class="shot-label">SEO</span><span class="shot-title">Website Health</span><span class="shot-sub">Audits, schema, performance</span></div>
+        </div>
+        <div class="shot-frame">
+          <img src="https://app.digitalgate.com.au/marketing/screenshots/ai-visibility.png" alt="DigitalGate AI Visibility Score dashboard" loading="lazy" width="640" height="400">
+          <div class="shot-caption"><span class="shot-label">AI Visibility</span><span class="shot-title">Visibility Score™</span><span class="shot-sub">AI search and recommendation readiness</span></div>
+        </div>
       </div>
       <p style="text-align:center;margin-top:1.5rem;"><a href="https://app.digitalgate.com.au" class="hero-cta-secondary" style="display:inline-flex;">Explore the live platform ↗</a></p>
     </div>

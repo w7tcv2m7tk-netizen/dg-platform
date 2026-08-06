@@ -45,7 +45,7 @@ This is a **brand repositioning**, not a cosmetic redesign. DigitalGate is an AI
 | `homepage.html` | Paste into Oxygen on `/` (homepage) |
 | `about-page.html` | Paste into Oxygen on `/about` |
 | `contact-page.html` | Paste into Oxygen on `/contact` |
-| `discovery-form.html` | Paste into Oxygen on `/discover` |
+| `discovery-form.html` | Paste into Oxygen on **`/discover`** (WordPress page slug must be `discover`) |
 | `digital-business-card.html` | Paste into Oxygen on `/card/` (Ben Roe digital card) |
 | `pricing-page.html` | Paste into Oxygen on `/pricing` |
 | `PRICING-DEPLOY.md` | Pricing-specific deploy notes |
@@ -53,7 +53,39 @@ This is a **brand repositioning**, not a cosmetic redesign. DigitalGate is an AI
 
 ---
 
-## Homepage sections (in order)
+## Discovery page (`/discover/`)
+
+| Where | URL |
+|-------|-----|
+| **Live URL** | [https://digitalgate.com.au/discover/](https://digitalgate.com.au/discover/) |
+| **Nav** | Header → Resources → **AI Platform Discovery** |
+| **Contact page CTA** | “Start AI Platform Discovery” |
+| **Homepage hero** | “AI Platform Discovery” button |
+
+**Deploy checklist**
+
+1. Upload plugin **v10.49.0+** (includes `class-client-discovery.php` + `discovery-form.js`)
+2. In WordPress → Pages → add or edit page with slug **`discover`**
+3. Paste full contents of `discovery-form.html` into the Oxygen body (Code Block)
+4. Publish and test — form posts to `/wp-json/digitalgate/v1/discovery`
+
+If `/discover/` shows a critical error, the plugin is missing/outdated or the page body has a PHP conflict — check `wp-content/debug.log` after upload.
+
+## Platform screenshots
+
+Screenshots are hosted on the app: `https://app.digitalgate.com.au/marketing/screenshots/`
+
+Regenerate after UI changes:
+
+```bash
+cd dg-platform-web
+npm run build && npm run start -- -p 3010
+npm run capture:screenshots
+```
+
+Copies PNGs to `public/marketing/screenshots/` and `dg-platform/marketing/assets/screenshots/`.
+
+---
 
 1. Hero — Gateway to Your Digital World™
 2. Five Pillars — Connect, Centralise, Understand, Automate, Grow
