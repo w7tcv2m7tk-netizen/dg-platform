@@ -69,6 +69,108 @@ class DG_Client_Support {
                 'permission_callback' => [__CLASS__, 'rest_can_chat'],
             ],
         ]);
+
+        register_rest_route(DG_REST_NAMESPACE, '/support/platform/conversation', [
+            'methods' => 'GET',
+            'callback' => [__CLASS__, 'rest_platform_get_conversation'],
+            'permission_callback' => [__CLASS__, 'rest_platform_can_access'],
+        ]);
+        register_rest_route(DG_REST_NAMESPACE, '/support/platform/messages', [
+            [
+                'methods' => 'GET',
+                'callback' => [__CLASS__, 'rest_platform_get_messages'],
+                'permission_callback' => [__CLASS__, 'rest_platform_can_access'],
+            ],
+            [
+                'methods' => 'POST',
+                'callback' => [__CLASS__, 'rest_platform_post_message'],
+                'permission_callback' => [__CLASS__, 'rest_platform_can_access'],
+            ],
+        ]);
+    }
+
+    public static function rest_platform_can_access($request) {
+        return class_exists('DG_Dev_API') && DG_Dev_API::verify_request($request);
+    }
+
+    /** Resolve WP user for Gen 2 platform chat (portal email + API key). */
+    public static function resolve_user_id_from_portal_request($request) {
+        $email = sanitize_email($request->get_header('X-Portal-Email') ?: $request->get_param('email'));
+        if ($email === '' || !class_exists('DG_Client_Portal')) {
+            return 0;
+        }
+
+        $clerk_user_id = sanitize_text_field($request->get_header('X-Clerk-User-Id') ?: '');
+        $profile = DG_Client_Portal::profile_for_portal_email($email, $clerk_user_id);
+        if (empty($profile['linked'])) {
+            return 0;
+        }
+
+        $user = get_user_by('email', $email);
+        return $user ? (int) $user->ID : 0;
+    }
+
+    public static function rest_platform_get_conversation($request) {
+        $user_id = self::resolve_user_id_from_portal_request($request);
+        if ($user_id <= 0) {
+            return new WP_Error('not_linked', 'Complete onboarding with this email to use live chat.', ['status' => 403]);
+        }
+
+        $conversation = self::get_or_create_conversation($user_id);
+        if (!$conversation) {
+            return new WP_Error('support_unavailable', 'Could not start conversation.', ['status' => 500]);
+        }
+
+        return new WP_REST_Response([
+            'conversation_id' => (int) $conversation->id,
+            'messages' => self::get_messages((int) $conversation->id),
+        ], 200);
+    }
+
+    public static function rest_platform_get_messages($request) {
+        $user_id = self::resolve_user_id_from_portal_request($request);
+        if ($user_id <= 0) {
+            return new WP_Error('not_linked', 'Complete onboarding with this email to use live chat.', ['status' => 403]);
+        }
+
+        $conversation = self::get_or_create_conversation($user_id);
+        if (!$conversation) {
+            return new WP_Error('support_unavailable', 'Could not load messages.', ['status' => 500]);
+        }
+
+        $after = (int) $request->get_param('after');
+        return new WP_REST_Response([
+            'messages' => self::get_messages((int) $conversation->id, $after),
+        ], 200);
+    }
+
+    public static function rest_platform_post_message($request) {
+        $user_id = self::resolve_user_id_from_portal_request($request);
+        if ($user_id <= 0) {
+            return new WP_Error('not_linked', 'Complete onboarding with this email to use live chat.', ['status' => 403]);
+        }
+
+        $body = sanitize_textarea_field((string) ($request->get_param('message') ?? ''));
+        if ($body === '') {
+            return new WP_Error('empty_message', 'Message is required.', ['status' => 400]);
+        }
+
+        $conversation = self::get_or_create_conversation($user_id);
+        if (!$conversation) {
+            return new WP_Error('support_unavailable', 'Could not send message.', ['status' => 500]);
+        }
+
+        $message_id = self::insert_message((int) $conversation->id, 'client', $user_id, $body);
+        if (!$message_id) {
+            return new WP_Error('send_failed', 'Could not save message.', ['status' => 500]);
+        }
+
+        self::notify_staff_new_message($conversation, $body);
+
+        return new WP_REST_Response([
+            'message_id' => $message_id,
+            'messages' => self::get_messages((int) $conversation->id),
+        ], 201);
     }
 
     public static function rest_can_chat() {
