@@ -90,7 +90,8 @@
       return '<li>' + p + '</li>';
     }).join('');
 
-    resultsEl.innerHTML =
+    var reportUrl = result.audit_report_url || '';
+    var html =
       '<div class="discovery-results-inner">' +
       '<span class="sub-label">Your Digital Maturity Snapshot</span>' +
       '<h2>Grade ' + grade + ' · ' + score + '/100</h2>' +
@@ -101,9 +102,11 @@
       '</div>' +
       (priorities ? '<h3>Priority opportunities</h3><ul class="results-list">' + priorities + '</ul>' : '') +
       '<p class="results-note">A confirmation email is on its way. Our team will review your discovery before your consultation.</p>' +
+      (reportUrl ? '<a href="' + reportUrl + '" class="btn-secondary" target="_blank" rel="noopener">View Digital Maturity Report</a>' : '') +
       '<a href="https://digitalgate.com.au/contact/" class="btn-primary">Book Your Free Consultation →</a>' +
       '<a href="https://digitalgate.com.au/onboarding/" class="btn-secondary">Start Free Trial</a>' +
       '</div>';
+    resultsEl.innerHTML = html;
     resultsEl.style.display = 'block';
     resultsEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }

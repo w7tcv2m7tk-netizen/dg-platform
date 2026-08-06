@@ -376,6 +376,10 @@ class DG_Stripe_Billing {
                 . DG_Marketing_Emails::cta($onboarding_url, 'Complete onboarding')
                 . '<p style="color:#E2E8F0;line-height:1.65;">Your client portal:</p>'
                 . DG_Marketing_Emails::cta($portal_url, 'Open client portal');
+
+            $app_signup = 'https://app.digitalgate.com.au/signup/account?' . http_build_query(['email' => $email]);
+            $inner .= '<p style="color:#E2E8F0;line-height:1.65;margin-top:1rem;">Access your platform dashboard:</p>'
+                . DG_Marketing_Emails::cta($app_signup, 'Open DigitalGate Platform');
             if (!empty($user_result['created'])) {
                 $inner .= DG_Marketing_Emails::cta($password_link, 'Set your password');
             }

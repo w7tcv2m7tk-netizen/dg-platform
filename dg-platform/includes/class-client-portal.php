@@ -1122,6 +1122,47 @@ class DG_Client_Portal {
 
 
     /**
+     * Stripe purchase metadata mapped for Gen 2 plan sync.
+     *
+     * @return array<string,mixed>|null
+     */
+    public static function purchase_profile_for_contact($contact_id) {
+        if (!class_exists('DG_Entity_Meta')) {
+            return null;
+        }
+
+        $meta = DG_Entity_Meta::get('contact', (int) $contact_id);
+        $stripe = is_array($meta['stripe_purchase'] ?? null) ? $meta['stripe_purchase'] : [];
+        if (empty($stripe)) {
+            return null;
+        }
+
+        $profile = [
+            'platform_tier' => sanitize_key((string) ($stripe['dg_platform_tier'] ?? '')),
+            'purchased_apps' => [],
+            'purchased_premium' => [],
+            'purchased_addons' => [],
+        ];
+
+        $category = sanitize_key((string) ($stripe['dg_category'] ?? ''));
+        $plan = sanitize_key((string) ($stripe['dg_plan'] ?? ''));
+
+        if ($category === 'app' && $plan !== '') {
+            $profile['purchased_apps'][] = $plan;
+        } elseif ($category === 'premium' && $plan !== '') {
+            $profile['purchased_premium'][] = $plan;
+        } elseif ($category === 'addon' && $plan !== '') {
+            $profile['purchased_addons'][] = $plan;
+        }
+
+        if ($profile['platform_tier'] === '' && empty($profile['purchased_apps']) && empty($profile['purchased_premium'])) {
+            return null;
+        }
+
+        return $profile;
+    }
+
+    /**
      * Onboarding submission + logo for Gen 2 platform preconfiguration.
      *
      * @return array<string,mixed>
@@ -1137,6 +1178,13 @@ class DG_Client_Portal {
                 if (!empty($org_meta['onboarding_submission']) && is_array($org_meta['onboarding_submission'])) {
                     $data = $org_meta['onboarding_submission'];
                 }
+            }
+        }
+
+        if (empty($data) && class_exists('DG_Entity_Meta')) {
+            $purchase = self::purchase_profile_for_contact((int) $contact_id);
+            if (is_array($purchase)) {
+                $data = $purchase;
             }
         }
 
@@ -1275,11 +1323,21 @@ class DG_Client_Portal {
         }
 
         $purchase_label = '';
+        $purchase = null;
         if (class_exists('DG_Entity_Meta')) {
             $meta = DG_Entity_Meta::get('contact', $contact_id);
             $stripe = is_array($meta['stripe_purchase'] ?? null) ? $meta['stripe_purchase'] : [];
             if (!empty($stripe['purchase_label'])) {
                 $purchase_label = (string) $stripe['purchase_label'];
+            }
+            if (!empty($stripe)) {
+                $purchase = [
+                    'dg_category' => sanitize_key((string) ($stripe['dg_category'] ?? '')),
+                    'dg_plan' => sanitize_key((string) ($stripe['dg_plan'] ?? '')),
+                    'dg_platform_tier' => sanitize_key((string) ($stripe['dg_platform_tier'] ?? '')),
+                    'purchase_label' => $purchase_label,
+                    'stripe_session_id' => (string) ($stripe['stripe_session_id'] ?? ''),
+                ];
             }
         }
 
@@ -1291,6 +1349,7 @@ class DG_Client_Portal {
             'organisation_id' => $org_id,
             'org_name' => $org_name,
             'purchase_label' => $purchase_label,
+            'purchase' => $purchase,
             'clerk_user_id' => $clerk_user_id,
             'setup' => [
                 'account_created' => true,

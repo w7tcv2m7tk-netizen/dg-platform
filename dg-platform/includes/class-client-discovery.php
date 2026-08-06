@@ -187,6 +187,34 @@ class DG_Client_Discovery {
         }
 
         $maturity = self::calculate_maturity($data);
+
+        if ($data['website_url'] !== '' && class_exists('DG_Marketing_Audit_Scoring')) {
+            $audit = DG_Marketing_Audit_Scoring::run_audit(
+                $data['business_name'],
+                $data['website_url'],
+                $data['industry'],
+                ''
+            );
+            if (is_array($audit)) {
+                $maturity['audit'] = $audit;
+                $maturity['score'] = (int) round(($maturity['score'] * 0.4) + ($audit['overall_score'] * 0.6));
+                $maturity['score'] = min(max($maturity['score'], 18), 96);
+                if ($maturity['score'] >= 80) {
+                    $maturity['grade'] = 'A';
+                } elseif ($maturity['score'] >= 65) {
+                    $maturity['grade'] = 'B';
+                } elseif ($maturity['score'] >= 48) {
+                    $maturity['grade'] = 'C';
+                } else {
+                    $maturity['grade'] = 'D';
+                }
+                $maturity['summary'] = self::maturity_summary($maturity['score'], $maturity['grade']);
+                if (!empty($audit['recommendations'])) {
+                    $maturity['priorities'] = array_slice($audit['recommendations'], 0, 3);
+                }
+            }
+        }
+
         $recommendation = self::recommend_plan($data, $maturity);
 
         $name_parts = preg_split('/\s+/', trim($data['full_name']), 2);
@@ -215,6 +243,7 @@ class DG_Client_Discovery {
             'summary' => $maturity['summary'],
             'priorities' => $maturity['priorities'],
             'recommendation' => $recommendation,
+            'audit_report_url' => $maturity['audit']['report_url'] ?? '',
             'redirect_url' => home_url('/discover/?discovery_sent=1'),
         ];
     }
@@ -456,6 +485,9 @@ class DG_Client_Discovery {
         DG_Entity_Meta::set('contact', $contact_id, 'discovery_submitted_at', current_time('mysql'));
         DG_Entity_Meta::set('contact', $contact_id, 'business_health_score', $maturity['score']);
         DG_Entity_Meta::set('contact', $contact_id, 'maturity_grade', $maturity['grade']);
+        if (!empty($maturity['audit']['report_url'])) {
+            DG_Entity_Meta::set('contact', $contact_id, 'discovery_report_url', $maturity['audit']['report_url']);
+        }
 
         if ($org_id) {
             DG_Entity_Meta::set('organisation', $org_id, 'discovery_submission', $bundle);
@@ -498,6 +530,7 @@ class DG_Client_Discovery {
 
         $priorities = implode('</li><li>', array_map('esc_html', $maturity['priorities']));
         $contact_url = home_url('/contact/');
+        $report_url = !empty($maturity['audit']['report_url']) ? $maturity['audit']['report_url'] : '';
 
         if (class_exists('DG_Marketing_Emails')) {
             $inner = '<h2 style="color:#FFFFFF;font-size:22px;margin:0 0 16px;">Hi ' . esc_html($first) . ',</h2>'
@@ -506,6 +539,7 @@ class DG_Client_Discovery {
                 . '<p style="color:#E2E8F0;line-height:1.65;">' . esc_html($maturity['summary']) . '</p>'
                 . '<p style="color:#E2E8F0;line-height:1.65;"><strong>Recommended starting point:</strong> ' . esc_html($recommendation['platform_tier_label']) . '</p>'
                 . '<ul style="color:#E2E8F0;line-height:1.65;"><li>' . $priorities . '</li></ul>'
+                . ($report_url ? DG_Marketing_Emails::cta($report_url, 'View full Digital Maturity Report') : '')
                 . DG_Marketing_Emails::cta($contact_url, 'Book your free consultation');
             $message = DG_Marketing_Emails::wrap($inner, ['footer_note' => 'DigitalGate — The Gateway to Your Digital World']);
             $headers = DG_Marketing_Emails::mail_headers(true);
