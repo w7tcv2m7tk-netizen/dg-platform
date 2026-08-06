@@ -327,6 +327,10 @@ class DG_Stripe_Billing {
 
         do_action('dg_stripe_checkout_completed', $contact_id, $org_id, $purchase, $user_result);
 
+        if (class_exists('DG_Growth_Engine_Sync')) {
+            DG_Growth_Engine_Sync::sync_platform_after_purchase($email);
+        }
+
         return [
             'contact_id' => $contact_id,
             'organisation_id' => $org_id,

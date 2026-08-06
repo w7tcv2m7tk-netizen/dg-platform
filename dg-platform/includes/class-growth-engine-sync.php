@@ -87,6 +87,15 @@ class DG_Growth_Engine_Sync {
         self::push_onboarding_sync(['email' => $email]);
     }
 
+    /** Push Gen 2 onboarding sync after WordPress Stripe checkout provisions a client. */
+    public static function sync_platform_after_purchase($email) {
+        $email = sanitize_email((string) $email);
+        if ($email === '') {
+            return;
+        }
+        self::push_onboarding_sync(['email' => $email]);
+    }
+
     /** @param array<string,mixed> $payload */
     private static function push_discovery(array $payload) {
         self::post_json('/api/webhooks/dg-discovery', $payload);
