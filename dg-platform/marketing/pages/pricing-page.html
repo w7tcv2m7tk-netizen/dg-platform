@@ -593,7 +593,10 @@
     .section-spacer { margin-top: 2.5rem; }
     .apps-grid-5 { display: grid; grid-template-columns: repeat(5, 1fr); gap: 1.25rem; }
     .apps-grid-6 { display: grid; grid-template-columns: repeat(6, 1fr); gap: 1.25rem; }
+    .apps-grid-7 { display: grid; grid-template-columns: repeat(7, 1fr); gap: 1.25rem; }
     .apps-grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1.25rem; }
+    .apps-grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.25rem; max-width: 960px; margin: 0 auto; }
+    .apps-grid-2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1.25rem; max-width: 560px; margin: 0 auto; }
     .app-card .app-desc { color: #94A3B8; font-size: 0.75rem; margin: 0.35rem 0 0.75rem; line-height: 1.4; min-height: 2.5em; }
     .app-card .btn-app {
       display: block; text-align: center; background: transparent; border: 1.5px solid #334155;
@@ -601,9 +604,9 @@
       text-decoration: none; transition: all 0.25s ease; font-family: 'Inter', sans-serif;
     }
     .app-card .btn-app:hover { border-color: #3B82F6; color: #FFFFFF; background: rgba(59,130,246,0.08); }
-    @media (max-width: 1200px) { .apps-grid-6 { grid-template-columns: repeat(3, 1fr); } }
-    @media (max-width: 1024px) { .pricing-grid-4 { grid-template-columns: repeat(2, 1fr); } .how-buy { grid-template-columns: 1fr; } .apps-grid-5 { grid-template-columns: repeat(3, 1fr); } .apps-grid-6 { grid-template-columns: repeat(3, 1fr); } .apps-grid-4 { grid-template-columns: repeat(2, 1fr); } }
-    @media (max-width: 768px) { .pricing-grid-4 { grid-template-columns: 1fr; } .apps-grid-5 { grid-template-columns: repeat(2, 1fr); } .apps-grid-6 { grid-template-columns: repeat(2, 1fr); } .apps-grid-4 { grid-template-columns: repeat(2, 1fr); } }
+    @media (max-width: 1200px) { .apps-grid-6 { grid-template-columns: repeat(3, 1fr); } .apps-grid-7 { grid-template-columns: repeat(4, 1fr); } }
+    @media (max-width: 1024px) { .pricing-grid-4 { grid-template-columns: repeat(2, 1fr); } .how-buy { grid-template-columns: 1fr; } .apps-grid-5 { grid-template-columns: repeat(3, 1fr); } .apps-grid-6 { grid-template-columns: repeat(3, 1fr); } .apps-grid-7 { grid-template-columns: repeat(3, 1fr); } .apps-grid-4 { grid-template-columns: repeat(2, 1fr); } .apps-grid-3 { grid-template-columns: repeat(2, 1fr); } }
+    @media (max-width: 768px) { .pricing-grid-4 { grid-template-columns: 1fr; } .apps-grid-5 { grid-template-columns: repeat(2, 1fr); } .apps-grid-6 { grid-template-columns: repeat(2, 1fr); } .apps-grid-7 { grid-template-columns: repeat(2, 1fr); } .apps-grid-4 { grid-template-columns: repeat(2, 1fr); } .apps-grid-3 { grid-template-columns: 1fr; } .apps-grid-2 { grid-template-columns: 1fr; max-width: 320px; } }
 
     /* ============================================================ */
     /* ===== RESPONSIVE ===== */
@@ -1168,16 +1171,9 @@
       <div class="section-header">
         <span class="sub-label">➕ PLATFORM ADD-ONS</span>
         <h2>Extend your platform</h2>
-        <p>Extra users, white label, and voice AI — add to any tier</p>
+        <p>Extra users and white label — add to any tier</p>
       </div>
-      <div class="apps-grid apps-grid-4">
-        <div class="app-card" data-dg-stripe="addon-voice-ai">
-          <div class="app-icon">🎙️</div>
-          <div class="app-name">Voice AI</div>
-          <div class="app-price">+$99<span>/mo</span></div>
-          <div class="app-desc">AI voice agent for inbound calls &amp; lead qualification</div>
-          <a href="https://digitalgate.com.au/onboarding/" class="btn-app"><span class="dg-ic dg-ic-plus" aria-hidden="true"></span> Add On</a>
-        </div>
+      <div class="apps-grid apps-grid-2">
         <div class="app-card" data-dg-stripe="addon-extra-users">
           <div class="app-icon">👥</div>
           <div class="app-name">Extra Users</div>
@@ -1191,14 +1187,6 @@
           <div class="app-price">+$199<span>/mo</span></div>
           <div class="app-desc">Your brand on the platform — for agencies &amp; resellers</div>
           <a href="https://digitalgate.com.au/onboarding/" class="btn-app"><span class="dg-ic dg-ic-plus" aria-hidden="true"></span> Add On</a>
-        </div>
-        <div class="app-card">
-          <div class="app-icon">🌐</div>
-          <div class="app-name">Website Builder</div>
-          <div class="app-badge app-badge-core">Included on Growth+</div>
-          <div class="app-price">Included</div>
-          <div class="app-desc">Templates, AI content, publish &amp; manage from the platform</div>
-          <a href="#website-capability" class="btn-app">Learn more</a>
         </div>
       </div>
     </div>
@@ -1214,7 +1202,7 @@
       </div>
 
       <div class="apps-subsection" id="industry-apps">
-        <div class="apps-grid apps-grid-6">
+        <div class="apps-grid apps-grid-4">
           <div class="app-card" data-dg-stripe="app-real-estate">
             <span class="app-badge app-badge-live">Live</span>
             <div class="app-icon">🏠</div>
@@ -1263,6 +1251,14 @@
             <div class="app-desc">Inventory, test drives &amp; dealership pipelines</div>
             <a href="/contact/" class="btn-app">Enquire</a>
           </div>
+          <div class="app-card soon" data-dg-stripe="app-commercial">
+            <span class="app-badge app-badge-soon">Coming soon</span>
+            <div class="app-icon">🏢</div>
+            <div class="app-name">Commercial</div>
+            <div class="app-price">+$99<span>/mo</span></div>
+            <div class="app-desc">Leases, tenants &amp; commercial property pipelines</div>
+            <a href="/contact/" class="btn-app">Enquire</a>
+          </div>
         </div>
       </div>
 
@@ -1271,7 +1267,7 @@
           <h3>Growth &amp; Intelligence Apps</h3>
           <p>Unlock advanced SEO, AI visibility, automation, and analytics on top of the core platform</p>
         </div>
-        <div class="apps-grid apps-grid-5">
+        <div class="apps-grid apps-grid-6">
           <div class="app-card" data-dg-stripe="premium-ai-visibility">
             <div class="app-icon">🤖</div>
             <div class="app-name">AI Visibility</div>
@@ -1322,13 +1318,14 @@
           <h3>Platform Capabilities</h3>
           <p>Infrastructure and commerce — connected to your operating system, not bolted on</p>
         </div>
-        <div class="apps-grid apps-grid-4">
+        <div class="apps-grid apps-grid-3">
           <div class="app-card">
-            <span class="app-badge app-badge-core">Core</span>
+            <span class="app-badge app-badge-core">Included on Growth+</span>
             <div class="app-icon">🌐</div>
-            <div class="app-name">Website &amp; SEO</div>
+            <div class="app-name">Website Builder</div>
             <div class="app-price">Included</div>
-            <div class="app-desc">Website manager, meta, schema, sitemap on Growth+</div>
+            <div class="app-desc">Templates, AI content, publish &amp; manage from the platform</div>
+            <a href="#website-capability" class="btn-app">Learn more</a>
           </div>
           <div class="app-card soon">
             <span class="app-badge app-badge-soon">Rolling out</span>
@@ -1343,14 +1340,6 @@
             <div class="app-name">Commerce</div>
             <div class="app-price">TBA</div>
             <div class="app-desc">Payments, quotes, invoices, checkout &amp; subscriptions</div>
-          </div>
-          <div class="app-card soon" data-dg-stripe="app-commercial">
-            <span class="app-badge app-badge-soon">Coming soon</span>
-            <div class="app-icon">🏢</div>
-            <div class="app-name">Commercial</div>
-            <div class="app-price">+$99<span>/mo</span></div>
-            <div class="app-desc">Leases, tenants &amp; commercial property pipelines</div>
-            <a href="/contact/" class="btn-app">Enquire</a>
           </div>
         </div>
       </div>
