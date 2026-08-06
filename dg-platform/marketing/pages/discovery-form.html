@@ -1,0 +1,331 @@
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>AI Platform Discovery | DigitalGate</title>
+<meta name="description" content="Complete the DigitalGate AI Discovery and receive your Digital Maturity score, recommended Platform tier, and priority opportunities — in minutes.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  .dg-discover * { margin: 0; padding: 0; box-sizing: border-box; }
+  .dg-discover { font-family: Inter, system-ui, sans-serif; background: #0A0E17; color: #F9FAFB; line-height: 1.6; }
+  .dg-discover .container { max-width: 760px; margin: 0 auto; padding: 0 1.5rem; }
+  .dg-discover h1, .dg-discover h2, .dg-discover h3 { color: #F9FAFB !important; }
+  .discover-hero { padding: 6rem 0 2rem; text-align: center; }
+  .sub-label { display: inline-block; font-size: 0.68rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: #93C5FD; margin-bottom: 0.65rem; }
+  .discover-hero h1 { font-size: clamp(1.8rem, 4vw, 2.6rem); font-weight: 800; margin-bottom: 0.75rem; }
+  .discover-hero p { color: #94A3B8; max-width: 620px; margin: 0 auto; font-size: 0.98rem; }
+  .discovery-shell { padding: 2rem 0 5rem; }
+  .discovery-progress { height: 6px; background: #1E293B; border-radius: 999px; margin-bottom: 0.75rem; overflow: hidden; }
+  #discoveryProgressFill { height: 100%; width: 20%; background: linear-gradient(90deg, #3B82F6, #2563EB); transition: width 0.25s; }
+  #discoveryStepLabel { font-size: 0.78rem; color: #64748B; margin-bottom: 1.25rem; }
+  .discovery-form-wrap { background: #111827; border: 1px solid #334155; border-radius: 20px; padding: 1.75rem; }
+  .discovery-step h2 { font-size: 1.25rem; font-weight: 800; margin-bottom: 0.35rem; }
+  .step-desc { color: #94A3B8; font-size: 0.88rem; margin-bottom: 1.25rem; }
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+  .form-group { margin-bottom: 1rem; }
+  .form-group label { display: block; font-size: 0.82rem; font-weight: 600; color: #CBD5E1; margin-bottom: 0.35rem; }
+  .form-group input, .form-group select, .form-group textarea {
+    width: 100%; padding: 0.8rem; font-size: 0.9rem; font-family: inherit;
+    border: 1px solid #334155; border-radius: 10px; background: #0A0E17; color: #F9FAFB;
+  }
+  .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+    outline: none; border-color: #3B82F6; box-shadow: 0 0 0 3px rgba(59,130,246,0.15);
+  }
+  .checkbox-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.45rem 0.75rem; }
+  .checkbox-label { display: flex; align-items: center; gap: 0.45rem; font-size: 0.84rem; color: #CBD5E1; cursor: pointer; }
+  .checkbox-label input { width: auto; accent-color: #3B82F6; }
+  .discovery-nav { display: flex; justify-content: space-between; gap: 0.75rem; margin-top: 1.5rem; flex-wrap: wrap; }
+  .btn-primary, .btn-secondary, .discovery-nav button {
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 0.85rem 1.5rem;
+    border-radius: 999px; font-weight: 700; font-size: 0.9rem; text-decoration: none; border: none; cursor: pointer; font-family: inherit;
+  }
+  .btn-primary { background: linear-gradient(105deg, #3B82F6, #2563EB); color: #fff !important; }
+  .btn-secondary { background: rgba(30,41,59,0.9); border: 1px solid #334155; color: #E2E8F0 !important; }
+  #discoveryPrev { background: transparent; border: 1px solid #334155; color: #E2E8F0; }
+  .discovery-message { display: none; padding: 0.85rem 1rem; border-radius: 10px; margin-bottom: 1rem; font-size: 0.85rem; font-weight: 600; }
+  .discovery-message--info { background: rgba(59,130,246,0.12); color: #93C5FD; border: 1px solid rgba(59,130,246,0.25); }
+  .discovery-message--error { background: rgba(239,68,68,0.12); color: #FCA5A5; border: 1px solid rgba(239,68,68,0.25); }
+  #discoveryResults { display: none; padding: 2rem 0 5rem; }
+  .discovery-results-inner { background: #111827; border: 1px solid #334155; border-radius: 20px; padding: 2rem; text-align: center; }
+  .discovery-results-inner h2 { font-size: 1.75rem; margin: 0.5rem 0 1rem; }
+  .results-lead { color: #94A3B8; margin-bottom: 1.5rem; }
+  .results-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.5rem; text-align: left; }
+  .results-card { background: #0A0E17; border: 1px solid #334155; border-radius: 12px; padding: 1rem; }
+  .results-card h3 { font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.08em; color: #64748B !important; margin-bottom: 0.35rem; }
+  .results-value { font-size: 1.35rem; font-weight: 800; color: #BFDBFE !important; }
+  .results-value-sm { font-size: 0.9rem; color: #CBD5E1; }
+  .results-list { text-align: left; color: #CBD5E1; font-size: 0.88rem; margin: 0 auto 1.25rem; max-width: 480px; padding-left: 1.25rem; }
+  .results-note { color: #64748B; font-size: 0.82rem; margin-bottom: 1.25rem; }
+  .discovery-results-inner .btn-primary, .discovery-results-inner .btn-secondary { margin: 0.25rem; }
+  @media (max-width: 640px) {
+    .form-row, .checkbox-grid, .results-grid { grid-template-columns: 1fr; }
+    .discovery-form-wrap { padding: 1.25rem; }
+  }
+</style>
+
+<div class="dg-discover">
+  <section class="discover-hero">
+    <div class="container">
+      <span class="sub-label">AI Platform Discovery</span>
+      <h1>See what DigitalGate recommends for your business</h1>
+      <p>Answer a few questions about your business, systems and goals. We&apos;ll calculate your Digital Maturity score and recommend the right Platform tier and Apps.</p>
+    </div>
+  </section>
+
+  <section class="discovery-shell">
+    <div class="container">
+      <div class="discovery-progress"><div id="discoveryProgressFill"></div></div>
+      <div id="discoveryStepLabel">Step 1 of 5</div>
+      <div id="discoveryFormMessage" class="discovery-message"></div>
+
+      <div class="discovery-form-wrap">
+        <form id="dgDiscoveryForm" novalidate>
+          <input type="hidden" name="action" value="dg_submit_discovery">
+          <input type="hidden" name="source" value="discovery">
+          <input type="text" name="website" tabindex="-1" autocomplete="off" aria-hidden="true" style="position:absolute;left:-9999px;opacity:0;height:0;width:0">
+
+          <!-- Step 1: Business -->
+          <div class="discovery-step">
+            <h2>Your business</h2>
+            <p class="step-desc">Tell us about your industry and team.</p>
+            <div class="form-row">
+              <div class="form-group">
+                <label for="industry">Industry *</label>
+                <select id="industry" name="industry" required>
+                  <option value="">Select industry</option>
+                  <option value="Real Estate">Real Estate</option>
+                  <option value="Accommodation &amp; Hospitality">Accommodation &amp; Hospitality</option>
+                  <option value="Finance &amp; Mortgage Broking">Finance &amp; Mortgage Broking</option>
+                  <option value="Professional Services">Professional Services</option>
+                  <option value="Commercial Property">Commercial Property</option>
+                  <option value="Automotive">Automotive</option>
+                  <option value="Creators &amp; Personal Brands">Creators &amp; Personal Brands</option>
+                  <option value="Other">Other</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label for="business_type">Business type</label>
+                <select id="business_type" name="business_type">
+                  <option value="">Select type</option>
+                  <option value="Sole trader">Sole trader</option>
+                  <option value="Small business">Small business</option>
+                  <option value="Growing team">Growing team</option>
+                  <option value="Multi-location">Multi-location</option>
+                  <option value="Franchise / network">Franchise / network</option>
+                </select>
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label for="team_size">Team size *</label>
+                <select id="team_size" name="team_size" required>
+                  <option value="">Select team size</option>
+                  <option value="Just me">Just me</option>
+                  <option value="2–5">2–5</option>
+                  <option value="6–10">6–10</option>
+                  <option value="11–25">11–25</option>
+                  <option value="26–50">26–50</option>
+                  <option value="50+">50+</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label for="website_url">Website URL</label>
+                <input type="url" id="website_url" name="website_url" placeholder="https://yourbusiness.com.au">
+              </div>
+            </div>
+          </div>
+
+          <!-- Step 2: Stack -->
+          <div class="discovery-step" style="display:none">
+            <h2>Current software stack</h2>
+            <p class="step-desc">What tools power your business today?</p>
+            <div class="form-row">
+              <div class="form-group">
+                <label for="crm">CRM / client management</label>
+                <select id="crm" name="crm">
+                  <option value="">Select</option>
+                  <option value="spreadsheets">Spreadsheets / manual</option>
+                  <option value="none">None</option>
+                  <option value="HubSpot">HubSpot</option>
+                  <option value="Salesforce">Salesforce</option>
+                  <option value="Pipedrive">Pipedrive</option>
+                  <option value="Industry CRM">Industry-specific CRM</option>
+                  <option value="Other">Other</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label for="accounting">Accounting</label>
+                <select id="accounting" name="accounting">
+                  <option value="">Select</option>
+                  <option value="Xero">Xero</option>
+                  <option value="MYOB">MYOB</option>
+                  <option value="QuickBooks">QuickBooks</option>
+                  <option value="Other">Other</option>
+                  <option value="none">None / bookkeeper only</option>
+                </select>
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label for="marketing_tools">Marketing tools</label>
+                <input type="text" id="marketing_tools" name="marketing_tools" placeholder="e.g. Mailchimp, Meta Ads, Semrush">
+              </div>
+              <div class="form-group">
+                <label for="website_platform">Website platform</label>
+                <select id="website_platform" name="website_platform">
+                  <option value="">Select</option>
+                  <option value="WordPress">WordPress</option>
+                  <option value="Squarespace">Squarespace</option>
+                  <option value="Wix">Wix</option>
+                  <option value="Shopify">Shopify</option>
+                  <option value="Custom">Custom build</option>
+                  <option value="none">No website yet</option>
+                </select>
+              </div>
+            </div>
+            <div class="form-group">
+              <label>Integrations already in use</label>
+              <div class="checkbox-grid">
+                <label class="checkbox-label"><input type="checkbox" name="integrations[]" value="Stripe"> Stripe / payments</label>
+                <label class="checkbox-label"><input type="checkbox" name="integrations[]" value="Google"> Google Workspace</label>
+                <label class="checkbox-label"><input type="checkbox" name="integrations[]" value="Zapier"> Zapier / Make</label>
+                <label class="checkbox-label"><input type="checkbox" name="integrations[]" value="Calendar"> Calendar booking</label>
+                <label class="checkbox-label"><input type="checkbox" name="integrations[]" value="Email"> Email marketing</label>
+                <label class="checkbox-label"><input type="checkbox" name="integrations[]" value="None"> None / disconnected</label>
+              </div>
+            </div>
+          </div>
+
+          <!-- Step 3: Challenges -->
+          <div class="discovery-step" style="display:none">
+            <h2>Operational challenges</h2>
+            <p class="step-desc">What&apos;s slowing your business down?</p>
+            <div class="form-group">
+              <label>Biggest challenges *</label>
+              <div class="checkbox-grid">
+                <label class="checkbox-label"><input type="checkbox" name="challenges[]" value="disconnected-systems"> Disconnected systems</label>
+                <label class="checkbox-label"><input type="checkbox" name="challenges[]" value="manual-follow-up"> Manual follow-up</label>
+                <label class="checkbox-label"><input type="checkbox" name="challenges[]" value="online-visibility"> Low online visibility</label>
+                <label class="checkbox-label"><input type="checkbox" name="challenges[]" value="ai-visibility"> Not visible in AI search</label>
+                <label class="checkbox-label"><input type="checkbox" name="challenges[]" value="reporting-visibility"> Poor reporting visibility</label>
+                <label class="checkbox-label"><input type="checkbox" name="challenges[]" value="scaling-ops"> Scaling operations</label>
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="software_spend">Current monthly software spend</label>
+              <select id="software_spend" name="software_spend">
+                <option value="">Select range</option>
+                <option value="Under $200/mo">Under $200/mo</option>
+                <option value="$200–500/mo">$200–500/mo</option>
+                <option value="$500–1000/mo">$500–1000/mo</option>
+                <option value="$1000–2000/mo">$1000–2000/mo</option>
+                <option value="$2000+/mo">$2000+/mo</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Step 4: Goals -->
+          <div class="discovery-step" style="display:none">
+            <h2>Growth &amp; AI readiness</h2>
+            <p class="step-desc">Where do you want to take the business?</p>
+            <div class="form-group">
+              <label>Growth objectives</label>
+              <div class="checkbox-grid">
+                <label class="checkbox-label"><input type="checkbox" name="growth_objectives[]" value="centralise-ops"> Centralise operations</label>
+                <label class="checkbox-label"><input type="checkbox" name="growth_objectives[]" value="automate-workflows"> Automate workflows</label>
+                <label class="checkbox-label"><input type="checkbox" name="growth_objectives[]" value="improve-visibility"> Improve visibility</label>
+                <label class="checkbox-label"><input type="checkbox" name="growth_objectives[]" value="implement-ai"> Implement AI</label>
+                <label class="checkbox-label"><input type="checkbox" name="growth_objectives[]" value="replace-stack"> Replace current stack</label>
+                <label class="checkbox-label"><input type="checkbox" name="growth_objectives[]" value="scale-team"> Scale the team</label>
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label for="ai_adoption">AI adoption level</label>
+                <select id="ai_adoption" name="ai_adoption">
+                  <option value="">Select</option>
+                  <option value="none">Not using AI yet</option>
+                  <option value="exploring">Exploring options</option>
+                  <option value="implementing">Implementing tools</option>
+                  <option value="active">Active across the business</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label for="timeframe">Desired implementation timeframe</label>
+                <select id="timeframe" name="timeframe">
+                  <option value="">Select</option>
+                  <option value="ASAP">ASAP</option>
+                  <option value="1–3 months">1–3 months</option>
+                  <option value="3–6 months">3–6 months</option>
+                  <option value="Exploring">Just exploring</option>
+                </select>
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="budget_range">Budget range</label>
+              <select id="budget_range" name="budget_range">
+                <option value="">Select range</option>
+                <option value="Under $200/mo">Under $200/mo</option>
+                <option value="$200–500/mo">$200–500/mo</option>
+                <option value="$500–1000/mo">$500–1000/mo</option>
+                <option value="$1000+/mo">$1000+/mo</option>
+                <option value="Enterprise / custom">Enterprise / custom</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Interested in</label>
+              <div class="checkbox-grid">
+                <label class="checkbox-label"><input type="checkbox" name="interested_in[]" value="Platform"> Platform</label>
+                <label class="checkbox-label"><input type="checkbox" name="interested_in[]" value="Industry Apps"> Industry Apps</label>
+                <label class="checkbox-label"><input type="checkbox" name="interested_in[]" value="AI Visibility"> AI Visibility</label>
+                <label class="checkbox-label"><input type="checkbox" name="interested_in[]" value="Voice AI"> Voice AI</label>
+                <label class="checkbox-label"><input type="checkbox" name="interested_in[]" value="Automation"> Automation</label>
+                <label class="checkbox-label"><input type="checkbox" name="interested_in[]" value="Professional Services"> Professional Services</label>
+              </div>
+            </div>
+          </div>
+
+          <!-- Step 5: Contact -->
+          <div class="discovery-step" style="display:none">
+            <h2>Your details</h2>
+            <p class="step-desc">We&apos;ll send your Digital Maturity report and recommendations.</p>
+            <div class="form-row">
+              <div class="form-group">
+                <label for="full_name">Full name *</label>
+                <input type="text" id="full_name" name="full_name" required placeholder="Your full name">
+              </div>
+              <div class="form-group">
+                <label for="business_name">Business name *</label>
+                <input type="text" id="business_name" name="business_name" required placeholder="Your business name">
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label for="email">Email *</label>
+                <input type="email" id="email" name="email" required placeholder="you@yourbusiness.com.au">
+              </div>
+              <div class="form-group">
+                <label for="phone">Phone</label>
+                <input type="tel" id="phone" name="phone" placeholder="Your phone number">
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="goals_message">Tell us about your goals</label>
+              <textarea id="goals_message" name="goals_message" rows="4" placeholder="What would success look like with DigitalGate?"></textarea>
+            </div>
+          </div>
+
+          <div class="discovery-nav">
+            <button type="button" id="discoveryPrev">← Back</button>
+            <button type="button" id="discoveryNext" class="btn-primary">Continue →</button>
+            <button type="submit" id="discoverySubmit" class="btn-primary" style="display:none">Get My Recommendations →</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </section>
+
+  <section id="discoveryResults" class="container"></section>
+</div>
+
+<!-- discovery-form.js loaded via DG Platform when page slug is /discover/ -->

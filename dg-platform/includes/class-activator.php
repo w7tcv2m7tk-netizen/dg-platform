@@ -50,6 +50,10 @@ class DG_Activator {
         if (class_exists('DG_Plan_Registry') && !get_option(DG_Plan_Registry::OPTION_PLAN)) {
             DG_Plan_Registry::set_plan(DG_Plan_Registry::default_for_site());
         }
+
+        if (class_exists('DG_SEO_Redirects')) {
+            DG_SEO_Redirects::seed_defaults();
+        }
     }
 
     private static function site_profile_option() {
@@ -76,6 +80,9 @@ class DG_Activator {
         self::create_tables();
         if (class_exists('DG_Permissions')) {
             DG_Permissions::register_capabilities();
+        }
+        if (class_exists('DG_SEO_Redirects')) {
+            DG_SEO_Redirects::seed_defaults();
         }
         update_option('dg_platform_db_version', DG_PLATFORM_VERSION);
     }

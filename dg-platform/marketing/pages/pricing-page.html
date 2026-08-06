@@ -1779,8 +1779,8 @@
       'growth-authority':      'https://buy.stripe.com/5kQcN45kb7OM7ZicJZb7y02',
       'growth-partner':        'https://buy.stripe.com/eVq5kC7sj0mk2EYdO3b7y07',
       // Support Plans — add Stripe links when live
-      'support-priority':      '',
-      'support-success-partner': '',
+      'support-priority':      'https://digitalgate.com.au/contact/?interest=support-priority',
+      'support-success-partner': 'https://digitalgate.com.au/contact/?interest=support-success-partner',
       // Industry Apps (+$99/mo)
       'app-real-estate':       'https://buy.stripe.com/5kQ7sKh2T8SQenGdO3b7y0i',
       'app-finance':           'https://buy.stripe.com/dRm00iaEvb0YdjC7pFb7y0h',
@@ -1813,8 +1813,10 @@
       var btn = card.querySelector('.btn-primary');
       if (btn && url && url !== 'REPLACE_ME') {
         btn.href = url;
-        btn.setAttribute('target', '_blank');
-        btn.setAttribute('rel', 'noopener');
+        if (url.indexOf('buy.stripe.com') !== -1) {
+          btn.setAttribute('target', '_blank');
+          btn.setAttribute('rel', 'noopener');
+        }
       }
     });
 

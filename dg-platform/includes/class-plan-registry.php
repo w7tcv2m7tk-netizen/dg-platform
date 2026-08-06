@@ -50,7 +50,7 @@ class DG_Plan_Registry {
             ],
             'professional' => [
                 'key' => 'professional',
-                'label' => 'Professional',
+                'label' => 'Growth',
                 'price' => 249,
                 'price_label' => '$249/mo',
                 'users' => 5,
@@ -76,7 +76,7 @@ class DG_Plan_Registry {
             ],
             'business' => [
                 'key' => 'business',
-                'label' => 'Business',
+                'label' => 'Scale',
                 'price' => 499,
                 'price_label' => '$499/mo',
                 'users' => 0,

@@ -45,6 +45,31 @@ class DG_SEO_Redirects {
         update_option(self::OPTION, $clean);
     }
 
+    /** Merge default marketing redirects without overwriting custom rules. */
+    public static function seed_defaults() {
+        $defaults = [
+            ['from' => '/services', 'to' => home_url('/pricing/'), 'code' => 301],
+            ['from' => '/free-agency-audit', 'to' => home_url('/contact/'), 'code' => 301],
+        ];
+
+        $rows = self::all();
+        $existing_from = [];
+        foreach ($rows as $row) {
+            $existing_from[self::normalize_path($row['from'])] = true;
+        }
+
+        foreach ($defaults as $row) {
+            $from = self::normalize_path($row['from']);
+            if (isset($existing_from[$from])) {
+                continue;
+            }
+            $rows[] = $row;
+            $existing_from[$from] = true;
+        }
+
+        self::save($rows);
+    }
+
     public static function maybe_redirect() {
         if (is_admin() || (defined('DOING_CRON') && DOING_CRON)) {
             return;

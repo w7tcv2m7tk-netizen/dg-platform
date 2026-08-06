@@ -45,6 +45,7 @@ This is a **brand repositioning**, not a cosmetic redesign. DigitalGate is an AI
 | `homepage.html` | Paste into Oxygen on `/` (homepage) |
 | `about-page.html` | Paste into Oxygen on `/about` |
 | `contact-page.html` | Paste into Oxygen on `/contact` |
+| `discovery-form.html` | Paste into Oxygen on `/discover` |
 | `digital-business-card.html` | Paste into Oxygen on `/card/` (Ben Roe digital card) |
 | `pricing-page.html` | Paste into Oxygen on `/pricing` |
 | `PRICING-DEPLOY.md` | Pricing-specific deploy notes |
