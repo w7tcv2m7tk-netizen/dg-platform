@@ -35,6 +35,11 @@ class DG_Acc_Dev_API {
                 ],
             ],
             [
+                'methods' => 'POST',
+                'callback' => [__CLASS__, 'create_bookings'],
+                'permission_callback' => [__CLASS__, 'can_manage'],
+            ],
+            [
                 'methods' => 'PATCH',
                 'callback' => [__CLASS__, 'update_bookings'],
                 'permission_callback' => [__CLASS__, 'can_manage'],
@@ -150,6 +155,15 @@ class DG_Acc_Dev_API {
 
         $today = current_time('Y-m-d');
         $tomorrow = date('Y-m-d', strtotime('+1 day'));
+        $checkins_today = get_posts([
+            'post_type' => 'dg_booking',
+            'posts_per_page' => -1,
+            'fields' => 'ids',
+            'meta_query' => [
+                ['key' => 'dg_booking_checkin', 'value' => $today, 'compare' => '=', 'type' => 'DATE'],
+                ['key' => 'dg_booking_status', 'value' => ['cancelled', 'completed'], 'compare' => 'NOT IN'],
+            ],
+        ]);
         $checkins_tomorrow = get_posts([
             'post_type' => 'dg_booking',
             'posts_per_page' => -1,
@@ -159,6 +173,8 @@ class DG_Acc_Dev_API {
                 ['key' => 'dg_booking_status', 'value' => ['cancelled', 'completed'], 'compare' => 'NOT IN'],
             ],
         ]);
+        $summary['checkins_today'] = count($checkins_today);
+        $summary['checkins_today_ids'] = array_map('intval', $checkins_today);
         $summary['checkins_tomorrow'] = count($checkins_tomorrow);
         $summary['checkins_tomorrow_ids'] = array_map('intval', $checkins_tomorrow);
 
@@ -270,13 +286,7 @@ class DG_Acc_Dev_API {
             'posts_per_page' => (int) $request->get_param('limit'),
             'post_status' => 'publish',
         ]) as $g) {
-            $guests[] = [
-                'id' => $g->ID,
-                'name' => $g->post_title,
-                'email' => get_post_meta($g->ID, 'dg_guest_email', true),
-                'phone' => get_post_meta($g->ID, 'dg_guest_phone', true),
-                'total_stays' => (int) get_post_meta($g->ID, 'dg_guest_total_stays', true),
-            ];
+            $guests[] = self::format_guest($g);
         }
         return rest_ensure_response(['guests' => $guests, 'total' => (int) wp_count_posts('dg_guest')->publish]);
     }
@@ -638,21 +648,234 @@ class DG_Acc_Dev_API {
             }
             $source = (string) get_post_meta($b->ID, 'dg_booking_source', true);
             $status = (string) get_post_meta($b->ID, 'dg_booking_status', true) ?: 'pending';
+            $paid = (string) get_post_meta($b->ID, 'dg_booking_paid', true);
+            $nights = (int) get_post_meta($b->ID, 'dg_booking_nights', true);
+            $checkin = (string) get_post_meta($b->ID, 'dg_booking_checkin', true);
+            $checkout = (string) get_post_meta($b->ID, 'dg_booking_checkout', true);
+            if ($nights <= 0 && $checkin && $checkout) {
+                $nights = self::nights_between($checkin, $checkout);
+            }
             $out[] = [
                 'id' => $b->ID,
                 'ref' => get_post_meta($b->ID, 'dg_booking_ref', true),
                 'guest_name' => $guest,
                 'email' => get_post_meta($b->ID, 'dg_booking_email', true),
+                'phone' => get_post_meta($b->ID, 'dg_booking_phone', true),
                 'accommodation' => get_post_meta($b->ID, 'dg_booking_accommodation_name', true),
                 'accommodation_id' => (int) get_post_meta($b->ID, 'dg_booking_accommodation_id', true),
-                'checkin' => get_post_meta($b->ID, 'dg_booking_checkin', true),
-                'checkout' => get_post_meta($b->ID, 'dg_booking_checkout', true),
+                'checkin' => $checkin,
+                'checkout' => $checkout,
+                'nights' => $nights,
+                'guests' => (int) get_post_meta($b->ID, 'dg_booking_guests', true) ?: null,
                 'status' => $status,
                 'source' => $source !== '' ? $source : $status,
                 'total' => (float) get_post_meta($b->ID, 'dg_booking_total', true),
+                'paid' => $paid === '' ? null : $paid,
+                'payment_method' => get_post_meta($b->ID, 'dg_booking_payment_method', true) ?: null,
+                'message' => get_post_meta($b->ID, 'dg_booking_message', true) ?: '',
             ];
         }
         return $out;
+    }
+
+    /** @return array<string,mixed> */
+    private static function format_guest($g) {
+        $vip = get_post_meta($g->ID, 'dg_guest_vip', true);
+        return [
+            'id' => $g->ID,
+            'name' => $g->post_title,
+            'email' => get_post_meta($g->ID, 'dg_guest_email', true),
+            'phone' => get_post_meta($g->ID, 'dg_guest_phone', true),
+            'address' => get_post_meta($g->ID, 'dg_guest_address', true) ?: '',
+            'source' => get_post_meta($g->ID, 'dg_guest_source', true) ?: '',
+            'vip' => $vip === '1' || $vip === 1 || $vip === true,
+            'notes' => get_post_meta($g->ID, 'dg_guest_notes', true) ?: '',
+            'tags' => get_post_meta($g->ID, 'dg_guest_tags', true) ?: '',
+            'total_stays' => (int) get_post_meta($g->ID, 'dg_guest_total_stays', true),
+            'total_nights' => (int) get_post_meta($g->ID, 'dg_guest_total_nights', true),
+            'total_spent' => (float) get_post_meta($g->ID, 'dg_guest_total_spent', true),
+            'last_stay' => get_post_meta($g->ID, 'dg_guest_last_stay', true) ?: null,
+            'contact_id' => get_post_meta($g->ID, 'dg_guest_contact_id', true) ?: null,
+        ];
+    }
+
+    /** Inclusive night count between YYYY-MM-DD dates (checkout exclusive). */
+    private static function nights_between($checkin, $checkout) {
+        $in = strtotime($checkin . ' 00:00:00');
+        $out = strtotime($checkout . ' 00:00:00');
+        if (!$in || !$out || $out <= $in) {
+            return 0;
+        }
+        return (int) round(($out - $in) / DAY_IN_SECONDS);
+    }
+
+    /**
+     * Create manual / direct bookings from Gen 2.
+     * Body: { booking: {...} } or { bookings: [{...}] } or a single booking object.
+     */
+    public static function create_bookings($request) {
+        $body = $request->get_json_params();
+        if (!is_array($body)) {
+            $body = [];
+        }
+
+        $rows = [];
+        if (isset($body['bookings']) && is_array($body['bookings'])) {
+            $rows = $body['bookings'];
+        } elseif (isset($body['booking']) && is_array($body['booking'])) {
+            $rows = [$body['booking']];
+        } elseif (isset($body['guest_name']) || isset($body['accommodation_id']) || isset($body['checkin'])) {
+            $rows = [$body];
+        }
+
+        if (!$rows) {
+            return new WP_Error(
+                'missing_booking',
+                'Provide booking{guest_name,accommodation_id,checkin,checkout,…} or bookings[].',
+                ['status' => 400]
+            );
+        }
+
+        $allowed_status = ['confirmed', 'pending', 'airbnb', 'bookingcom', 'cancelled', 'completed'];
+        $allowed_source = ['manual', 'direct', 'website', 'airbnb', 'bookingcom', 'phone', 'email'];
+        $allowed_paid = ['yes', 'no'];
+        $allowed_payment = ['payid', 'stripe', 'airbnb', 'bookingcom', 'cash', 'bank', 'other', ''];
+
+        $created = [];
+        $acc_ids = [];
+        $errors = [];
+
+        foreach ($rows as $i => $row) {
+            if (!is_array($row)) {
+                $errors[] = ['index' => $i, 'message' => 'Invalid booking row'];
+                continue;
+            }
+
+            $guest_name = sanitize_text_field((string) ($row['guest_name'] ?? $row['name'] ?? ''));
+            $acc_id = (int) ($row['accommodation_id'] ?? 0);
+            $checkin = sanitize_text_field((string) ($row['checkin'] ?? ''));
+            $checkout = sanitize_text_field((string) ($row['checkout'] ?? ''));
+
+            if ($guest_name === '' || !$acc_id || $checkin === '' || $checkout === '') {
+                $errors[] = [
+                    'index' => $i,
+                    'message' => 'guest_name, accommodation_id, checkin, and checkout are required',
+                ];
+                continue;
+            }
+            if (get_post_type($acc_id) !== 'dg_accommodation') {
+                $errors[] = ['index' => $i, 'message' => 'Invalid accommodation_id'];
+                continue;
+            }
+            if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $checkin) || !preg_match('/^\d{4}-\d{2}-\d{2}$/', $checkout)) {
+                $errors[] = ['index' => $i, 'message' => 'checkin/checkout must be YYYY-MM-DD'];
+                continue;
+            }
+            if (strtotime($checkout) <= strtotime($checkin)) {
+                $errors[] = ['index' => $i, 'message' => 'checkout must be after checkin'];
+                continue;
+            }
+
+            $acc_name = get_the_title($acc_id);
+            $nights = isset($row['nights']) ? (int) $row['nights'] : self::nights_between($checkin, $checkout);
+            if ($nights <= 0) {
+                $nights = self::nights_between($checkin, $checkout);
+            }
+            $guests = isset($row['guests']) ? max(1, (int) $row['guests']) : 2;
+            $email = sanitize_email((string) ($row['email'] ?? ''));
+            $phone = sanitize_text_field((string) ($row['phone'] ?? ''));
+            $message = sanitize_textarea_field((string) ($row['message'] ?? ''));
+            $total = isset($row['total']) ? (float) $row['total'] : 0.0;
+
+            $status = sanitize_key((string) ($row['status'] ?? 'confirmed'));
+            if (!in_array($status, $allowed_status, true)) {
+                $status = 'confirmed';
+            }
+
+            $source = sanitize_key((string) ($row['source'] ?? 'manual'));
+            if (!in_array($source, $allowed_source, true)) {
+                $source = 'manual';
+            }
+
+            $paid = sanitize_key((string) ($row['paid'] ?? ''));
+            if ($paid === 'true' || $paid === '1') {
+                $paid = 'yes';
+            } elseif ($paid === 'false' || $paid === '0') {
+                $paid = 'no';
+            }
+            if (!in_array($paid, $allowed_paid, true)) {
+                $paid = ($status === 'confirmed') ? 'yes' : 'no';
+            }
+
+            $payment_method = sanitize_key((string) ($row['payment_method'] ?? ''));
+            if (!in_array($payment_method, $allowed_payment, true)) {
+                $payment_method = '';
+            }
+
+            $ref = sanitize_text_field((string) ($row['ref'] ?? ''));
+            if ($ref === '') {
+                $prefix = ($source === 'direct') ? 'DIRECT' : 'MANUAL';
+                $ref = $prefix . '-' . gmdate('Ymd') . '-' . wp_rand(1000, 9999);
+            }
+
+            $booking_id = wp_insert_post([
+                'post_type' => 'dg_booking',
+                'post_title' => $guest_name . ' — ' . $acc_name,
+                'post_status' => 'publish',
+                'meta_input' => [
+                    'dg_booking_accommodation_id' => $acc_id,
+                    'dg_booking_accommodation_name' => $acc_name,
+                    'dg_booking_checkin' => $checkin,
+                    'dg_booking_checkout' => $checkout,
+                    'dg_booking_nights' => $nights,
+                    'dg_booking_guests' => $guests,
+                    'dg_booking_name' => $guest_name,
+                    'dg_booking_email' => $email,
+                    'dg_booking_phone' => $phone,
+                    'dg_booking_message' => $message,
+                    'dg_booking_ref' => $ref,
+                    'dg_booking_total' => $total,
+                    'dg_booking_paid' => $paid,
+                    'dg_booking_payment_method' => $payment_method,
+                    'dg_booking_status' => $status,
+                    'dg_booking_source' => $source,
+                ],
+            ], true);
+
+            if (is_wp_error($booking_id)) {
+                $errors[] = ['index' => $i, 'message' => $booking_id->get_error_message()];
+                continue;
+            }
+
+            $acc_ids[$acc_id] = true;
+
+            if ($status === 'confirmed') {
+                do_action('dg_booking_confirmed', (int) $booking_id);
+            }
+            do_action('dg_booking_created', (int) $booking_id, $ref);
+
+            $created[] = self::format_bookings([get_post($booking_id)])[0] ?? ['id' => (int) $booking_id];
+        }
+
+        if (class_exists('DG_Acc_Ota')) {
+            foreach (array_keys($acc_ids) as $acc_id) {
+                DG_Acc_Ota::rebuild_blocked_dates((int) $acc_id);
+            }
+        }
+
+        if (!$created && $errors) {
+            return new WP_Error('create_failed', $errors[0]['message'] ?? 'Could not create booking', [
+                'status' => 400,
+                'errors' => $errors,
+            ]);
+        }
+
+        return rest_ensure_response([
+            'ok' => true,
+            'created' => $created,
+            'count' => count($created),
+            'errors' => $errors,
+        ]);
     }
 
     /**
@@ -959,11 +1182,15 @@ class DG_Acc_Dev_API {
     public static function update_bookings($request) {
         $updates = self::extract_updates($request);
         if (!$updates) {
-            return new WP_Error('missing_updates', 'Provide updates[{id,guest_name?,email?,phone?,checkin?,checkout?,status?,total?,accommodation_id?}].', ['status' => 400]);
+            return new WP_Error('missing_updates', 'Provide updates[{id,guest_name?,email?,phone?,checkin?,checkout?,status?,total?,accommodation_id?,guests?,nights?,paid?,payment_method?,message?,source?}].', ['status' => 400]);
         }
 
         $allowed_status = ['confirmed', 'pending', 'airbnb', 'bookingcom', 'cancelled', 'completed'];
+        $allowed_source = ['manual', 'direct', 'website', 'airbnb', 'bookingcom', 'phone', 'email'];
+        $allowed_paid = ['yes', 'no'];
+        $allowed_payment = ['payid', 'stripe', 'airbnb', 'bookingcom', 'cash', 'bank', 'other', ''];
         $saved = [];
+        $acc_ids = [];
 
         foreach ($updates as $row) {
             if (!is_array($row)) {
@@ -973,6 +1200,9 @@ class DG_Acc_Dev_API {
             if (!$id || get_post_type($id) !== 'dg_booking') {
                 continue;
             }
+
+            $prev_acc = (int) get_post_meta($id, 'dg_booking_accommodation_id', true);
+            $dates_or_unit_changed = false;
 
             if (isset($row['guest_name']) && is_string($row['guest_name'])) {
                 $name = sanitize_text_field($row['guest_name']);
@@ -993,28 +1223,92 @@ class DG_Acc_Dev_API {
             }
             if (!empty($row['checkin'])) {
                 update_post_meta($id, 'dg_booking_checkin', sanitize_text_field((string) $row['checkin']));
+                $dates_or_unit_changed = true;
             }
             if (!empty($row['checkout'])) {
                 update_post_meta($id, 'dg_booking_checkout', sanitize_text_field((string) $row['checkout']));
+                $dates_or_unit_changed = true;
             }
             if (!empty($row['status']) && in_array($row['status'], $allowed_status, true)) {
                 update_post_meta($id, 'dg_booking_status', sanitize_key($row['status']));
+                // Cancel / uncancel affects blocked dates.
+                if ($row['status'] === 'cancelled' || $prev_acc) {
+                    $dates_or_unit_changed = true;
+                }
             }
             if (array_key_exists('total', $row) && $row['total'] !== null && $row['total'] !== '') {
                 update_post_meta($id, 'dg_booking_total', (float) $row['total']);
+            }
+            if (array_key_exists('guests', $row) && $row['guests'] !== null && $row['guests'] !== '') {
+                update_post_meta($id, 'dg_booking_guests', max(1, (int) $row['guests']));
+            }
+            if (array_key_exists('nights', $row) && $row['nights'] !== null && $row['nights'] !== '') {
+                update_post_meta($id, 'dg_booking_nights', max(0, (int) $row['nights']));
+            } elseif ($dates_or_unit_changed) {
+                $checkin = (string) get_post_meta($id, 'dg_booking_checkin', true);
+                $checkout = (string) get_post_meta($id, 'dg_booking_checkout', true);
+                $nights = self::nights_between($checkin, $checkout);
+                if ($nights > 0) {
+                    update_post_meta($id, 'dg_booking_nights', $nights);
+                }
+            }
+            if (array_key_exists('paid', $row)) {
+                $paid = sanitize_key((string) $row['paid']);
+                if ($paid === 'true' || $paid === '1') {
+                    $paid = 'yes';
+                } elseif ($paid === 'false' || $paid === '0') {
+                    $paid = 'no';
+                }
+                if (in_array($paid, $allowed_paid, true)) {
+                    update_post_meta($id, 'dg_booking_paid', $paid);
+                }
+            }
+            if (array_key_exists('payment_method', $row)) {
+                $method = sanitize_key((string) $row['payment_method']);
+                if (in_array($method, $allowed_payment, true)) {
+                    if ($method === '') {
+                        delete_post_meta($id, 'dg_booking_payment_method');
+                    } else {
+                        update_post_meta($id, 'dg_booking_payment_method', $method);
+                    }
+                }
+            }
+            if (array_key_exists('message', $row)) {
+                update_post_meta($id, 'dg_booking_message', sanitize_textarea_field((string) $row['message']));
+            }
+            if (!empty($row['source']) && in_array(sanitize_key((string) $row['source']), $allowed_source, true)) {
+                update_post_meta($id, 'dg_booking_source', sanitize_key((string) $row['source']));
             }
             if (!empty($row['accommodation_id'])) {
                 $acc_id = (int) $row['accommodation_id'];
                 if ($acc_id && get_post_type($acc_id) === 'dg_accommodation') {
                     update_post_meta($id, 'dg_booking_accommodation_id', $acc_id);
                     update_post_meta($id, 'dg_booking_accommodation_name', get_the_title($acc_id));
+                    if ($acc_id !== $prev_acc) {
+                        $dates_or_unit_changed = true;
+                        if ($prev_acc) {
+                            $acc_ids[$prev_acc] = true;
+                        }
+                    }
                 }
             }
             if (array_key_exists('ref', $row) && is_string($row['ref'])) {
                 update_post_meta($id, 'dg_booking_ref', sanitize_text_field($row['ref']));
             }
 
+            $new_acc = (int) get_post_meta($id, 'dg_booking_accommodation_id', true);
+            if ($dates_or_unit_changed && $new_acc) {
+                $acc_ids[$new_acc] = true;
+            }
+
             $saved[] = self::format_bookings([get_post($id)])[0] ?? ['id' => $id];
+        }
+
+        // Same as DELETE path — keep OTA blocked dates in sync when stay nights / unit change.
+        if (class_exists('DG_Acc_Ota')) {
+            foreach (array_keys($acc_ids) as $acc_id) {
+                DG_Acc_Ota::rebuild_blocked_dates((int) $acc_id);
+            }
         }
 
         return rest_ensure_response([
@@ -1086,7 +1380,11 @@ class DG_Acc_Dev_API {
     public static function update_guests($request) {
         $updates = self::extract_updates($request);
         if (!$updates) {
-            return new WP_Error('missing_updates', 'Provide updates[{id,name?,email?,phone?}].', ['status' => 400]);
+            return new WP_Error(
+                'missing_updates',
+                'Provide updates[{id|contact_id,name?,email?,phone?,address?,source?,vip?,notes?,tags?}].',
+                ['status' => 400]
+            );
         }
 
         $saved = [];
@@ -1094,7 +1392,22 @@ class DG_Acc_Dev_API {
             if (!is_array($row)) {
                 continue;
             }
+
             $id = (int) ($row['id'] ?? 0);
+            // Gen 2 Contact-centric: resolve WP guest by stored contact_id when id omitted.
+            if (!$id && !empty($row['contact_id']) && is_string($row['contact_id'])) {
+                $found = get_posts([
+                    'post_type' => 'dg_guest',
+                    'posts_per_page' => 1,
+                    'post_status' => 'publish',
+                    'fields' => 'ids',
+                    'meta_query' => [
+                        ['key' => 'dg_guest_contact_id', 'value' => sanitize_text_field($row['contact_id'])],
+                    ],
+                ]);
+                $id = !empty($found) ? (int) $found[0] : 0;
+            }
+
             if (!$id || get_post_type($id) !== 'dg_guest') {
                 continue;
             }
@@ -1111,15 +1424,31 @@ class DG_Acc_Dev_API {
             if (array_key_exists('phone', $row)) {
                 update_post_meta($id, 'dg_guest_phone', sanitize_text_field((string) $row['phone']));
             }
+            if (array_key_exists('address', $row)) {
+                update_post_meta($id, 'dg_guest_address', sanitize_text_field((string) $row['address']));
+            }
+            if (array_key_exists('source', $row)) {
+                update_post_meta($id, 'dg_guest_source', sanitize_text_field((string) $row['source']));
+            }
+            if (array_key_exists('notes', $row)) {
+                update_post_meta($id, 'dg_guest_notes', sanitize_textarea_field((string) $row['notes']));
+            }
+            if (array_key_exists('tags', $row)) {
+                $tags = is_array($row['tags'])
+                    ? implode(', ', array_map('sanitize_text_field', $row['tags']))
+                    : sanitize_text_field((string) $row['tags']);
+                update_post_meta($id, 'dg_guest_tags', $tags);
+            }
+            if (array_key_exists('vip', $row)) {
+                $vip = !empty($row['vip']) && $row['vip'] !== '0' && $row['vip'] !== 'false';
+                update_post_meta($id, 'dg_guest_vip', $vip ? '1' : '0');
+            }
+            if (array_key_exists('contact_id', $row) && is_string($row['contact_id']) && $row['contact_id'] !== '') {
+                update_post_meta($id, 'dg_guest_contact_id', sanitize_text_field($row['contact_id']));
+            }
 
             $post = get_post($id);
-            $saved[] = [
-                'id' => $id,
-                'name' => $post ? $post->post_title : '',
-                'email' => get_post_meta($id, 'dg_guest_email', true),
-                'phone' => get_post_meta($id, 'dg_guest_phone', true),
-                'total_stays' => (int) get_post_meta($id, 'dg_guest_total_stays', true),
-            ];
+            $saved[] = $post ? self::format_guest($post) : ['id' => $id];
         }
 
         return rest_ensure_response([

@@ -1,5 +1,13 @@
 # DG Platform Changelog
 
+## 10.65.0 — Accommodation Gen 2 booking create + richer APIs (August 2026)
+
+- **POST `/accommodation/bookings`** — create manual/direct bookings (guest, unit, dates, guests/nights, paid, payment_method, message, source); rebuilds OTA blocked dates
+- **PATCH bookings** — richer writable fields; **rebuild_blocked_dates()** when check-in/out or unit changes (same as DELETE cancel path)
+- **GET bookings** — phone, guests, nights, paid, payment_method, message, source on every row
+- **GET/PATCH guests** — VIP, notes, tags, address, source, total nights/spend, last stay; optional `contact_id` link for Gen 2 Contact sync
+- **GET summary** — `checkins_today` (+ ids) alongside tomorrow
+
 ## 10.64.0 — CVH email logos + booking source (August 2026)
 
 - **Root cause:** CVH/Roe email logos pointed at live `/uploads/` URLs that return **403** behind CDN hotlink protection — clients never showed images
