@@ -201,12 +201,61 @@ class DG_Acc_Dev_API {
         ]);
     }
 
+    /**
+     * Query args for accommodation units in the Dev API / Gen 2.
+     * Includes coming soon + events listings (not only bookable), and draft/private for ops.
+     *
+     * @param array $extra Extra get_posts args.
+     * @return array
+     */
+    private static function accommodation_query_args($extra = []) {
+        $defaults = [
+            'post_type' => 'dg_accommodation',
+            'posts_per_page' => -1,
+            'post_status' => ['publish', 'private', 'draft', 'pending'],
+            'orderby' => 'title',
+            'order' => 'ASC',
+        ];
+        return array_merge($defaults, $extra);
+    }
+
+    /** @return WP_Post[] sorted bookable → coming_soon → events_future → other */
+    private static function get_accommodation_posts($extra = []) {
+        $posts = get_posts(self::accommodation_query_args($extra));
+        if (!class_exists('DG_Acc_Listing_Status')) {
+            return $posts;
+        }
+        $rank = [
+            DG_Acc_Listing_Status::BOOKABLE => 0,
+            DG_Acc_Listing_Status::COMING_SOON => 1,
+            DG_Acc_Listing_Status::EVENTS_FUTURE => 2,
+        ];
+        usort($posts, static function ($a, $b) use ($rank) {
+            $ra = $rank[DG_Acc_Listing_Status::get($a->ID)] ?? 9;
+            $rb = $rank[DG_Acc_Listing_Status::get($b->ID)] ?? 9;
+            if ($ra !== $rb) {
+                return $ra <=> $rb;
+            }
+            return strcasecmp($a->post_title, $b->post_title);
+        });
+        return $posts;
+    }
+
     public static function list_properties($request) {
         $properties = [];
-        foreach (get_posts(['post_type' => 'dg_accommodation', 'posts_per_page' => -1, 'post_status' => 'publish', 'orderby' => 'title', 'order' => 'ASC']) as $p) {
-            $properties[] = self::format_property($p);
+        $listing_filter = sanitize_key((string) $request->get_param('listing_status'));
+        foreach (self::get_accommodation_posts() as $p) {
+            $row = self::format_property($p);
+            if ($listing_filter !== '' && ($row['listing_status'] ?? '') !== $listing_filter) {
+                continue;
+            }
+            $properties[] = $row;
         }
-        return rest_ensure_response(['properties' => $properties, 'total' => count($properties)]);
+        return rest_ensure_response([
+            'properties' => $properties,
+            'total' => count($properties),
+            'includes' => ['coming_soon', 'events_future', 'draft', 'private'],
+        ]);
     }
 
     public static function list_guests($request) {
@@ -238,17 +287,12 @@ class DG_Acc_Dev_API {
         }
 
         $property_id = (int) $request->get_param('property_id');
-        $query = [
-            'post_type' => 'dg_accommodation',
-            'posts_per_page' => -1,
-            'post_status' => 'publish',
-            'orderby' => 'title',
-            'order' => 'ASC',
-        ];
+        $extra = [];
         if ($property_id > 0) {
-            $query['include'] = [$property_id];
+            $extra['include'] = [$property_id];
+            $extra['post_status'] = ['publish', 'private', 'draft', 'pending'];
         }
-        $properties = get_posts($query);
+        $properties = self::get_accommodation_posts($extra);
 
         $units = [];
         foreach ($properties as $p) {
@@ -292,13 +336,7 @@ class DG_Acc_Dev_API {
 
     public static function list_housekeeping($request) {
         $items = [];
-        foreach (get_posts([
-            'post_type' => 'dg_accommodation',
-            'posts_per_page' => -1,
-            'post_status' => 'publish',
-            'orderby' => 'title',
-            'order' => 'ASC',
-        ]) as $p) {
+        foreach (self::get_accommodation_posts() as $p) {
             $items[] = [
                 'id' => $p->ID,
                 'title' => $p->post_title,
@@ -435,6 +473,7 @@ class DG_Acc_Dev_API {
             'id' => $p->ID,
             'title' => $p->post_title,
             'slug' => $p->post_name,
+            'post_status' => $p->post_status,
             'weekday_rate' => (float) get_post_meta($p->ID, 'dg_weekday_rate', true),
             'weekend_rate' => (float) get_post_meta($p->ID, 'dg_weekend_rate', true),
             'cleaning_fee' => (float) get_post_meta($p->ID, 'dg_cleaning_fee', true),
@@ -496,12 +535,7 @@ class DG_Acc_Dev_API {
         }
         $property_id = (int) $request->get_param('property_id');
 
-        $query = [
-            'post_type' => 'dg_accommodation',
-            'posts_per_page' => -1,
-            'post_status' => 'publish',
-            'fields' => 'ids',
-        ];
+        $query = self::accommodation_query_args(['fields' => 'ids']);
         if ($property_id > 0) {
             $query['include'] = [$property_id];
         }
