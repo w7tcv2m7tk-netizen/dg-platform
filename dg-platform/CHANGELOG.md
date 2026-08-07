@@ -1,5 +1,11 @@
 # DG Platform Changelog
 
+## 10.60.0 — Soft-delete bookings via Dev API (August 2026)
+
+- **DELETE `/accommodation/bookings`** soft-cancels bookings (`dg_booking_status=cancelled`) — same pattern as OTA iCal UID removal; does not hard-destroy posts
+- Rebuilds OTA blocked dates for affected units after cancel
+- Enables Gen 2 Bookings table Delete button
+
 ## 10.56.0 — Branded email logos (August 2026)
 
 - **Roe / CVH email shells** now include absolute HTTPS logo images (live site assets); text wordmark fallback if URL empty

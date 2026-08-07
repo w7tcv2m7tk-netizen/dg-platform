@@ -39,6 +39,11 @@ class DG_Acc_Dev_API {
                 'callback' => [__CLASS__, 'update_bookings'],
                 'permission_callback' => [__CLASS__, 'can_manage'],
             ],
+            [
+                'methods' => 'DELETE',
+                'callback' => [__CLASS__, 'delete_bookings'],
+                'permission_callback' => [__CLASS__, 'can_manage'],
+            ],
         ]);
 
         register_rest_route(DG_REST_NAMESPACE, '/accommodation/properties', [
@@ -718,6 +723,65 @@ class DG_Acc_Dev_API {
             'ok' => true,
             'updated' => $saved,
             'count' => count($saved),
+        ]);
+    }
+
+    /**
+     * Soft-delete bookings: set status to cancelled (matches OTA iCal removal).
+     * Does not hard-destroy posts — keeps OTA UID history for re-import.
+     */
+    public static function delete_bookings($request) {
+        $body = $request->get_json_params();
+        if (!is_array($body)) {
+            $body = [];
+        }
+
+        $ids = [];
+        if (!empty($body['ids']) && is_array($body['ids'])) {
+            $ids = array_map('intval', $body['ids']);
+        } elseif (!empty($body['id'])) {
+            $ids = [(int) $body['id']];
+        } else {
+            $updates = self::extract_updates($request);
+            if ($updates) {
+                foreach ($updates as $row) {
+                    if (is_array($row) && !empty($row['id'])) {
+                        $ids[] = (int) $row['id'];
+                    }
+                }
+            }
+        }
+
+        $ids = array_values(array_unique(array_filter($ids)));
+        if (!$ids) {
+            return new WP_Error('missing_ids', 'Provide ids[] or id of bookings to cancel.', ['status' => 400]);
+        }
+
+        $cancelled = [];
+        $acc_ids = [];
+
+        foreach ($ids as $id) {
+            if (!$id || get_post_type($id) !== 'dg_booking') {
+                continue;
+            }
+            update_post_meta($id, 'dg_booking_status', 'cancelled');
+            $acc_id = (int) get_post_meta($id, 'dg_booking_accommodation_id', true);
+            if ($acc_id) {
+                $acc_ids[$acc_id] = true;
+            }
+            $cancelled[] = self::format_bookings([get_post($id)])[0] ?? ['id' => $id, 'status' => 'cancelled'];
+        }
+
+        if (class_exists('DG_Acc_Ota')) {
+            foreach (array_keys($acc_ids) as $acc_id) {
+                DG_Acc_Ota::rebuild_blocked_dates((int) $acc_id);
+            }
+        }
+
+        return rest_ensure_response([
+            'ok' => true,
+            'cancelled' => $cancelled,
+            'count' => count($cancelled),
         ]);
     }
 
