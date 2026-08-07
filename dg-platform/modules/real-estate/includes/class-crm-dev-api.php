@@ -418,6 +418,7 @@ class DG_RE_CRM_Dev_API {
             'roe_property_building_size' => sanitize_text_field((string) ($body['building_size'] ?? '')),
             'roe_property_features' => sanitize_textarea_field((string) ($body['features'] ?? '')),
             'roe_property_external_id' => sanitize_text_field((string) ($body['external_id'] ?? $dg_id)),
+            'roe_property_inspection_times' => sanitize_text_field((string) ($body['inspection_times'] ?? '')),
         ];
 
         if ($price !== null && $price !== '') {
@@ -596,6 +597,7 @@ class DG_RE_CRM_Dev_API {
             'building_size' => get_post_meta($post_id, 'roe_property_building_size', true),
             'features' => get_post_meta($post_id, 'roe_property_features', true),
             'description' => $description,
+            'inspection_times' => get_post_meta($post_id, 'roe_property_inspection_times', true),
             'external_id' => get_post_meta($post_id, 'roe_property_external_id', true),
             'images' => array_values(array_filter($images)),
             'featured_image' => $featured ?: null,

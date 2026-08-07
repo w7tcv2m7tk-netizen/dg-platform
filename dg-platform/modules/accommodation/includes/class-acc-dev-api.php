@@ -167,7 +167,7 @@ class DG_Acc_Dev_API {
         }
 
         $today = current_time('Y-m-d');
-        $tomorrow = date('Y-m-d', strtotime('+1 day'));
+        $tomorrow = wp_date('Y-m-d', current_time('timestamp') + DAY_IN_SECONDS);
         $checkins_today = get_posts([
             'post_type' => 'dg_booking',
             'posts_per_page' => -1,
@@ -186,10 +186,23 @@ class DG_Acc_Dev_API {
                 ['key' => 'dg_booking_status', 'value' => ['cancelled', 'completed'], 'compare' => 'NOT IN'],
             ],
         ]);
+        $checkouts_today = get_posts([
+            'post_type' => 'dg_booking',
+            'posts_per_page' => -1,
+            'fields' => 'ids',
+            'meta_query' => [
+                ['key' => 'dg_booking_checkout', 'value' => $today, 'compare' => '=', 'type' => 'DATE'],
+                ['key' => 'dg_booking_status', 'value' => ['cancelled', 'completed'], 'compare' => 'NOT IN'],
+            ],
+        ]);
         $summary['checkins_today'] = count($checkins_today);
         $summary['checkins_today_ids'] = array_map('intval', $checkins_today);
         $summary['checkins_tomorrow'] = count($checkins_tomorrow);
         $summary['checkins_tomorrow_ids'] = array_map('intval', $checkins_tomorrow);
+        $summary['checkouts_today'] = count($checkouts_today);
+        $summary['checkouts_today_ids'] = array_map('intval', $checkouts_today);
+        $summary['today'] = $today;
+        $summary['tomorrow'] = $tomorrow;
 
         $recent = self::format_bookings(get_posts([
             'post_type' => 'dg_booking',
@@ -439,14 +452,45 @@ class DG_Acc_Dev_API {
     }
 
     public static function list_housekeeping($request) {
+        $today = current_time('Y-m-d');
+        $checkout_unit_ids = [];
+        foreach (get_posts([
+            'post_type' => 'dg_booking',
+            'posts_per_page' => -1,
+            'meta_query' => [
+                ['key' => 'dg_booking_checkout', 'value' => $today, 'compare' => '=', 'type' => 'DATE'],
+                ['key' => 'dg_booking_status', 'value' => ['cancelled', 'completed'], 'compare' => 'NOT IN'],
+            ],
+        ]) as $b) {
+            $uid = (int) get_post_meta($b->ID, 'dg_booking_accommodation_id', true);
+            if ($uid) {
+                $checkout_unit_ids[$uid] = true;
+            }
+        }
+
         $items = [];
+        $summary = [];
+        if (class_exists('DG_Acc_Housekeeping')) {
+            $summary = array_fill_keys(array_keys(DG_Acc_Housekeeping::STATUSES), 0);
+        }
+        $summary['unknown'] = 0;
+
         foreach (self::get_accommodation_posts() as $p) {
+            $status = get_post_meta($p->ID, 'dg_housekeeping_status', true) ?: 'unknown';
+            if (!isset($summary[$status])) {
+                $summary[$status] = 0;
+            }
+            $summary[$status]++;
+
+            $report_id = (int) get_post_meta($p->ID, 'dg_housekeeping_last_report_id', true);
             $items[] = [
                 'id' => $p->ID,
                 'title' => $p->post_title,
-                'status' => get_post_meta($p->ID, 'dg_housekeeping_status', true) ?: 'unknown',
+                'status' => $status,
                 'notes' => get_post_meta($p->ID, 'dg_housekeeping_notes', true) ?: '',
                 'last_cleaned' => get_post_meta($p->ID, 'dg_housekeeping_last_cleaned', true) ?: null,
+                'last_report_id' => $report_id ?: null,
+                'checkout_today' => !empty($checkout_unit_ids[$p->ID]),
                 'cleaning_form_url' => class_exists('DG_Acc_Cleaning')
                     ? DG_Acc_Cleaning::cleaning_url_for_property($p->ID)
                     : '',
@@ -456,14 +500,12 @@ class DG_Acc_Dev_API {
             ];
         }
 
-        $summary = class_exists('DG_Acc_Housekeeping')
-            ? DG_Acc_Housekeeping::status_summary()
-            : [];
-
         return rest_ensure_response([
             'items' => $items,
             'summary' => $summary,
             'statuses' => class_exists('DG_Acc_Housekeeping') ? DG_Acc_Housekeeping::STATUSES : [],
+            'checkouts_today' => count($checkout_unit_ids),
+            'today' => $today,
             'total' => count($items),
         ]);
     }
@@ -836,6 +878,35 @@ class DG_Acc_Dev_API {
     }
 
     /**
+     * Return nights in [checkin, checkout) that appear in a blocked-dates list.
+     *
+     * @param string   $checkin
+     * @param string   $checkout
+     * @param string[] $blocked
+     * @return string[]
+     */
+    private static function nights_overlap_blocked($checkin, $checkout, array $blocked) {
+        if (!$blocked) {
+            return [];
+        }
+        $set = array_fill_keys($blocked, true);
+        $hits = [];
+        $current = strtotime($checkin . ' 00:00:00');
+        $end = strtotime($checkout . ' 00:00:00');
+        if (!$current || !$end || $end <= $current) {
+            return [];
+        }
+        while ($current < $end) {
+            $day = date('Y-m-d', $current);
+            if (!empty($set[$day])) {
+                $hits[] = $day;
+            }
+            $current = strtotime('+1 day', $current);
+        }
+        return $hits;
+    }
+
+    /**
      * Create manual / direct bookings from Gen 2.
      * Body: { booking: {...} } or { bookings: [{...}] } or a single booking object.
      */
@@ -902,6 +973,40 @@ class DG_Acc_Dev_API {
                 continue;
             }
 
+            $force = !empty($row['force']) || !empty($row['allow_overlap']);
+            $allow_saturday = !empty($row['allow_saturday']) || $force;
+
+            // CVH public book-now rejects Saturday check-in/out — Gen 2 ops can override.
+            if (
+                !$allow_saturday
+                && class_exists('DG_Acc_Frontend')
+                && !DG_Acc_Frontend::are_booking_dates_valid($checkin, $checkout)
+            ) {
+                $errors[] = [
+                    'index' => $i,
+                    'message' => 'Saturday check-in/out is not allowed (set allow_saturday to override)',
+                    'code' => 'saturday_blocked',
+                ];
+                continue;
+            }
+
+            // Reject nights that overlap existing stays or manual blocks.
+            if (!$force && class_exists('DG_Acc_Frontend')) {
+                $blocked = DG_Acc_Frontend::get_blocked_dates($acc_id);
+                $conflict = self::nights_overlap_blocked($checkin, $checkout, $blocked);
+                if ($conflict) {
+                    $errors[] = [
+                        'index' => $i,
+                        'message' => 'Dates conflict with existing booking or block on '
+                            . implode(', ', array_slice($conflict, 0, 5))
+                            . (count($conflict) > 5 ? '…' : ''),
+                        'code' => 'dates_unavailable',
+                        'conflict_dates' => $conflict,
+                    ];
+                    continue;
+                }
+            }
+
             $acc_name = get_the_title($acc_id);
             $nights = isset($row['nights']) ? (int) $row['nights'] : self::nights_between($checkin, $checkout);
             if ($nights <= 0) {
@@ -912,6 +1017,14 @@ class DG_Acc_Dev_API {
             $phone = sanitize_text_field((string) ($row['phone'] ?? ''));
             $message = sanitize_textarea_field((string) ($row['message'] ?? ''));
             $total = isset($row['total']) ? (float) $row['total'] : 0.0;
+
+            // Auto-quote from unit rates when Gen 2 leaves total empty/zero.
+            if ($total <= 0 && class_exists('DG_Acc_Frontend')) {
+                $quote = DG_Acc_Frontend::calculate_total($acc_id, $checkin, $checkout);
+                if (!empty($quote['total'])) {
+                    $total = (float) $quote['total'];
+                }
+            }
 
             $status = sanitize_key((string) ($row['status'] ?? 'confirmed'));
             if (!in_array($status, $allowed_status, true)) {
@@ -929,8 +1042,9 @@ class DG_Acc_Dev_API {
             } elseif ($paid === 'false' || $paid === '0') {
                 $paid = 'no';
             }
+            // Explicit default unpaid — do not infer paid=yes from confirmed status.
             if (!in_array($paid, $allowed_paid, true)) {
-                $paid = ($status === 'confirmed') ? 'yes' : 'no';
+                $paid = 'no';
             }
 
             $payment_method = sanitize_key((string) ($row['payment_method'] ?? ''));

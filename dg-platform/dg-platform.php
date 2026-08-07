@@ -3,7 +3,7 @@
  * Plugin Name: DG Platform
  * Plugin URI: https://digitalgate.com.au
  * Description: DigitalGate Business Platform Core - Modular CRM with Industry Modules
- * Version: 10.65.1
+ * Version: 10.66.0
  * Author: DigitalGate
  * Author URI: https://digitalgate.com.au
  * Text Domain: dg-platform
@@ -20,7 +20,7 @@ if (defined('WP_CONTENT_DIR') && file_exists(WP_CONTENT_DIR . '/.dg-platform-off
     return;
 }
 
-define('DG_PLATFORM_VERSION', '10.65.1');
+define('DG_PLATFORM_VERSION', '10.66.0');
 define('DG_PLATFORM_PATH', plugin_dir_path(__FILE__));
 define('DG_PLATFORM_URL', plugin_dir_url(__FILE__));
 define('DG_MODULES_PATH', DG_PLATFORM_PATH . 'modules/');

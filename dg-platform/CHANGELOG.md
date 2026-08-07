@@ -1,5 +1,12 @@
 # DG Platform Changelog
 
+## 10.66.0 — RE inspection times + Acc ops guards (August 2026)
+
+- **RE:** **POST `/properties` upsert** accepts `inspection_times` → `roe_property_inspection_times` (open homes); **GET `/properties`** returns `inspection_times` for Gen 2 listing sync / publish round-trip
+- **Acc (ex-10.65.2):** **POST `/accommodation/bookings`** — reject overlapping nights (existing stays + manual blocks); Saturday check-in/out blocked unless `allow_saturday` / `force`; default `paid=no` (no longer inferred from confirmed); auto-quote total from unit rates when total omitted
+- **Acc:** **GET `/accommodation/summary`** — fix tomorrow TZ (`wp_date` from site today); add `checkouts_today` (+ ids), `today`, `tomorrow`
+- **Acc:** **GET `/accommodation/housekeeping`** — `last_report_id`, `checkout_today` per unit; summary counts match listed units (incl. draft/coming soon); `checkouts_today` + `today`
+
 ## 10.65.1 — Accommodation reviews API + guest prefs round-trip (August 2026)
 
 - **GET `/accommodation/reviews`** — read-only surface over `dg_reviews` (Airbnb / TrustIndex import / manual) with platform counts for Gen 2 Acc Reviews
