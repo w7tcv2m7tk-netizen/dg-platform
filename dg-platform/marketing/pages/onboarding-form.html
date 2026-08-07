@@ -109,7 +109,7 @@
         </div>
       </div>
 
-      <!-- SECTION 3: Plan & Products -->
+      <!-- SECTION 3: Plan & Products (aligned with pricing page) -->
       <div class="form-section" data-section="3">
         <div class="section-title"><i class="fas fa-layer-group"></i><span>3. Your DigitalGate Plan</span></div>
         <div class="form-grid">
@@ -118,59 +118,63 @@
               <option value="">Select industry</option>
               <option value="real-estate">Real Estate</option>
               <option value="accommodation">Accommodation &amp; Hospitality</option>
-              <option value="finance">Finance &amp; Lending</option>
               <option value="services">Services &amp; Trades</option>
+              <option value="creator">Creator / Personal Brand</option>
+              <option value="finance">Finance &amp; Lending</option>
               <option value="automotive">Automotive / Dealership</option>
               <option value="commercial">Commercial Property</option>
               <option value="agency">Marketing / Creative Agency</option>
               <option value="other">Other</option>
             </select>
           </div>
-          <div class="form-group"><label>DG Platform tier</label>
+          <div class="form-group form-group-full"><label>DG Platform tier</label>
             <select name="platform_tier">
               <option value="">Not purchased / unsure</option>
-              <option value="starter">Starter ($99/mo)</option>
-              <option value="professional">Growth ($249/mo)</option>
-              <option value="business">Scale ($499/mo)</option>
-              <option value="enterprise">Enterprise (custom)</option>
+              <option value="starter">Starter — $99/mo</option>
+              <option value="professional">Growth — $249/mo</option>
+              <option value="business">Scale — $499/mo</option>
+              <option value="enterprise">Enterprise — custom</option>
             </select>
+            <p style="font-size:0.75rem;color:#64748B;margin-top:0.35rem;">Matches digitalgate.com.au/pricing — Starter, Growth, Scale, Enterprise.</p>
           </div>
-          <div class="form-group"><label>Growth Systems tier (if applicable)</label>
-            <select name="growth_tier">
-              <option value="">Not applicable</option>
-              <option value="foundation">Foundation ($497/mo)</option>
-              <option value="growth">Growth ($997/mo)</option>
-              <option value="authority">Authority ($1,997/mo)</option>
-              <option value="partner">Growth Partner ($2,997/mo)</option>
-            </select>
-          </div>
-          <div class="form-group form-group-full"><label>Industry apps purchased (+$99/mo each)</label>
+          <div class="form-group form-group-full"><label>Industry Apps (+$99/mo each)</label>
             <div class="checkbox-group">
               <label class="checkbox-label"><input type="checkbox" name="purchased_apps[]" value="real-estate"> Real Estate</label>
               <label class="checkbox-label"><input type="checkbox" name="purchased_apps[]" value="accommodation"> Accommodation</label>
-              <label class="checkbox-label"><input type="checkbox" name="purchased_apps[]" value="finance"> Finance</label>
               <label class="checkbox-label"><input type="checkbox" name="purchased_apps[]" value="services"> Services</label>
-              <label class="checkbox-label"><input type="checkbox" name="purchased_apps[]" value="automotive"> Automotive</label>
-              <label class="checkbox-label"><input type="checkbox" name="purchased_apps[]" value="commercial"> Commercial</label>
+              <label class="checkbox-label"><input type="checkbox" name="purchased_apps[]" value="creator"> Creator</label>
+              <label class="checkbox-label"><input type="checkbox" name="purchased_apps[]" value="finance"> Finance <span style="color:#64748B;">(coming soon)</span></label>
+              <label class="checkbox-label"><input type="checkbox" name="purchased_apps[]" value="automotive"> Automotive <span style="color:#64748B;">(coming soon)</span></label>
+              <label class="checkbox-label"><input type="checkbox" name="purchased_apps[]" value="commercial"> Commercial <span style="color:#64748B;">(coming soon)</span></label>
             </div>
           </div>
-          <div class="form-group form-group-full"><label>Premium apps purchased</label>
+          <div class="form-group form-group-full"><label>Growth &amp; Intelligence Apps</label>
             <div class="checkbox-group">
-              <label class="checkbox-label"><input type="checkbox" name="purchased_premium[]" value="seo_pro"> SEO Pro</label>
-              <label class="checkbox-label"><input type="checkbox" name="purchased_premium[]" value="social_pro"> Social Pro</label>
-              <label class="checkbox-label"><input type="checkbox" name="purchased_premium[]" value="analytics_pro"> Analytics Pro</label>
-              <label class="checkbox-label"><input type="checkbox" name="purchased_premium[]" value="ai_visibility_pro"> AI Visibility Pro</label>
-              <label class="checkbox-label"><input type="checkbox" name="purchased_premium[]" value="automation_pro"> Automation Pro</label>
+              <label class="checkbox-label"><input type="checkbox" name="purchased_premium[]" value="ai_visibility"> AI Visibility (+$99/mo)</label>
+              <label class="checkbox-label"><input type="checkbox" name="purchased_premium[]" value="seo"> SEO (+$99/mo)</label>
+              <label class="checkbox-label"><input type="checkbox" name="purchased_premium[]" value="automation"> Automation (+$49/mo)</label>
+              <label class="checkbox-label"><input type="checkbox" name="purchased_premium[]" value="analytics"> Analytics (+$49/mo)</label>
+              <label class="checkbox-label"><input type="checkbox" name="purchased_premium[]" value="social"> Social (+$79/mo)</label>
+              <label class="checkbox-label"><input type="checkbox" name="purchased_premium[]" value="voice_ai"> Voice AI (+$99/mo)</label>
             </div>
           </div>
-          <div class="form-group form-group-full"><label>Add-ons</label>
+          <div class="form-group form-group-full"><label>Platform add-ons</label>
             <div class="checkbox-group">
-              <label class="checkbox-label"><input type="checkbox" name="purchased_addons[]" value="voice_ai"> Voice AI</label>
-              <label class="checkbox-label"><input type="checkbox" name="purchased_addons[]" value="training"> Training &amp; Onboarding ($497)</label>
-              <label class="checkbox-label"><input type="checkbox" name="purchased_addons[]" value="white_label"> White Label</label>
-              <label class="checkbox-label"><input type="checkbox" name="purchased_addons[]" value="extra_users"> Extra users</label>
+              <label class="checkbox-label"><input type="checkbox" name="purchased_addons[]" value="extra_users"> Extra users (+$29/user)</label>
+              <label class="checkbox-label"><input type="checkbox" name="purchased_addons[]" value="white_label"> White Label (+$199/mo)</label>
             </div>
           </div>
+          <div class="form-group form-group-full"><label>Professional services (optional)</label>
+            <div class="checkbox-group">
+              <label class="checkbox-label"><input type="checkbox" name="purchased_services[]" value="implementation"> Implementation / migration</label>
+              <label class="checkbox-label"><input type="checkbox" name="purchased_services[]" value="training"> Training &amp; onboarding</label>
+              <label class="checkbox-label"><input type="checkbox" name="purchased_services[]" value="success_partner"> Success Partner</label>
+              <label class="checkbox-label"><input type="checkbox" name="purchased_services[]" value="consulting"> Consulting</label>
+            </div>
+            <p style="font-size:0.75rem;color:#64748B;margin-top:0.35rem;">Replaces the old “Growth Systems” retainers — same expert help, now listed as Professional Services on pricing.</p>
+          </div>
+          <!-- Keep growth_tier field for legacy Stripe/checkout payloads -->
+          <input type="hidden" name="growth_tier" id="growth_tier" value="">
         </div>
       </div>
 

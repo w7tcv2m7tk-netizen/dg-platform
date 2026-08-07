@@ -382,18 +382,29 @@
     .apps-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1.5rem; }
 
     .app-card {
-      background: #1E293B;
-      border: 1px solid #334155;
-      border-radius: 16px;
-      padding: 1.25rem;
+      background: #1E293B !important;
+      border: 1px solid #334155 !important;
+      border-radius: 16px !important;
+      padding: 1.25rem !important;
       text-align: center;
       transition: all 0.3s ease;
+      position: relative;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.28);
+      min-height: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
     }
-    .app-card:hover { border-color: #3B82F6; transform: translateY(-3px); }
+    .app-card:hover {
+      border-color: #3B82F6 !important;
+      transform: translateY(-3px);
+      box-shadow: 0 12px 28px rgba(59, 130, 246, 0.18);
+    }
     .app-card .app-icon { font-size: 2rem; margin-bottom: 0.5rem; }
-    .app-card .app-name { font-weight: 700; font-size: 1rem; margin-bottom: 0.25rem; }
-    .app-card .app-price { color: #3B82F6; font-weight: 700; font-size: 1.1rem; }
+    .app-card .app-name { font-weight: 700; font-size: 1rem; margin-bottom: 0.25rem; color: #F9FAFB !important; }
+    .app-card .app-price { color: #3B82F6 !important; font-weight: 700; font-size: 1.1rem; }
     .app-card .app-price span { font-size: 0.8rem; font-weight: 400; color: #94A3B8; }
+    .app-card .btn-app { margin-top: auto; width: 100%; }
 
     /* ============================================================ */
     /* ===== GROWTH SERVICES ===== */
@@ -592,7 +603,7 @@
     .savings-callout { display: inline-block; margin-top: 1rem; padding: 0.5rem 1rem; background: rgba(16,185,129,0.1); border: 1px solid rgba(16,185,129,0.2); border-radius: 40px; color: #34D399; font-size: 0.85rem; font-weight: 600; }
     .section-spacer { margin-top: 2.5rem; }
     .apps-grid-5 { display: grid; grid-template-columns: repeat(5, 1fr); gap: 1.25rem; }
-    .apps-grid-6 { display: grid; grid-template-columns: repeat(6, 1fr); gap: 1.25rem; }
+    .apps-grid-6 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.25rem; }
     .apps-grid-7 { display: grid; grid-template-columns: repeat(7, 1fr); gap: 1.25rem; }
     .apps-grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1.25rem; }
     .apps-grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.25rem; max-width: 960px; margin: 0 auto; }
@@ -605,8 +616,8 @@
     }
     .app-card .btn-app:hover { border-color: #3B82F6; color: #FFFFFF; background: rgba(59,130,246,0.08); }
     @media (max-width: 1200px) { .apps-grid-6 { grid-template-columns: repeat(3, 1fr); } .apps-grid-7 { grid-template-columns: repeat(4, 1fr); } }
-    @media (max-width: 1024px) { .pricing-grid-4 { grid-template-columns: repeat(2, 1fr); } .how-buy { grid-template-columns: 1fr; } .apps-grid-5 { grid-template-columns: repeat(3, 1fr); } .apps-grid-6 { grid-template-columns: repeat(3, 1fr); } .apps-grid-7 { grid-template-columns: repeat(3, 1fr); } .apps-grid-4 { grid-template-columns: repeat(2, 1fr); } .apps-grid-3 { grid-template-columns: repeat(2, 1fr); } }
-    @media (max-width: 768px) { .pricing-grid-4 { grid-template-columns: 1fr; } .apps-grid-5 { grid-template-columns: repeat(2, 1fr); } .apps-grid-6 { grid-template-columns: repeat(2, 1fr); } .apps-grid-7 { grid-template-columns: repeat(2, 1fr); } .apps-grid-4 { grid-template-columns: repeat(2, 1fr); } .apps-grid-3 { grid-template-columns: 1fr; } .apps-grid-2 { grid-template-columns: 1fr; max-width: 320px; } }
+    @media (max-width: 1024px) { .pricing-grid-4 { grid-template-columns: repeat(2, 1fr); } .how-buy { grid-template-columns: 1fr; } .apps-grid-5 { grid-template-columns: repeat(3, 1fr); } .apps-grid-6 { grid-template-columns: repeat(2, 1fr); } .apps-grid-7 { grid-template-columns: repeat(3, 1fr); } .apps-grid-4 { grid-template-columns: repeat(2, 1fr); } .apps-grid-3 { grid-template-columns: repeat(2, 1fr); } }
+    @media (max-width: 768px) { .pricing-grid-4 { grid-template-columns: 1fr; } .apps-grid-5 { grid-template-columns: repeat(2, 1fr); } .apps-grid-6 { grid-template-columns: 1fr; } .apps-grid-7 { grid-template-columns: repeat(2, 1fr); } .apps-grid-4 { grid-template-columns: repeat(2, 1fr); } .apps-grid-3 { grid-template-columns: 1fr; } .apps-grid-2 { grid-template-columns: 1fr; max-width: 320px; } }
 
     /* ============================================================ */
     /* ===== RESPONSIVE ===== */
