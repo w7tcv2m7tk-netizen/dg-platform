@@ -72,6 +72,16 @@ class DG_Acc_Dev_API {
                 'permission_callback' => [__CLASS__, 'can_manage'],
             ],
         ]);
+
+        register_rest_route(DG_REST_NAMESPACE, '/accommodation/ota-sync', [
+            'methods' => 'POST',
+            'callback' => [__CLASS__, 'sync_ota_calendars'],
+            'permission_callback' => [__CLASS__, 'can_manage'],
+            'args' => [
+                'property_id' => ['type' => 'integer'],
+                'source' => ['type' => 'string', 'default' => 'all'],
+            ],
+        ]);
     }
 
     public static function can_access($request) {
@@ -424,19 +434,98 @@ class DG_Acc_Dev_API {
     private static function format_bookings($posts) {
         $out = [];
         foreach ($posts as $b) {
+            $guest = (string) get_post_meta($b->ID, 'dg_booking_name', true);
+            if ($guest === '') {
+                $guest = $b->post_title ?: '';
+                // Strip " — Property" suffix from iCal titles when used as display name.
+                if (strpos($guest, ' — ') !== false) {
+                    $guest = trim(explode(' — ', $guest, 2)[0]);
+                }
+            }
+            $source = (string) get_post_meta($b->ID, 'dg_booking_source', true);
+            $status = (string) get_post_meta($b->ID, 'dg_booking_status', true) ?: 'pending';
             $out[] = [
                 'id' => $b->ID,
                 'ref' => get_post_meta($b->ID, 'dg_booking_ref', true),
-                'guest_name' => get_post_meta($b->ID, 'dg_booking_name', true),
+                'guest_name' => $guest,
                 'email' => get_post_meta($b->ID, 'dg_booking_email', true),
                 'accommodation' => get_post_meta($b->ID, 'dg_booking_accommodation_name', true),
                 'accommodation_id' => (int) get_post_meta($b->ID, 'dg_booking_accommodation_id', true),
                 'checkin' => get_post_meta($b->ID, 'dg_booking_checkin', true),
                 'checkout' => get_post_meta($b->ID, 'dg_booking_checkout', true),
-                'status' => get_post_meta($b->ID, 'dg_booking_status', true) ?: 'pending',
+                'status' => $status,
+                'source' => $source !== '' ? $source : $status,
                 'total' => (float) get_post_meta($b->ID, 'dg_booking_total', true),
             ];
         }
         return $out;
+    }
+
+    /**
+     * Trigger Airbnb / Booking.com iCal import for one or all properties.
+     */
+    public static function sync_ota_calendars($request) {
+        if (!class_exists('DG_Acc_Ical_Import')) {
+            return new WP_Error('dg_ota_unavailable', 'OTA sync is not available on this site.', ['status' => 501]);
+        }
+
+        $source = sanitize_key((string) $request->get_param('source'));
+        if ($source === '') {
+            $source = 'all';
+        }
+        $property_id = (int) $request->get_param('property_id');
+
+        $query = [
+            'post_type' => 'dg_accommodation',
+            'posts_per_page' => -1,
+            'post_status' => 'publish',
+            'fields' => 'ids',
+        ];
+        if ($property_id > 0) {
+            $query['include'] = [$property_id];
+        }
+
+        $ids = get_posts($query);
+        $results = [];
+        $imported = 0;
+        $updated = 0;
+        $cancelled = 0;
+        $errors = [];
+
+        foreach ($ids as $id) {
+            $airbnb = get_post_meta($id, 'dg_ical_url', true);
+            $bookingcom = get_post_meta($id, 'dg_bookingcom_ical_url', true);
+            if (!$airbnb && !$bookingcom) {
+                continue;
+            }
+            $sync = DG_Acc_Ical_Import::sync_accommodation((int) $id, $source);
+            $imported += (int) ($sync['imported'] ?? 0);
+            $updated += (int) ($sync['updated'] ?? 0);
+            $cancelled += (int) ($sync['cancelled'] ?? 0);
+            if (!empty($sync['errors'])) {
+                $errors = array_merge($errors, $sync['errors']);
+            }
+            $results[] = [
+                'property_id' => (int) $id,
+                'title' => get_the_title($id),
+                'message' => $sync['message'] ?? '',
+                'airbnb_last_sync' => get_post_meta($id, 'dg_ical_last_sync', true) ?: null,
+                'bookingcom_last_sync' => get_post_meta($id, 'dg_bookingcom_ical_last_sync', true) ?: null,
+                'airbnb_last_error' => get_post_meta($id, 'dg_ical_last_error', true) ?: null,
+                'bookingcom_last_error' => get_post_meta($id, 'dg_bookingcom_ical_last_error', true) ?: null,
+            ];
+        }
+
+        return rest_ensure_response([
+            'ok' => empty($errors) || ($imported + $updated) > 0,
+            'imported' => $imported,
+            'updated' => $updated,
+            'cancelled' => $cancelled,
+            'properties' => $results,
+            'errors' => $errors,
+            'message' => empty($results)
+                ? 'No properties have Airbnb or Booking.com calendar URLs configured.'
+                : sprintf('Synced %d propert%s — %d new, %d updated, %d removed.', count($results), count($results) === 1 ? 'y' : 'ies', $imported, $updated, $cancelled),
+        ]);
     }
 }

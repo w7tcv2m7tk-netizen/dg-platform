@@ -51,6 +51,8 @@ class DG_Acc_Ical_Import {
             $body = self::fetch($url);
             if (is_wp_error($body)) {
                 $results['errors'][] = $config['label'] . ': ' . $body->get_error_message();
+                update_post_meta($accommodation_id, $config['error_meta'], $body->get_error_message());
+                // Do not cancel OTA bookings when the feed fails — keep last good state.
                 continue;
             }
 
@@ -67,6 +69,7 @@ class DG_Acc_Ical_Import {
             ];
 
             update_post_meta($accommodation_id, $config['sync_meta'], current_time('mysql'));
+            delete_post_meta($accommodation_id, $config['error_meta']);
         }
 
         if (class_exists('DG_Acc_Ota')) {
@@ -173,11 +176,17 @@ class DG_Acc_Ical_Import {
             $seen_uids[] = $uid;
 
             $existing_id = self::find_booking_by_uid($accommodation_id, $uid, $source);
+            $guest_name = self::guest_name_from_summary((string) $event['summary'], $source);
             if ($existing_id) {
                 update_post_meta($existing_id, 'dg_booking_checkin', $checkin);
                 update_post_meta($existing_id, 'dg_booking_checkout', $checkout);
                 update_post_meta($existing_id, 'dg_booking_status', $source);
                 update_post_meta($existing_id, 'dg_booking_source', $source);
+                update_post_meta($existing_id, 'dg_booking_accommodation_name', $property_title);
+                if ($guest_name !== '') {
+                    update_post_meta($existing_id, 'dg_booking_name', $guest_name);
+                }
+                delete_post_meta($existing_id, 'dg_booking_ical_misses');
                 if (!empty($event['summary'])) {
                     wp_update_post([
                         'ID' => $existing_id,
@@ -204,6 +213,10 @@ class DG_Acc_Ical_Import {
             update_post_meta($booking_id, 'dg_booking_status', $source);
             update_post_meta($booking_id, 'dg_booking_source', $source);
             update_post_meta($booking_id, 'dg_booking_ical_uid', $uid);
+            update_post_meta($booking_id, 'dg_booking_accommodation_name', $property_title);
+            if ($guest_name !== '') {
+                update_post_meta($booking_id, 'dg_booking_name', $guest_name);
+            }
             $imported++;
         }
 
@@ -233,6 +246,10 @@ class DG_Acc_Ical_Import {
         return !empty($bookings[0]) ? (int) $bookings[0] : 0;
     }
 
+    /**
+     * Soft-cancel: require two consecutive successful syncs missing a UID
+     * before marking cancelled (avoids false removals on flaky feeds).
+     */
     private static function cancel_stale_bookings($accommodation_id, $source, array $seen_uids) {
         $cancelled = 0;
         $seen_uids = array_flip($seen_uids);
@@ -254,6 +271,14 @@ class DG_Acc_Ical_Import {
             $uid = (string) get_post_meta($booking_id, 'dg_booking_ical_uid', true);
             $status = (string) get_post_meta($booking_id, 'dg_booking_status', true);
             if ($uid === '' || isset($seen_uids[$uid]) || $status === 'cancelled') {
+                if (isset($seen_uids[$uid])) {
+                    delete_post_meta($booking_id, 'dg_booking_ical_misses');
+                }
+                continue;
+            }
+            $misses = (int) get_post_meta($booking_id, 'dg_booking_ical_misses', true) + 1;
+            update_post_meta($booking_id, 'dg_booking_ical_misses', $misses);
+            if ($misses < 2) {
                 continue;
             }
             update_post_meta($booking_id, 'dg_booking_status', 'cancelled');
@@ -261,6 +286,22 @@ class DG_Acc_Ical_Import {
         }
 
         return $cancelled;
+    }
+
+    private static function guest_name_from_summary($summary, $source) {
+        $summary = trim((string) $summary);
+        if ($summary === '') {
+            return '';
+        }
+        // Airbnb often uses "Reserved" / "Not available" — keep channel label instead of fake guest.
+        if (preg_match('/^(reserved|not available|blocked|unavailable)$/i', $summary)) {
+            return $source === 'bookingcom' ? 'Booking.com guest' : 'Airbnb guest';
+        }
+        // "Closed - Not available" style
+        if (preg_match('/not available|unavailable/i', $summary)) {
+            return $source === 'bookingcom' ? 'Booking.com block' : 'Airbnb block';
+        }
+        return $summary;
     }
 
     private static function booking_title($summary, $property_title, $source) {
@@ -283,12 +324,13 @@ class DG_Acc_Ical_Import {
         return [];
     }
 
-    /** @return array{url_meta:string,sync_meta:string,label:string} */
+    /** @return array{url_meta:string,sync_meta:string,error_meta:string,label:string} */
     private static function source_config($source) {
         if ($source === 'bookingcom') {
             return [
                 'url_meta' => 'dg_bookingcom_ical_url',
                 'sync_meta' => 'dg_bookingcom_ical_last_sync',
+                'error_meta' => 'dg_bookingcom_ical_last_error',
                 'label' => 'Booking.com',
             ];
         }
@@ -296,6 +338,7 @@ class DG_Acc_Ical_Import {
         return [
             'url_meta' => 'dg_ical_url',
             'sync_meta' => 'dg_ical_last_sync',
+            'error_meta' => 'dg_ical_last_error',
             'label' => 'Airbnb',
         ];
     }

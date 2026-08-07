@@ -1135,8 +1135,9 @@ class DG_Module_Accommodation {
                 </ul>
             </div>
             <div class="dg-meta-field full-width">
-                <label for="dg_blocked_dates">Blocked Dates</label>
+                <label for="dg_blocked_dates">Manual blocked dates</label>
                 <textarea name="dg_blocked_dates" rows="3" placeholder="2024-12-20 to 2025-01-10&#10;2025-04-10 to 2025-04-20"><?php echo esc_textarea(get_post_meta($post->ID, 'dg_blocked_dates', true)); ?></textarea>
+                <p class="description">Operator-only ranges. Airbnb / Booking.com stays block via calendar sync and are not written here.</p>
                 <div class="helper">Enter each blocked date range on a new line. Format: YYYY-MM-DD to YYYY-MM-DD</div>
             </div>
             
@@ -1274,7 +1275,7 @@ class DG_Module_Accommodation {
             <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
                 <span style="font-size:16px;">🏡</span>
                 <span style="font-weight:600;font-size:13px;">Airbnb</span>
-                <span class="dg-ota-badge <?php echo !empty($airbnb_id) ? 'airbnb' : 'none'; ?>"><?php echo !empty($airbnb_id) ? 'Connected' : 'Not Connected'; ?></span>
+                <span class="dg-ota-badge <?php echo !empty($ical_url) ? 'airbnb' : 'none'; ?>"><?php echo !empty($ical_url) ? 'iCal connected' : 'Add iCal URL'; ?></span>
             </div>
             <div class="dg-booking-settings-field">
                 <label for="dg_airbnb_id">Listing ID</label>
@@ -1292,7 +1293,7 @@ class DG_Module_Accommodation {
             <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
                 <span style="font-size:16px;">🏨</span>
                 <span style="font-weight:600;font-size:13px;">Booking.com</span>
-                <span class="dg-ota-badge <?php echo !empty($bookingcom_id) ? 'bookingcom' : 'none'; ?>"><?php echo !empty($bookingcom_id) ? 'Connected' : 'Not Connected'; ?></span>
+                <span class="dg-ota-badge <?php echo !empty($bookingcom_ical_url) ? 'bookingcom' : 'none'; ?>"><?php echo !empty($bookingcom_ical_url) ? 'iCal connected' : 'Add iCal URL'; ?></span>
             </div>
             <div class="dg-booking-settings-field">
                 <label for="dg_bookingcom_id">Listing ID</label>
