@@ -59,6 +59,60 @@ class DG_RE_CRM_Dev_API {
                 ],
             ],
         ]);
+
+        register_rest_route(DG_REST_NAMESPACE, '/properties', [
+            [
+                'methods' => 'GET',
+                'callback' => [__CLASS__, 'list_properties'],
+                'permission_callback' => [__CLASS__, 'can_access'],
+                'args' => [
+                    'dg_property_id' => [
+                        'type' => 'string',
+                        'required' => false,
+                    ],
+                    'limit' => [
+                        'type' => 'integer',
+                        'default' => 20,
+                        'minimum' => 1,
+                        'maximum' => 100,
+                    ],
+                ],
+            ],
+            [
+                'methods' => 'POST',
+                'callback' => [__CLASS__, 'upsert_property'],
+                'permission_callback' => [__CLASS__, 'can_access'],
+            ],
+        ]);
+
+        register_rest_route(DG_REST_NAMESPACE, '/properties/(?P<id>\d+)', [
+            'methods' => 'PUT',
+            'callback' => [__CLASS__, 'update_property_by_id'],
+            'permission_callback' => [__CLASS__, 'can_access'],
+        ]);
+
+        register_rest_route(DG_REST_NAMESPACE, '/agents', [
+            [
+                'methods' => 'GET',
+                'callback' => [__CLASS__, 'list_agents'],
+                'permission_callback' => [__CLASS__, 'can_access'],
+                'args' => [
+                    'dg_membership_id' => [
+                        'type' => 'string',
+                        'required' => false,
+                    ],
+                    'email' => [
+                        'type' => 'string',
+                        'required' => false,
+                    ],
+                ],
+            ],
+            [
+                'methods' => 'POST',
+                'callback' => [__CLASS__, 'upsert_agent'],
+                'permission_callback' => [__CLASS__, 'can_access'],
+            ],
+        ]);
     }
 
     public static function can_access($request) {
@@ -177,6 +231,436 @@ class DG_RE_CRM_Dev_API {
             'total_returned' => count($bookings),
             'bookings' => $bookings,
         ]);
+    }
+
+    public static function list_properties($request) {
+        $dg_id = sanitize_text_field((string) ($request->get_param('dg_property_id') ?? ''));
+        if ($dg_id !== '') {
+            $found = self::find_property_by_dg_id($dg_id);
+            if (!$found) {
+                return rest_ensure_response(['total_returned' => 0, 'properties' => []]);
+            }
+            return rest_ensure_response([
+                'total_returned' => 1,
+                'properties' => [self::format_dg_property($found)],
+            ]);
+        }
+
+        $limit = (int) ($request->get_param('limit') ?: 20);
+        $query = new WP_Query([
+            'post_type' => 'property',
+            'post_status' => ['publish', 'draft', 'pending'],
+            'posts_per_page' => $limit,
+            'orderby' => 'modified',
+            'order' => 'DESC',
+        ]);
+
+        $properties = [];
+        while ($query->have_posts()) {
+            $query->the_post();
+            $properties[] = self::format_dg_property(get_the_ID());
+        }
+        wp_reset_postdata();
+
+        return rest_ensure_response([
+            'total_returned' => count($properties),
+            'properties' => $properties,
+        ]);
+    }
+
+    public static function upsert_property($request) {
+        $body = $request->get_json_params();
+        if (!is_array($body)) {
+            return new WP_Error('invalid_body', 'Expected JSON property payload.', ['status' => 400]);
+        }
+
+        $dg_id = sanitize_text_field((string) ($body['dg_property_id'] ?? $body['id'] ?? ''));
+        if ($dg_id === '') {
+            return new WP_Error('validation_error', 'dg_property_id is required.', ['status' => 422]);
+        }
+
+        $existing_id = self::find_property_by_dg_id($dg_id);
+        $property_id = $existing_id
+            ? self::apply_property_payload($existing_id, $body, false)
+            : self::apply_property_payload(0, $body, true);
+
+        if (is_wp_error($property_id)) {
+            return $property_id;
+        }
+
+        return rest_ensure_response([
+            'ok' => true,
+            'created' => !$existing_id,
+            'property' => self::format_dg_property((int) $property_id),
+        ]);
+    }
+
+    public static function update_property_by_id($request) {
+        $property_id = (int) $request['id'];
+        if (get_post_type($property_id) !== 'property') {
+            return new WP_Error('not_found', 'Property not found.', ['status' => 404]);
+        }
+
+        $body = $request->get_json_params();
+        if (!is_array($body)) {
+            return new WP_Error('invalid_body', 'Expected JSON property payload.', ['status' => 400]);
+        }
+
+        $result = self::apply_property_payload($property_id, $body, false);
+        if (is_wp_error($result)) {
+            return $result;
+        }
+
+        return rest_ensure_response([
+            'ok' => true,
+            'created' => false,
+            'property' => self::format_dg_property((int) $result),
+        ]);
+    }
+
+    private static function find_property_by_dg_id($dg_id) {
+        $query = new WP_Query([
+            'post_type' => 'property',
+            'post_status' => ['publish', 'draft', 'pending', 'private'],
+            'posts_per_page' => 1,
+            'meta_key' => 'roe_property_dg_id',
+            'meta_value' => $dg_id,
+            'fields' => 'ids',
+        ]);
+        if (empty($query->posts)) {
+            return 0;
+        }
+        return (int) $query->posts[0];
+    }
+
+    private static function map_status_to_wp($status) {
+        $map = [
+            'listed' => 'For Sale',
+            'under_offer' => 'Under Contract',
+            'sold' => 'Sold',
+            'withdrawn' => 'Withdrawn',
+            'appraisal' => 'For Sale',
+            'prospect' => 'For Sale',
+        ];
+        $key = strtolower((string) $status);
+        return $map[$key] ?? 'For Sale';
+    }
+
+    private static function should_publish($status) {
+        return in_array(strtolower((string) $status), ['listed', 'under_offer', 'sold'], true);
+    }
+
+    /**
+     * @param int   $property_id 0 to create
+     * @param array $body
+     * @param bool  $create
+     * @return int|WP_Error
+     */
+    private static function apply_property_payload($property_id, $body, $create) {
+        $dg_id = sanitize_text_field((string) ($body['dg_property_id'] ?? $body['id'] ?? ''));
+        $address = sanitize_text_field((string) ($body['address'] ?? $body['address_line1'] ?? ''));
+        $suburb = sanitize_text_field((string) ($body['suburb'] ?? ''));
+        $state = sanitize_text_field((string) ($body['state'] ?? ''));
+        $postcode = sanitize_text_field((string) ($body['postcode'] ?? ''));
+        $status = sanitize_text_field((string) ($body['status'] ?? 'listed'));
+        $title = sanitize_text_field((string) ($body['title'] ?? ''));
+        if ($title === '') {
+            $title = trim($address . ($suburb !== '' ? ', ' . $suburb : ''));
+        }
+        if ($title === '') {
+            $title = 'Property ' . ($dg_id !== '' ? $dg_id : time());
+        }
+
+        $description = wp_kses_post((string) ($body['description'] ?? ''));
+        $post_status = self::should_publish($status) ? 'publish' : 'draft';
+
+        $post_data = [
+            'post_type' => 'property',
+            'post_status' => $post_status,
+            'post_title' => $title,
+        ];
+        if ($description !== '') {
+            $post_data['post_content'] = $description;
+        }
+
+        if ($create) {
+            $property_id = wp_insert_post($post_data, true);
+            if (is_wp_error($property_id)) {
+                return $property_id;
+            }
+        } else {
+            $post_data['ID'] = $property_id;
+            $updated = wp_update_post($post_data, true);
+            if (is_wp_error($updated)) {
+                return $updated;
+            }
+        }
+
+        $price = $body['price'] ?? null;
+        if ($price === null && isset($body['listing_price_cents'])) {
+            $price = ((float) $body['listing_price_cents']) / 100;
+        }
+
+        $meta = [
+            'roe_property_dg_id' => $dg_id,
+            'roe_property_status' => self::map_status_to_wp($status),
+            'roe_property_address' => $address,
+            'roe_property_suburb' => $suburb,
+            'roe_property_state' => $state,
+            'roe_property_postcode' => $postcode,
+            'roe_property_title' => $title,
+            'roe_property_description' => $description,
+            'roe_property_type' => sanitize_text_field((string) ($body['property_type'] ?? '')),
+            'roe_property_bedrooms' => isset($body['bedrooms']) ? (string) (int) $body['bedrooms'] : '',
+            'roe_property_bathrooms' => isset($body['bathrooms']) ? (string) (int) $body['bathrooms'] : '',
+            'roe_property_car_spaces' => isset($body['car_spaces']) ? (string) (int) $body['car_spaces'] : '',
+            'roe_property_land_size' => sanitize_text_field((string) ($body['land_size'] ?? '')),
+            'roe_property_building_size' => sanitize_text_field((string) ($body['building_size'] ?? '')),
+            'roe_property_features' => sanitize_textarea_field((string) ($body['features'] ?? '')),
+            'roe_property_external_id' => sanitize_text_field((string) ($body['external_id'] ?? $dg_id)),
+        ];
+
+        if ($price !== null && $price !== '') {
+            $meta['roe_property_price'] = (string) $price;
+        }
+
+        if (!empty($body['agent']) && is_array($body['agent'])) {
+            $meta['roe_property_agent_name'] = sanitize_text_field((string) ($body['agent']['name'] ?? ''));
+            $meta['roe_property_agent_phone'] = sanitize_text_field((string) ($body['agent']['phone'] ?? ''));
+            $meta['roe_property_agent_email'] = sanitize_email((string) ($body['agent']['email'] ?? ''));
+        }
+
+        $agent_id = isset($body['agent_id']) ? (int) $body['agent_id'] : 0;
+        if ($agent_id > 0 && get_post_type($agent_id) === 'agent') {
+            $meta['roe_property_agent_id'] = (string) $agent_id;
+            if (empty($meta['roe_property_agent_name'])) {
+                $meta['roe_property_agent_name'] = get_the_title($agent_id);
+            }
+            if (empty($meta['roe_property_agent_phone'])) {
+                $meta['roe_property_agent_phone'] = get_post_meta($agent_id, 'roe_agent_phone', true);
+            }
+            if (empty($meta['roe_property_agent_email'])) {
+                $meta['roe_property_agent_email'] = get_post_meta($agent_id, 'roe_agent_email', true);
+            }
+        }
+
+        foreach ($meta as $key => $value) {
+            if ($value === '' || $value === null) {
+                continue;
+            }
+            update_post_meta($property_id, $key, $value);
+        }
+
+        self::upsert_sync_record((int) $property_id, $dg_id);
+
+        return (int) $property_id;
+    }
+
+    private static function upsert_sync_record($property_id, $dg_id) {
+        global $wpdb;
+        $sync_table = $wpdb->prefix . 'roe_property_sync';
+        if ($wpdb->get_var("SHOW TABLES LIKE '$sync_table'") !== $sync_table) {
+            return;
+        }
+
+        $existing = $wpdb->get_var($wpdb->prepare(
+            "SELECT id FROM $sync_table WHERE property_id = %d AND source = %s LIMIT 1",
+            $property_id,
+            'digitalgate'
+        ));
+
+        if ($existing) {
+            $wpdb->update(
+                $sync_table,
+                [
+                    'external_id' => $dg_id,
+                    'last_synced' => current_time('mysql'),
+                    'sync_status' => 'active',
+                ],
+                ['id' => (int) $existing]
+            );
+            return;
+        }
+
+        $wpdb->insert($sync_table, [
+            'property_id' => $property_id,
+            'external_id' => $dg_id,
+            'source' => 'digitalgate',
+            'last_synced' => current_time('mysql'),
+            'sync_status' => 'active',
+        ]);
+    }
+
+    private static function format_dg_property($post_id) {
+        $post_id = (int) $post_id;
+        return [
+            'id' => $post_id,
+            'dg_property_id' => get_post_meta($post_id, 'roe_property_dg_id', true),
+            'title' => get_the_title($post_id),
+            'permalink' => get_permalink($post_id),
+            'post_status' => get_post_status($post_id),
+            'status' => get_post_meta($post_id, 'roe_property_status', true),
+            'address' => get_post_meta($post_id, 'roe_property_address', true),
+            'suburb' => get_post_meta($post_id, 'roe_property_suburb', true),
+            'state' => get_post_meta($post_id, 'roe_property_state', true),
+            'postcode' => get_post_meta($post_id, 'roe_property_postcode', true),
+            'price' => get_post_meta($post_id, 'roe_property_price', true),
+            'property_type' => get_post_meta($post_id, 'roe_property_type', true),
+            'bedrooms' => get_post_meta($post_id, 'roe_property_bedrooms', true),
+            'bathrooms' => get_post_meta($post_id, 'roe_property_bathrooms', true),
+        ];
+    }
+
+    public static function list_agents($request) {
+        if (!post_type_exists('agent')) {
+            return new WP_Error('unavailable', 'Agent profiles are not available on this site.', ['status' => 404]);
+        }
+
+        $dg_id = sanitize_text_field((string) ($request->get_param('dg_membership_id') ?? ''));
+        $email = sanitize_email((string) ($request->get_param('email') ?? ''));
+
+        if ($dg_id !== '') {
+            $found = self::find_agent_by_dg_id($dg_id);
+            return rest_ensure_response([
+                'total_returned' => $found ? 1 : 0,
+                'agents' => $found ? [self::format_dg_agent($found)] : [],
+            ]);
+        }
+
+        if ($email !== '') {
+            $found = self::find_agent_by_email($email);
+            return rest_ensure_response([
+                'total_returned' => $found ? 1 : 0,
+                'agents' => $found ? [self::format_dg_agent($found)] : [],
+            ]);
+        }
+
+        $query = new WP_Query([
+            'post_type' => 'agent',
+            'post_status' => ['publish', 'draft'],
+            'posts_per_page' => 50,
+            'orderby' => 'title',
+            'order' => 'ASC',
+        ]);
+
+        $agents = [];
+        while ($query->have_posts()) {
+            $query->the_post();
+            $agents[] = self::format_dg_agent(get_the_ID());
+        }
+        wp_reset_postdata();
+
+        return rest_ensure_response([
+            'total_returned' => count($agents),
+            'agents' => $agents,
+        ]);
+    }
+
+    public static function upsert_agent($request) {
+        if (!post_type_exists('agent')) {
+            return new WP_Error('unavailable', 'Agent profiles are not available on this site.', ['status' => 404]);
+        }
+
+        $body = $request->get_json_params();
+        if (!is_array($body)) {
+            return new WP_Error('invalid_body', 'Expected JSON agent payload.', ['status' => 400]);
+        }
+
+        $dg_id = sanitize_text_field((string) ($body['dg_membership_id'] ?? ''));
+        $email = sanitize_email((string) ($body['email'] ?? ''));
+        $name = sanitize_text_field((string) ($body['name'] ?? ''));
+        if ($name === '') {
+            $name = $email !== '' ? $email : 'Agent';
+        }
+
+        $existing_id = 0;
+        if ($dg_id !== '') {
+            $existing_id = self::find_agent_by_dg_id($dg_id);
+        }
+        if (!$existing_id && $email !== '') {
+            $existing_id = self::find_agent_by_email($email);
+        }
+
+        $post_data = [
+            'post_type' => 'agent',
+            'post_status' => 'publish',
+            'post_title' => $name,
+        ];
+        $bio = isset($body['bio']) ? wp_kses_post((string) $body['bio']) : '';
+        if ($bio !== '') {
+            $post_data['post_content'] = $bio;
+        }
+
+        if ($existing_id) {
+            $post_data['ID'] = $existing_id;
+            $agent_id = wp_update_post($post_data, true);
+        } else {
+            $agent_id = wp_insert_post($post_data, true);
+        }
+
+        if (is_wp_error($agent_id)) {
+            return $agent_id;
+        }
+
+        $meta = [
+            'roe_agent_dg_id' => $dg_id,
+            'roe_agent_email' => $email,
+            'roe_agent_phone' => sanitize_text_field((string) ($body['phone'] ?? '')),
+            'roe_agent_title' => sanitize_text_field((string) ($body['title'] ?? '')),
+            'roe_agent_position' => sanitize_text_field((string) ($body['position'] ?? $body['title'] ?? '')),
+            'roe_agent_bio' => $bio,
+        ];
+        foreach ($meta as $key => $value) {
+            if ($value === '' || $value === null) {
+                continue;
+            }
+            update_post_meta($agent_id, $key, $value);
+        }
+
+        return rest_ensure_response([
+            'ok' => true,
+            'created' => !$existing_id,
+            'agent' => self::format_dg_agent((int) $agent_id),
+        ]);
+    }
+
+    private static function find_agent_by_dg_id($dg_id) {
+        $query = new WP_Query([
+            'post_type' => 'agent',
+            'post_status' => ['publish', 'draft', 'pending', 'private'],
+            'posts_per_page' => 1,
+            'meta_key' => 'roe_agent_dg_id',
+            'meta_value' => $dg_id,
+            'fields' => 'ids',
+        ]);
+        return empty($query->posts) ? 0 : (int) $query->posts[0];
+    }
+
+    private static function find_agent_by_email($email) {
+        $query = new WP_Query([
+            'post_type' => 'agent',
+            'post_status' => ['publish', 'draft', 'pending', 'private'],
+            'posts_per_page' => 1,
+            'meta_key' => 'roe_agent_email',
+            'meta_value' => $email,
+            'fields' => 'ids',
+        ]);
+        return empty($query->posts) ? 0 : (int) $query->posts[0];
+    }
+
+    private static function format_dg_agent($post_id) {
+        $post_id = (int) $post_id;
+        return [
+            'id' => $post_id,
+            'dg_membership_id' => get_post_meta($post_id, 'roe_agent_dg_id', true),
+            'name' => get_the_title($post_id),
+            'permalink' => get_permalink($post_id),
+            'email' => get_post_meta($post_id, 'roe_agent_email', true),
+            'phone' => get_post_meta($post_id, 'roe_agent_phone', true),
+            'title' => get_post_meta($post_id, 'roe_agent_title', true),
+            'bio' => get_post_meta($post_id, 'roe_agent_bio', true),
+            'post_status' => get_post_status($post_id),
+        ];
     }
 
     private static function list_args() {
