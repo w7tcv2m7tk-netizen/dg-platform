@@ -320,13 +320,21 @@ class DG_Acc_Dev_API {
                 ],
             ]));
 
+            $manual = self::expand_manual_blocked_dates($p->ID);
+            $manual_in_range = array_values(array_filter($manual, static function ($d) use ($from, $to) {
+                return $d >= $from && $d <= $to;
+            }));
+
             $units[] = [
                 'id' => $p->ID,
                 'title' => $p->post_title,
                 'listing_status' => class_exists('DG_Acc_Listing_Status') ? DG_Acc_Listing_Status::get($p->ID) : 'bookable',
                 'weekday_rate' => (float) get_post_meta($p->ID, 'dg_weekday_rate', true),
                 'weekend_rate' => (float) get_post_meta($p->ID, 'dg_weekend_rate', true),
+                'cleaning_fee' => (float) get_post_meta($p->ID, 'dg_cleaning_fee', true),
+                // Merged: bookings + manual (legacy). Prefer manual_blocked_dates for operator UI.
                 'blocked_dates' => $blocked,
+                'manual_blocked_dates' => $manual_in_range,
                 'bookings' => $bookings,
             ];
         }
@@ -625,7 +633,7 @@ class DG_Acc_Dev_API {
     public static function update_properties($request) {
         $updates = self::extract_updates($request);
         if (!$updates) {
-            return new WP_Error('missing_updates', 'Provide updates[{id,title?,weekday_rate?,weekend_rate?,cleaning_fee?,listing_status?,airbnb_ical_url?,bookingcom_ical_url?}].', ['status' => 400]);
+            return new WP_Error('missing_updates', 'Provide updates[{id,title?,weekday_rate?,weekend_rate?,cleaning_fee?,listing_status?,airbnb_ical_url?,bookingcom_ical_url?,block_dates?,unblock_dates?,manual_blocked_dates?}].', ['status' => 400]);
         }
 
         $listing_labels = class_exists('DG_Acc_Listing_Status')
@@ -684,7 +692,41 @@ class DG_Acc_Dev_API {
                 }
             }
 
-            $saved[] = self::format_property(get_post($id));
+            // Manual operator blocks only — never touches dg_ota_blocked_dates.
+            $touched_blocks = false;
+            if (array_key_exists('manual_blocked_dates', $row) && is_array($row['manual_blocked_dates'])) {
+                self::save_manual_blocked_dates($id, self::sanitize_date_list($row['manual_blocked_dates']));
+                $touched_blocks = true;
+            } else {
+                $block = isset($row['block_dates']) && is_array($row['block_dates'])
+                    ? self::sanitize_date_list($row['block_dates'])
+                    : [];
+                $unblock = isset($row['unblock_dates']) && is_array($row['unblock_dates'])
+                    ? self::sanitize_date_list($row['unblock_dates'])
+                    : [];
+                if ($block || $unblock) {
+                    $current = self::expand_manual_blocked_dates($id);
+                    $set = array_fill_keys($current, true);
+                    foreach ($block as $d) {
+                        $set[$d] = true;
+                    }
+                    foreach ($unblock as $d) {
+                        unset($set[$d]);
+                    }
+                    self::save_manual_blocked_dates($id, array_keys($set));
+                    $touched_blocks = true;
+                }
+            }
+
+            $prop = self::format_property(get_post($id));
+            if ($touched_blocks) {
+                $manual = self::expand_manual_blocked_dates($id);
+                $prop['manual_blocked_dates'] = $manual;
+                $prop['blocked_dates'] = class_exists('DG_Acc_Frontend')
+                    ? DG_Acc_Frontend::get_blocked_dates($id)
+                    : $manual;
+            }
+            $saved[] = $prop;
         }
 
         return rest_ensure_response([
@@ -865,5 +907,96 @@ class DG_Acc_Dev_API {
             'updated' => $saved,
             'count' => count($saved),
         ]);
+    }
+
+    /**
+     * Expand dg_blocked_dates meta into individual YYYY-MM-DD days (inclusive ranges).
+     *
+     * @return string[]
+     */
+    private static function expand_manual_blocked_dates($property_id) {
+        $manual = get_post_meta((int) $property_id, 'dg_blocked_dates', true);
+        if (!is_string($manual) || trim($manual) === '') {
+            return [];
+        }
+
+        $days = [];
+        foreach (preg_split('/\r\n|\r|\n/', $manual) as $line) {
+            $line = trim($line);
+            if ($line === '') {
+                continue;
+            }
+            if (preg_match('/^(\d{4}-\d{2}-\d{2})\s+to\s+(\d{4}-\d{2}-\d{2})$/i', $line, $m)) {
+                $current = strtotime($m[1]);
+                $end = strtotime($m[2]);
+                if ($current === false || $end === false) {
+                    continue;
+                }
+                while ($current <= $end) {
+                    $days[] = date('Y-m-d', $current);
+                    $current = strtotime('+1 day', $current);
+                }
+            } elseif (preg_match('/^(\d{4}-\d{2}-\d{2})$/', $line, $m)) {
+                $days[] = $m[1];
+            }
+        }
+
+        $days = array_values(array_unique($days));
+        sort($days);
+        return $days;
+    }
+
+    /**
+     * @param mixed $raw
+     * @return string[]
+     */
+    private static function sanitize_date_list($raw) {
+        if (!is_array($raw)) {
+            return [];
+        }
+        $out = [];
+        foreach ($raw as $d) {
+            if (!is_string($d) && !is_numeric($d)) {
+                continue;
+            }
+            $d = trim((string) $d);
+            if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $d)) {
+                $out[] = $d;
+            }
+        }
+        return array_values(array_unique($out));
+    }
+
+    /**
+     * Persist expanded day list as compressed inclusive ranges in dg_blocked_dates.
+     * Does not modify dg_ota_blocked_dates.
+     *
+     * @param string[] $days
+     */
+    private static function save_manual_blocked_dates($property_id, array $days) {
+        $days = self::sanitize_date_list($days);
+        sort($days);
+        if (!$days) {
+            delete_post_meta((int) $property_id, 'dg_blocked_dates');
+            return;
+        }
+
+        $ranges = [];
+        $range_start = $days[0];
+        $prev = $days[0];
+        for ($i = 1, $n = count($days); $i < $n; $i++) {
+            $d = $days[$i];
+            $expected = date('Y-m-d', strtotime($prev . ' +1 day'));
+            if ($d === $expected) {
+                $prev = $d;
+                continue;
+            }
+            $ranges[] = $range_start . ' to ' . $prev;
+            $range_start = $d;
+            $prev = $d;
+        }
+        $ranges[] = $range_start . ' to ' . $prev;
+
+        update_post_meta((int) $property_id, 'dg_blocked_dates', implode("\n", $ranges));
     }
 }

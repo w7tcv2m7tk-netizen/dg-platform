@@ -1,5 +1,12 @@
 # DG Platform Changelog
 
+## 10.62.0 — Manual blocked dates via Dev API (August 2026)
+
+- **GET `/accommodation/availability`** returns `manual_blocked_dates` (operator blocks from `dg_blocked_dates` only) alongside merged `blocked_dates`
+- **PATCH `/accommodation/properties`** accepts `block_dates[]` / `unblock_dates[]` (incremental) or `manual_blocked_dates[]` (full replace of expanded days)
+- Writes only `dg_blocked_dates` — never touches `dg_ota_blocked_dates` / OTA booking-derived blocks
+- Enables Gen 2 Availability click-to-block
+
 ## 10.61.0 — iCal URL fields on accommodation properties API (August 2026)
 
 - **GET/PATCH `/accommodation/properties`** includes OTA calendar fields: `airbnb_ical_url`, `bookingcom_ical_url`, `ical_export_url` (+ optional fallback), last sync / last error
