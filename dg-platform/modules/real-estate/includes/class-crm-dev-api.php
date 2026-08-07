@@ -246,7 +246,7 @@ class DG_RE_CRM_Dev_API {
             ]);
         }
 
-        $limit = (int) ($request->get_param('limit') ?: 20);
+        $limit = (int) ($request->get_param('limit') ?: 100);
         $query = new WP_Query([
             'post_type' => 'property',
             'post_status' => ['publish', 'draft', 'pending'],
@@ -444,6 +444,23 @@ class DG_RE_CRM_Dev_API {
             }
         }
 
+        // Optional image URLs — sideload into media library and set gallery.
+        $image_urls = [];
+        if (!empty($body['images']) && is_array($body['images'])) {
+            $image_urls = $body['images'];
+        } elseif (!empty($body['gallery_urls']) && is_array($body['gallery_urls'])) {
+            $image_urls = $body['gallery_urls'];
+        }
+        if (!empty($image_urls)) {
+            $attachment_ids = self::sideload_property_images((int) $property_id, $image_urls);
+            if (!empty($attachment_ids)) {
+                $meta['roe_property_gallery'] = implode(',', $attachment_ids);
+                if (!has_post_thumbnail($property_id)) {
+                    set_post_thumbnail($property_id, (int) $attachment_ids[0]);
+                }
+            }
+        }
+
         foreach ($meta as $key => $value) {
             if ($value === '' || $value === null) {
                 continue;
@@ -454,6 +471,49 @@ class DG_RE_CRM_Dev_API {
         self::upsert_sync_record((int) $property_id, $dg_id);
 
         return (int) $property_id;
+    }
+
+    /**
+     * Sideload remote image URLs into the media library for a property.
+     *
+     * @param int   $property_id
+     * @param array $urls
+     * @return int[] attachment IDs
+     */
+    private static function sideload_property_images($property_id, $urls) {
+        if (!function_exists('media_sideload_image')) {
+            require_once ABSPATH . 'wp-admin/includes/media.php';
+            require_once ABSPATH . 'wp-admin/includes/file.php';
+            require_once ABSPATH . 'wp-admin/includes/image.php';
+        }
+
+        $ids = [];
+        $count = 0;
+        foreach ($urls as $url) {
+            if ($count >= 20) {
+                break;
+            }
+            $url = esc_url_raw(trim((string) $url));
+            if ($url === '' || !preg_match('#^https?://#i', $url)) {
+                continue;
+            }
+
+            // Reuse existing attachment if this URL was already downloaded.
+            $existing = attachment_url_to_postid($url);
+            if ($existing) {
+                $ids[] = (int) $existing;
+                $count++;
+                continue;
+            }
+
+            $attachment_id = media_sideload_image($url, $property_id, null, 'id');
+            if (!is_wp_error($attachment_id) && $attachment_id) {
+                $ids[] = (int) $attachment_id;
+                $count++;
+            }
+        }
+
+        return $ids;
     }
 
     private static function upsert_sync_record($property_id, $dg_id) {
@@ -493,6 +553,29 @@ class DG_RE_CRM_Dev_API {
 
     private static function format_dg_property($post_id) {
         $post_id = (int) $post_id;
+
+        $gallery_meta = get_post_meta($post_id, 'roe_property_gallery', true);
+        $images = [];
+        if (!empty($gallery_meta)) {
+            $ids = array_filter(array_map('trim', explode(',', (string) $gallery_meta)));
+            foreach ($ids as $attachment_id) {
+                $url = wp_get_attachment_image_url((int) $attachment_id, 'large');
+                if ($url) {
+                    $images[] = $url;
+                }
+            }
+        }
+
+        $featured = get_the_post_thumbnail_url($post_id, 'large');
+        if ($featured && !in_array($featured, $images, true)) {
+            array_unshift($images, $featured);
+        }
+
+        $description = get_post_meta($post_id, 'roe_property_description', true);
+        if ($description === '' || $description === false) {
+            $description = get_post_field('post_content', $post_id);
+        }
+
         return [
             'id' => $post_id,
             'dg_property_id' => get_post_meta($post_id, 'roe_property_dg_id', true),
@@ -508,6 +591,21 @@ class DG_RE_CRM_Dev_API {
             'property_type' => get_post_meta($post_id, 'roe_property_type', true),
             'bedrooms' => get_post_meta($post_id, 'roe_property_bedrooms', true),
             'bathrooms' => get_post_meta($post_id, 'roe_property_bathrooms', true),
+            'car_spaces' => get_post_meta($post_id, 'roe_property_car_spaces', true),
+            'land_size' => get_post_meta($post_id, 'roe_property_land_size', true),
+            'building_size' => get_post_meta($post_id, 'roe_property_building_size', true),
+            'features' => get_post_meta($post_id, 'roe_property_features', true),
+            'description' => $description,
+            'external_id' => get_post_meta($post_id, 'roe_property_external_id', true),
+            'images' => array_values(array_filter($images)),
+            'featured_image' => $featured ?: null,
+            'agent' => [
+                'id' => (int) get_post_meta($post_id, 'roe_property_agent_id', true),
+                'name' => get_post_meta($post_id, 'roe_property_agent_name', true),
+                'phone' => get_post_meta($post_id, 'roe_property_agent_phone', true),
+                'email' => get_post_meta($post_id, 'roe_property_agent_email', true),
+            ],
+            'modified_at' => get_post_modified_time('c', true, $post_id),
         ];
     }
 
@@ -617,6 +715,15 @@ class DG_RE_CRM_Dev_API {
             update_post_meta($agent_id, $key, $value);
         }
 
+        $photo_url = isset($body['photo_url']) ? esc_url_raw(trim((string) $body['photo_url'])) : '';
+        if ($photo_url !== '' && preg_match('#^https?://#i', $photo_url)) {
+            $attachment_ids = self::sideload_property_images((int) $agent_id, [$photo_url]);
+            if (!empty($attachment_ids[0])) {
+                set_post_thumbnail((int) $agent_id, (int) $attachment_ids[0]);
+                update_post_meta((int) $agent_id, 'roe_agent_photo_url', $photo_url);
+            }
+        }
+
         return rest_ensure_response([
             'ok' => true,
             'created' => !$existing_id,
@@ -650,6 +757,7 @@ class DG_RE_CRM_Dev_API {
 
     private static function format_dg_agent($post_id) {
         $post_id = (int) $post_id;
+        $featured = get_the_post_thumbnail_url($post_id, 'large');
         return [
             'id' => $post_id,
             'dg_membership_id' => get_post_meta($post_id, 'roe_agent_dg_id', true),
@@ -659,6 +767,7 @@ class DG_RE_CRM_Dev_API {
             'phone' => get_post_meta($post_id, 'roe_agent_phone', true),
             'title' => get_post_meta($post_id, 'roe_agent_title', true),
             'bio' => get_post_meta($post_id, 'roe_agent_bio', true),
+            'photo_url' => $featured ?: (get_post_meta($post_id, 'roe_agent_photo_url', true) ?: null),
             'post_status' => get_post_status($post_id),
         ];
     }
