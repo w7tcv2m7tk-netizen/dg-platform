@@ -22,30 +22,51 @@ class DG_Acc_Dev_API {
         ]);
 
         register_rest_route(DG_REST_NAMESPACE, '/accommodation/bookings', [
-            'methods' => 'GET',
-            'callback' => [__CLASS__, 'list_bookings'],
-            'permission_callback' => [__CLASS__, 'can_access'],
-            'args' => [
-                'status' => ['type' => 'string'],
-                'limit' => ['type' => 'integer', 'default' => 25, 'minimum' => 1, 'maximum' => 100],
-                'offset' => ['type' => 'integer', 'default' => 0, 'minimum' => 0],
-                'from' => ['type' => 'string'],
-                'to' => ['type' => 'string'],
+            [
+                'methods' => 'GET',
+                'callback' => [__CLASS__, 'list_bookings'],
+                'permission_callback' => [__CLASS__, 'can_access'],
+                'args' => [
+                    'status' => ['type' => 'string'],
+                    'limit' => ['type' => 'integer', 'default' => 25, 'minimum' => 1, 'maximum' => 100],
+                    'offset' => ['type' => 'integer', 'default' => 0, 'minimum' => 0],
+                    'from' => ['type' => 'string'],
+                    'to' => ['type' => 'string'],
+                ],
+            ],
+            [
+                'methods' => 'PATCH',
+                'callback' => [__CLASS__, 'update_bookings'],
+                'permission_callback' => [__CLASS__, 'can_manage'],
             ],
         ]);
 
         register_rest_route(DG_REST_NAMESPACE, '/accommodation/properties', [
-            'methods' => 'GET',
-            'callback' => [__CLASS__, 'list_properties'],
-            'permission_callback' => [__CLASS__, 'can_access'],
+            [
+                'methods' => 'GET',
+                'callback' => [__CLASS__, 'list_properties'],
+                'permission_callback' => [__CLASS__, 'can_access'],
+            ],
+            [
+                'methods' => 'PATCH',
+                'callback' => [__CLASS__, 'update_properties'],
+                'permission_callback' => [__CLASS__, 'can_manage'],
+            ],
         ]);
 
         register_rest_route(DG_REST_NAMESPACE, '/accommodation/guests', [
-            'methods' => 'GET',
-            'callback' => [__CLASS__, 'list_guests'],
-            'permission_callback' => [__CLASS__, 'can_access'],
-            'args' => [
-                'limit' => ['type' => 'integer', 'default' => 25, 'minimum' => 1, 'maximum' => 100],
+            [
+                'methods' => 'GET',
+                'callback' => [__CLASS__, 'list_guests'],
+                'permission_callback' => [__CLASS__, 'can_access'],
+                'args' => [
+                    'limit' => ['type' => 'integer', 'default' => 25, 'minimum' => 1, 'maximum' => 100],
+                ],
+            ],
+            [
+                'methods' => 'PATCH',
+                'callback' => [__CLASS__, 'update_guests'],
+                'permission_callback' => [__CLASS__, 'can_manage'],
             ],
         ]);
 
@@ -526,6 +547,189 @@ class DG_Acc_Dev_API {
             'message' => empty($results)
                 ? 'No properties have Airbnb or Booking.com calendar URLs configured.'
                 : sprintf('Synced %d propert%s — %d new, %d updated, %d removed.', count($results), count($results) === 1 ? 'y' : 'ies', $imported, $updated, $cancelled),
+        ]);
+    }
+
+    /** @return array<int, array> */
+    private static function extract_updates($request) {
+        $body = $request->get_json_params();
+        if (!is_array($body)) {
+            return [];
+        }
+        if (isset($body['updates']) && is_array($body['updates'])) {
+            return $body['updates'];
+        }
+        if (isset($body['id']) || isset($body['property_id'])) {
+            return [$body];
+        }
+        return [];
+    }
+
+    public static function update_properties($request) {
+        $updates = self::extract_updates($request);
+        if (!$updates) {
+            return new WP_Error('missing_updates', 'Provide updates[{id,title?,weekday_rate?,weekend_rate?,cleaning_fee?,listing_status?}].', ['status' => 400]);
+        }
+
+        $listing_labels = class_exists('DG_Acc_Listing_Status')
+            ? DG_Acc_Listing_Status::labels()
+            : ['bookable' => 'Open', 'coming_soon' => 'Coming soon', 'events_future' => 'Events'];
+
+        $saved = [];
+        foreach ($updates as $row) {
+            if (!is_array($row)) {
+                continue;
+            }
+            $id = (int) ($row['id'] ?? $row['property_id'] ?? 0);
+            if (!$id || get_post_type($id) !== 'dg_accommodation') {
+                continue;
+            }
+
+            if (isset($row['title']) && is_string($row['title']) && trim($row['title']) !== '') {
+                wp_update_post([
+                    'ID' => $id,
+                    'post_title' => sanitize_text_field($row['title']),
+                ]);
+            }
+
+            foreach (['weekday_rate' => 'dg_weekday_rate', 'weekend_rate' => 'dg_weekend_rate', 'cleaning_fee' => 'dg_cleaning_fee'] as $field => $meta) {
+                if (array_key_exists($field, $row) && $row[$field] !== null && $row[$field] !== '') {
+                    update_post_meta($id, $meta, (float) $row[$field]);
+                }
+            }
+
+            if (!empty($row['listing_status']) && isset($listing_labels[$row['listing_status']])) {
+                update_post_meta($id, class_exists('DG_Acc_Listing_Status') ? DG_Acc_Listing_Status::META : 'dg_listing_status', sanitize_key($row['listing_status']));
+            }
+
+            if (!empty($row['housekeeping_status']) && class_exists('DG_Acc_Housekeeping')) {
+                $hk = sanitize_key((string) $row['housekeeping_status']);
+                if (isset(DG_Acc_Housekeeping::STATUSES[$hk])) {
+                    update_post_meta($id, 'dg_housekeeping_status', $hk);
+                }
+            }
+
+            $saved[] = self::format_property(get_post($id));
+        }
+
+        return rest_ensure_response([
+            'ok' => true,
+            'updated' => $saved,
+            'count' => count($saved),
+        ]);
+    }
+
+    public static function update_bookings($request) {
+        $updates = self::extract_updates($request);
+        if (!$updates) {
+            return new WP_Error('missing_updates', 'Provide updates[{id,guest_name?,email?,phone?,checkin?,checkout?,status?,total?,accommodation_id?}].', ['status' => 400]);
+        }
+
+        $allowed_status = ['confirmed', 'pending', 'airbnb', 'bookingcom', 'cancelled', 'completed'];
+        $saved = [];
+
+        foreach ($updates as $row) {
+            if (!is_array($row)) {
+                continue;
+            }
+            $id = (int) ($row['id'] ?? 0);
+            if (!$id || get_post_type($id) !== 'dg_booking') {
+                continue;
+            }
+
+            if (isset($row['guest_name']) && is_string($row['guest_name'])) {
+                $name = sanitize_text_field($row['guest_name']);
+                update_post_meta($id, 'dg_booking_name', $name);
+                if ($name !== '') {
+                    $property = get_post_meta($id, 'dg_booking_accommodation_name', true);
+                    wp_update_post([
+                        'ID' => $id,
+                        'post_title' => $property ? ($name . ' — ' . $property) : $name,
+                    ]);
+                }
+            }
+            if (array_key_exists('email', $row)) {
+                update_post_meta($id, 'dg_booking_email', sanitize_email((string) $row['email']));
+            }
+            if (array_key_exists('phone', $row)) {
+                update_post_meta($id, 'dg_booking_phone', sanitize_text_field((string) $row['phone']));
+            }
+            if (!empty($row['checkin'])) {
+                update_post_meta($id, 'dg_booking_checkin', sanitize_text_field((string) $row['checkin']));
+            }
+            if (!empty($row['checkout'])) {
+                update_post_meta($id, 'dg_booking_checkout', sanitize_text_field((string) $row['checkout']));
+            }
+            if (!empty($row['status']) && in_array($row['status'], $allowed_status, true)) {
+                update_post_meta($id, 'dg_booking_status', sanitize_key($row['status']));
+            }
+            if (array_key_exists('total', $row) && $row['total'] !== null && $row['total'] !== '') {
+                update_post_meta($id, 'dg_booking_total', (float) $row['total']);
+            }
+            if (!empty($row['accommodation_id'])) {
+                $acc_id = (int) $row['accommodation_id'];
+                if ($acc_id && get_post_type($acc_id) === 'dg_accommodation') {
+                    update_post_meta($id, 'dg_booking_accommodation_id', $acc_id);
+                    update_post_meta($id, 'dg_booking_accommodation_name', get_the_title($acc_id));
+                }
+            }
+            if (array_key_exists('ref', $row) && is_string($row['ref'])) {
+                update_post_meta($id, 'dg_booking_ref', sanitize_text_field($row['ref']));
+            }
+
+            $saved[] = self::format_bookings([get_post($id)])[0] ?? ['id' => $id];
+        }
+
+        return rest_ensure_response([
+            'ok' => true,
+            'updated' => $saved,
+            'count' => count($saved),
+        ]);
+    }
+
+    public static function update_guests($request) {
+        $updates = self::extract_updates($request);
+        if (!$updates) {
+            return new WP_Error('missing_updates', 'Provide updates[{id,name?,email?,phone?}].', ['status' => 400]);
+        }
+
+        $saved = [];
+        foreach ($updates as $row) {
+            if (!is_array($row)) {
+                continue;
+            }
+            $id = (int) ($row['id'] ?? 0);
+            if (!$id || get_post_type($id) !== 'dg_guest') {
+                continue;
+            }
+
+            if (isset($row['name']) && is_string($row['name']) && trim($row['name']) !== '') {
+                wp_update_post([
+                    'ID' => $id,
+                    'post_title' => sanitize_text_field($row['name']),
+                ]);
+            }
+            if (array_key_exists('email', $row)) {
+                update_post_meta($id, 'dg_guest_email', sanitize_email((string) $row['email']));
+            }
+            if (array_key_exists('phone', $row)) {
+                update_post_meta($id, 'dg_guest_phone', sanitize_text_field((string) $row['phone']));
+            }
+
+            $post = get_post($id);
+            $saved[] = [
+                'id' => $id,
+                'name' => $post ? $post->post_title : '',
+                'email' => get_post_meta($id, 'dg_guest_email', true),
+                'phone' => get_post_meta($id, 'dg_guest_phone', true),
+                'total_stays' => (int) get_post_meta($id, 'dg_guest_total_stays', true),
+            ];
+        }
+
+        return rest_ensure_response([
+            'ok' => true,
+            'updated' => $saved,
+            'count' => count($saved),
         ]);
     }
 }
