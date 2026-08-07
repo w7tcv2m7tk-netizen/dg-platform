@@ -1,5 +1,10 @@
 # DG Platform Changelog
 
+## 10.65.1 — Accommodation reviews API + guest prefs round-trip (August 2026)
+
+- **GET `/accommodation/reviews`** — read-only surface over `dg_reviews` (Airbnb / TrustIndex import / manual) with platform counts for Gen 2 Acc Reviews
+- **PATCH `/accommodation/guests`** — write `preferences` / `special_requests` meta; resolve guest by `id` → `contact_id` → `email`; return `skipped[]` when unmatched
+
 ## 10.65.0 — Accommodation Gen 2 booking create + richer APIs (August 2026)
 
 - **POST `/accommodation/bookings`** — create manual/direct bookings (guest, unit, dates, guests/nights, paid, payment_method, message, source); rebuilds OTA blocked dates

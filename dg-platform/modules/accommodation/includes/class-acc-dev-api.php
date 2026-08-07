@@ -113,6 +113,19 @@ class DG_Acc_Dev_API {
                 'source' => ['type' => 'string', 'default' => 'all'],
             ],
         ]);
+
+        register_rest_route(DG_REST_NAMESPACE, '/accommodation/reviews', [
+            'methods' => 'GET',
+            'callback' => [__CLASS__, 'list_reviews'],
+            'permission_callback' => [__CLASS__, 'can_access'],
+            'args' => [
+                'platform' => ['type' => 'string'],
+                'listing_id' => ['type' => 'string'],
+                'limit' => ['type' => 'integer', 'default' => 25, 'minimum' => 1, 'maximum' => 100],
+                'offset' => ['type' => 'integer', 'default' => 0, 'minimum' => 0],
+                'min_rating' => ['type' => 'number', 'default' => 0],
+            ],
+        ]);
     }
 
     public static function can_access($request) {
@@ -289,6 +302,74 @@ class DG_Acc_Dev_API {
             $guests[] = self::format_guest($g);
         }
         return rest_ensure_response(['guests' => $guests, 'total' => (int) wp_count_posts('dg_guest')->publish]);
+    }
+
+    /**
+     * Thin Gen 2 surface over dg_reviews (Airbnb / TrustIndex import / manual).
+     * Not the Network Reviews product — read-only ops view for accommodation sites.
+     */
+    public static function list_reviews($request) {
+        if (!class_exists('DG_Reviews')) {
+            return rest_ensure_response([
+                'reviews' => [],
+                'total' => 0,
+                'by_platform' => [],
+                'available' => false,
+                'message' => 'DG_Reviews module not loaded',
+            ]);
+        }
+
+        DG_Reviews::ensure_table();
+        $platform = sanitize_key((string) $request->get_param('platform'));
+        $listing_id = sanitize_text_field((string) $request->get_param('listing_id'));
+        $limit = (int) $request->get_param('limit');
+        $offset = (int) $request->get_param('offset');
+        $min_rating = (float) $request->get_param('min_rating');
+
+        $args = [
+            'status' => 'published',
+            'limit' => $limit,
+            'offset' => $offset,
+            'min_rating' => $min_rating,
+        ];
+        if ($platform !== '') {
+            $args['platform'] = $platform;
+        }
+        if ($listing_id !== '') {
+            $args['listing_id'] = $listing_id;
+        }
+
+        $rows = DG_Reviews::get_reviews($args);
+        $platforms = DG_Reviews::platforms();
+        $reviews = [];
+        foreach ($rows as $row) {
+            $reviews[] = [
+                'id' => (int) $row->id,
+                'platform' => (string) $row->platform,
+                'platform_label' => $platforms[$row->platform] ?? (string) $row->platform,
+                'author_name' => (string) ($row->author_name ?: 'Guest'),
+                'author_photo' => (string) ($row->author_photo ?: ''),
+                'rating' => (float) $row->rating,
+                'title' => (string) ($row->title ?: ''),
+                'content' => wp_strip_all_tags((string) ($row->content ?: '')),
+                'review_date' => $row->review_date ?: null,
+                'source_url' => (string) ($row->source_url ?: ''),
+                'listing_id' => (string) ($row->listing_id ?: ''),
+                'external_id' => (string) ($row->external_id ?: ''),
+            ];
+        }
+
+        global $wpdb;
+        $table = DG_Reviews::table();
+        $total = (int) $wpdb->get_var("SELECT COUNT(*) FROM {$table} WHERE status = 'published'");
+
+        return rest_ensure_response([
+            'reviews' => $reviews,
+            'total' => $total,
+            'by_platform' => DG_Reviews::count_by_platform(),
+            'available' => true,
+            'site' => home_url(),
+        ]);
     }
 
     public static function get_availability($request) {
@@ -690,6 +771,8 @@ class DG_Acc_Dev_API {
             'source' => get_post_meta($g->ID, 'dg_guest_source', true) ?: '',
             'vip' => $vip === '1' || $vip === 1 || $vip === true,
             'notes' => get_post_meta($g->ID, 'dg_guest_notes', true) ?: '',
+            'preferences' => get_post_meta($g->ID, 'dg_guest_preferences', true) ?: '',
+            'special_requests' => get_post_meta($g->ID, 'dg_guest_special_requests', true) ?: '',
             'tags' => get_post_meta($g->ID, 'dg_guest_tags', true) ?: '',
             'total_stays' => (int) get_post_meta($g->ID, 'dg_guest_total_stays', true),
             'total_nights' => (int) get_post_meta($g->ID, 'dg_guest_total_nights', true),
@@ -697,6 +780,49 @@ class DG_Acc_Dev_API {
             'last_stay' => get_post_meta($g->ID, 'dg_guest_last_stay', true) ?: null,
             'contact_id' => get_post_meta($g->ID, 'dg_guest_contact_id', true) ?: null,
         ];
+    }
+
+    /**
+     * Resolve WP guest id from Gen 2 patch row: id → contact_id → email.
+     */
+    private static function resolve_guest_id_from_row(array $row) {
+        $id = (int) ($row['id'] ?? 0);
+        if ($id && get_post_type($id) === 'dg_guest') {
+            return $id;
+        }
+
+        if (!empty($row['contact_id']) && is_string($row['contact_id'])) {
+            $found = get_posts([
+                'post_type' => 'dg_guest',
+                'posts_per_page' => 1,
+                'post_status' => 'publish',
+                'fields' => 'ids',
+                'meta_query' => [
+                    ['key' => 'dg_guest_contact_id', 'value' => sanitize_text_field($row['contact_id'])],
+                ],
+            ]);
+            if (!empty($found)) {
+                return (int) $found[0];
+            }
+        }
+
+        $email = isset($row['email']) ? sanitize_email((string) $row['email']) : '';
+        if ($email !== '') {
+            $found = get_posts([
+                'post_type' => 'dg_guest',
+                'posts_per_page' => 1,
+                'post_status' => 'publish',
+                'fields' => 'ids',
+                'meta_query' => [
+                    ['key' => 'dg_guest_email', 'value' => $email],
+                ],
+            ]);
+            if (!empty($found)) {
+                return (int) $found[0];
+            }
+        }
+
+        return 0;
     }
 
     /** Inclusive night count between YYYY-MM-DD dates (checkout exclusive). */
@@ -1382,33 +1508,26 @@ class DG_Acc_Dev_API {
         if (!$updates) {
             return new WP_Error(
                 'missing_updates',
-                'Provide updates[{id|contact_id,name?,email?,phone?,address?,source?,vip?,notes?,tags?}].',
+                'Provide updates[{id|contact_id|email,name?,email?,phone?,address?,source?,vip?,notes?,preferences?,special_requests?,tags?}].',
                 ['status' => 400]
             );
         }
 
         $saved = [];
-        foreach ($updates as $row) {
+        $skipped = [];
+        foreach ($updates as $i => $row) {
             if (!is_array($row)) {
                 continue;
             }
 
-            $id = (int) ($row['id'] ?? 0);
-            // Gen 2 Contact-centric: resolve WP guest by stored contact_id when id omitted.
-            if (!$id && !empty($row['contact_id']) && is_string($row['contact_id'])) {
-                $found = get_posts([
-                    'post_type' => 'dg_guest',
-                    'posts_per_page' => 1,
-                    'post_status' => 'publish',
-                    'fields' => 'ids',
-                    'meta_query' => [
-                        ['key' => 'dg_guest_contact_id', 'value' => sanitize_text_field($row['contact_id'])],
-                    ],
-                ]);
-                $id = !empty($found) ? (int) $found[0] : 0;
-            }
-
-            if (!$id || get_post_type($id) !== 'dg_guest') {
+            $id = self::resolve_guest_id_from_row($row);
+            if (!$id) {
+                $skipped[] = [
+                    'index' => (int) $i,
+                    'reason' => 'guest_not_found',
+                    'contact_id' => isset($row['contact_id']) ? (string) $row['contact_id'] : null,
+                    'email' => isset($row['email']) ? sanitize_email((string) $row['email']) : null,
+                ];
                 continue;
             }
 
@@ -1433,6 +1552,12 @@ class DG_Acc_Dev_API {
             if (array_key_exists('notes', $row)) {
                 update_post_meta($id, 'dg_guest_notes', sanitize_textarea_field((string) $row['notes']));
             }
+            if (array_key_exists('preferences', $row)) {
+                update_post_meta($id, 'dg_guest_preferences', sanitize_textarea_field((string) $row['preferences']));
+            }
+            if (array_key_exists('special_requests', $row)) {
+                update_post_meta($id, 'dg_guest_special_requests', sanitize_textarea_field((string) $row['special_requests']));
+            }
             if (array_key_exists('tags', $row)) {
                 $tags = is_array($row['tags'])
                     ? implode(', ', array_map('sanitize_text_field', $row['tags']))
@@ -1454,6 +1579,7 @@ class DG_Acc_Dev_API {
         return rest_ensure_response([
             'ok' => true,
             'updated' => $saved,
+            'skipped' => $skipped,
             'count' => count($saved),
         ]);
     }
