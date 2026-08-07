@@ -101,6 +101,14 @@
   border-bottom-left-radius: 4px;
 }
 
+.dg-support-msg.ai {
+  align-self: flex-start;
+  background: #064e3b;
+  color: #ecfdf5;
+  border: 1px solid #34d399;
+  border-bottom-left-radius: 4px;
+}
+
 .dg-support-meta {
   display: block;
   font-size: 10px;

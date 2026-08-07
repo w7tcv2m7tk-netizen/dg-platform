@@ -21,6 +21,10 @@ class DG_Client_Support {
         add_action('admin_enqueue_scripts', [__CLASS__, 'enqueue_assets']);
         add_action('admin_menu', [__CLASS__, 'register_admin_menu'], 25);
         add_action('admin_post_dg_support_reply', [__CLASS__, 'handle_admin_reply']);
+
+        if (class_exists('DG_Support_AI')) {
+            DG_Support_AI::init();
+        }
     }
 
     public static function enabled() {
@@ -166,6 +170,7 @@ class DG_Client_Support {
         }
 
         self::notify_staff_new_message($conversation, $body);
+        do_action('dg_support_client_message_created', $conversation, $message_id, $body);
 
         return new WP_REST_Response([
             'message_id' => $message_id,
@@ -298,7 +303,11 @@ class DG_Client_Support {
 
         if ($role === 'client') {
             self::notify_staff_new_message($conversation, $body);
+            do_action('dg_support_client_message_created', $conversation, $message_id, $body);
         } else {
+            if (class_exists('DG_Support_AI')) {
+                DG_Support_AI::pause_conversation((int) $conversation->id);
+            }
             self::notify_client_reply($conversation, $body);
         }
 
@@ -368,26 +377,36 @@ class DG_Client_Support {
 
     /** @return array<string,mixed> */
     private static function format_message($row) {
+        $role = (string) $row->sender_role;
         $sender_name = 'Support';
-        if ($row->sender_role === 'client') {
+        if ($role === 'client') {
             $user = get_userdata((int) $row->sender_user_id);
             $sender_name = $user ? ($user->display_name ?: $user->user_email) : 'Client';
+        } elseif ($role === 'ai') {
+            $sender_name = 'DigitalGate Assist';
         }
 
         return [
             'id' => (int) $row->id,
-            'role' => (string) $row->sender_role,
+            'role' => $role,
             'sender' => $sender_name,
             'body' => (string) $row->body,
             'at' => (string) $row->created_at,
         ];
     }
 
+    /** Public wrapper for AI / integrations. */
+    public static function insert_message_public($conversation_id, $role, $user_id, $body) {
+        return self::insert_message($conversation_id, $role, $user_id, $body);
+    }
+
     private static function insert_message($conversation_id, $role, $user_id, $body) {
         global $wpdb;
+        $allowed = ['client', 'staff', 'ai'];
+        $role = in_array($role, $allowed, true) ? $role : 'client';
         $wpdb->insert(self::messages_table(), [
             'conversation_id' => (int) $conversation_id,
-            'sender_role' => $role === 'staff' ? 'staff' : 'client',
+            'sender_role' => $role,
             'sender_user_id' => (int) $user_id,
             'body' => $body,
             'created_at' => current_time('mysql'),
@@ -410,6 +429,13 @@ class DG_Client_Support {
         $message = "New message in the client portal:\n\n";
         $message .= $body . "\n\n";
         $message .= "From: " . ($user ? $user->user_email : '') . "\n";
+        if (
+            class_exists('DG_Support_AI')
+            && DG_Support_AI::enabled()
+            && empty($conversation->ai_paused)
+        ) {
+            $message .= "DigitalGate Assist may send a first-line reply in chat.\n";
+        }
         $message .= admin_url('admin.php?page=dg-platform-support&conversation_id=' . (int) $conversation->id);
 
         wp_mail($to, $subject, $message, ['Content-Type: text/plain; charset=UTF-8']);
@@ -461,6 +487,9 @@ class DG_Client_Support {
         }
 
         self::insert_message($conversation_id, 'staff', get_current_user_id(), $body);
+        if (class_exists('DG_Support_AI')) {
+            DG_Support_AI::pause_conversation($conversation_id);
+        }
         self::notify_client_reply($conversation, $body);
 
         wp_safe_redirect(admin_url('admin.php?page=dg-platform-support&conversation_id=' . $conversation_id . '&sent=1'));

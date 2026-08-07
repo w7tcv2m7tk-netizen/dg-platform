@@ -1,5 +1,11 @@
 # DG Platform Changelog
 
+## 10.55.0 — Live Support AI first-line (August 2026)
+
+- DigitalGate Assist auto-replies in Live Support after client messages (OpenAI/Gemini via `DG_AI_Client`)
+- New `ai` message role + Support Inbox pause/resume controls (staff reply pauses AI)
+- Schema: `ai_paused` on support conversations
+
 ## 10.17.1 — CHV admin UX (August 2026)
 
 ### Fixed

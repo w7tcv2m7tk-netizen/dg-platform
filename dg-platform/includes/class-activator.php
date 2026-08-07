@@ -78,6 +78,7 @@ class DG_Activator {
             return;
         }
         self::create_tables();
+        self::ensure_support_ai_columns();
         if (class_exists('DG_Permissions')) {
             DG_Permissions::register_capabilities();
         }
@@ -85,6 +86,23 @@ class DG_Activator {
             DG_SEO_Redirects::seed_defaults();
         }
         update_option('dg_platform_db_version', DG_PLATFORM_VERSION);
+    }
+
+    /** Add Live Support AI columns on existing installs (dbDelta can miss tinyint defaults). */
+    public static function ensure_support_ai_columns() {
+        global $wpdb;
+        $table = $wpdb->prefix . 'dg_support_conversations';
+        // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+        $exists = $wpdb->get_var($wpdb->prepare('SHOW TABLES LIKE %s', $table));
+        if ($exists !== $table) {
+            return;
+        }
+        // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+        $col = $wpdb->get_results("SHOW COLUMNS FROM `{$table}` LIKE 'ai_paused'");
+        if (empty($col)) {
+            // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+            $wpdb->query("ALTER TABLE `{$table}` ADD COLUMN ai_paused tinyint(1) NOT NULL DEFAULT 0 AFTER status");
+        }
     }
 
     public static function deactivate() {
@@ -295,6 +313,7 @@ class DG_Activator {
                 user_id bigint(20) NOT NULL,
                 contact_id bigint(20) DEFAULT NULL,
                 status varchar(20) DEFAULT 'open',
+                ai_paused tinyint(1) NOT NULL DEFAULT 0,
                 last_message_at datetime DEFAULT CURRENT_TIMESTAMP,
                 created_at datetime DEFAULT CURRENT_TIMESTAMP,
                 PRIMARY KEY (id),

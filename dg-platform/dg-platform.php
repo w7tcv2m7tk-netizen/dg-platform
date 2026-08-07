@@ -3,7 +3,7 @@
  * Plugin Name: DG Platform
  * Plugin URI: https://digitalgate.com.au
  * Description: DigitalGate Business Platform Core - Modular CRM with Industry Modules
- * Version: 10.54.0
+ * Version: 10.55.0
  * Author: DigitalGate
  * Author URI: https://digitalgate.com.au
  * Text Domain: dg-platform
@@ -20,7 +20,7 @@ if (defined('WP_CONTENT_DIR') && file_exists(WP_CONTENT_DIR . '/.dg-platform-off
     return;
 }
 
-define('DG_PLATFORM_VERSION', '10.54.0');
+define('DG_PLATFORM_VERSION', '10.55.0');
 define('DG_PLATFORM_PATH', plugin_dir_path(__FILE__));
 define('DG_PLATFORM_URL', plugin_dir_url(__FILE__));
 define('DG_MODULES_PATH', DG_PLATFORM_PATH . 'modules/');
@@ -74,6 +74,7 @@ require_once DG_INCLUDES_PATH . 'class-onboarding.php';
 require_once DG_INCLUDES_PATH . 'class-client-portal.php';
 require_once DG_INCLUDES_PATH . 'class-site-portal-guest.php';
 require_once DG_INCLUDES_PATH . 'class-client-reports.php';
+require_once DG_INCLUDES_PATH . 'class-support-ai.php';
 require_once DG_INCLUDES_PATH . 'class-client-support.php';
 require_once DG_INCLUDES_PATH . 'class-stripe-billing.php';
 require_once DG_INCLUDES_PATH . 'class-client-onboarding.php';
@@ -95,6 +96,12 @@ add_action('admin_init', function () {
     }
     if (class_exists('DG_Activator')) {
         DG_Activator::maybe_enable_deferred_modules();
+    }
+}, 1);
+
+// Schema upgrade on any request (REST / portal) so deploy works without visiting wp-admin first.
+add_action('init', function () {
+    if (class_exists('DG_Activator')) {
         DG_Activator::maybe_upgrade_schema();
     }
 }, 1);

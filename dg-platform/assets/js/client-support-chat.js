@@ -52,7 +52,7 @@
       messagesEl.innerHTML = '';
     }
     if (!messages.length && !append) {
-      messagesEl.innerHTML = '<div class="dg-support-empty">Say hello — we typically reply within a few hours on business days.</div>';
+      messagesEl.innerHTML = '<div class="dg-support-empty">Say hello — Assist usually replies within a few seconds.</div>';
       return;
     }
     messages.forEach(function (msg) {
@@ -155,7 +155,7 @@
   var panel = el('div', 'dg-support-panel');
   panel.innerHTML =
     '<div class="dg-support-header">' +
-      '<div><h3>Live support</h3><p>Chat with DigitalGate — replies by email &amp; here</p></div>' +
+      '<div><h3>Live support</h3><p>DigitalGate Assist replies instantly — humans follow up here &amp; by email</p></div>' +
       '<button type="button" class="dg-support-close" aria-label="Close chat">&times;</button>' +
     '</div>' +
     '<div class="dg-support-messages"></div>' +
