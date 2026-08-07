@@ -571,15 +571,22 @@ class DG_Client_Discovery {
             'Goals' => $data['goals_message'],
         ];
 
-        $body = '<h2>New AI Discovery submission</h2>';
-        foreach ($rows as $label => $value) {
-            if ($value === '') {
-                continue;
+        if (class_exists('DG_Email_Brand')) {
+            $body = DG_Email_Brand::admin_notification('New AI Discovery submission', $rows, [
+                'theme' => 'digitalgate',
+                'footer_note' => 'Internal notification from DigitalGate Discovery.',
+            ]);
+            $headers = DG_Email_Brand::mail_headers(true);
+        } else {
+            $body = '<h2>New AI Discovery submission</h2>';
+            foreach ($rows as $label => $value) {
+                if ($value === '') {
+                    continue;
+                }
+                $body .= '<p><strong>' . esc_html($label) . ':</strong> ' . esc_html($value) . '</p>';
             }
-            $body .= '<p><strong>' . esc_html($label) . ':</strong> ' . esc_html($value) . '</p>';
+            $headers = ['Content-Type: text/html; charset=UTF-8', 'From: DigitalGate <hello@digitalgate.com.au>'];
         }
-
-        $headers = ['Content-Type: text/html; charset=UTF-8', 'From: DigitalGate <hello@digitalgate.com.au>'];
         wp_mail($to, $subject, $body, $headers);
     }
 

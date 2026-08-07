@@ -204,40 +204,47 @@ class DG_Acc_Payments {
 
         $payid_block = '';
         if (!$is_paid && $payment_method !== 'stripe') {
-            $payid_block = '
-            <div class="payid-box">
-                <p><strong>PayID:</strong> payid@currumbinvalleyhideaway.com.au</p>
-                <p><strong>Reference:</strong> ' . esc_html($data['booking_ref']) . '</p>
-                <p><strong>Amount:</strong> $' . number_format(floatval($data['total']), 2) . '</p>
-            </div>
-            <p>Once payment is confirmed, you\'ll receive check-in instructions by email.</p>';
+            $payid_block = '<div style="background:#f0f8ff;padding:20px;border-radius:10px;border:2px dashed #B9A48A;margin:15px 0;">'
+                . '<p style="margin:0 0 8px;"><strong>PayID:</strong> payid@currumbinvalleyhideaway.com.au</p>'
+                . '<p style="margin:0 0 8px;"><strong>Reference:</strong> ' . esc_html($data['booking_ref']) . '</p>'
+                . '<p style="margin:0;"><strong>Amount:</strong> $' . number_format(floatval($data['total']), 2) . '</p>'
+                . '</div>'
+                . '<p style="margin:0 0 12px;line-height:1.6;">Once payment is confirmed, you\'ll receive check-in instructions by email.</p>';
         } elseif ($is_paid) {
-            $payid_block = '<p>Your check-in instructions will arrive in a separate email shortly.</p>';
+            $payid_block = '<p style="margin:0 0 12px;line-height:1.6;">Your check-in instructions will arrive in a separate email shortly.</p>';
         }
 
-        $html = '
-        <html><head><style>body{font-family:Arial,sans-serif;color:#2F2F2F;padding:20px;}.container{max-width:600px;margin:0 auto;background:#fff;padding:30px;border-radius:16px;border:1px solid #E0D6CC;}h2{color:#1C2B2A;border-bottom:2px solid #C9A46C;padding-bottom:10px;}.highlight{background:#f5f2ef;padding:20px;border-radius:10px;margin:15px 0;border-left:4px solid #C9A46C;}.payid-box{background:#f0f8ff;padding:20px;border-radius:10px;border:2px dashed #B9A48A;}</style></head>
-        <body><div class="container">
-            <h2>' . ($is_paid ? '✅ Booking Confirmed!' : '🏡 Thank You for Your Booking!') . '</h2>
-            <p>Dear <strong>' . esc_html($guest_name) . '</strong>,</p>
-            <div class="highlight">
-                <p><strong>Accommodation:</strong> ' . esc_html($data['accommodation']) . '</p>
-                <p><strong>Check-in:</strong> ' . date('l, F j, Y', strtotime($data['checkin'])) . '</p>
-                <p><strong>Check-out:</strong> ' . date('l, F j, Y', strtotime($data['checkout'])) . '</p>
-                <p><strong>Nights:</strong> ' . esc_html($data['nights']) . '</p>
-                <p><strong>Total:</strong> $' . number_format(floatval($data['total']), 2) . '</p>
-                <p><strong>Reference:</strong> ' . esc_html($data['booking_ref']) . '</p>
-            </div>
-            ' . $payid_block . '
-            <p>Warm regards,<br><strong>Currumbin Valley Hideaway</strong></p>
-        </div></body></html>';
+        $highlight = 'background:#f5f2ef;padding:20px;border-radius:10px;margin:15px 0;border-left:4px solid #C9A46C;';
 
-        wp_mail(
-            $data['email'],
-            $subject,
-            $html,
-            ['Content-Type: text/html; charset=UTF-8', 'From: Currumbin Valley Hideaway <bookings@currumbinvalleyhideaway.com.au>']
-        );
+        $inner = '<h2 style="color:#1C2B2A;border-bottom:2px solid #C9A46C;padding-bottom:10px;margin:0 0 16px;">'
+            . ($is_paid ? 'Booking Confirmed!' : 'Thank You for Your Booking!') . '</h2>'
+            . '<p style="margin:0 0 12px;line-height:1.6;">Dear <strong>' . esc_html($guest_name) . '</strong>,</p>'
+            . '<div style="' . $highlight . '">'
+            . '<p style="margin:0 0 8px;"><strong>Accommodation:</strong> ' . esc_html($data['accommodation']) . '</p>'
+            . '<p style="margin:0 0 8px;"><strong>Check-in:</strong> ' . date('l, F j, Y', strtotime($data['checkin'])) . '</p>'
+            . '<p style="margin:0 0 8px;"><strong>Check-out:</strong> ' . date('l, F j, Y', strtotime($data['checkout'])) . '</p>'
+            . '<p style="margin:0 0 8px;"><strong>Nights:</strong> ' . esc_html($data['nights']) . '</p>'
+            . '<p style="margin:0 0 8px;"><strong>Total:</strong> $' . number_format(floatval($data['total']), 2) . '</p>'
+            . '<p style="margin:0;"><strong>Reference:</strong> ' . esc_html($data['booking_ref']) . '</p>'
+            . '</div>'
+            . $payid_block
+            . '<p style="margin:16px 0 0;line-height:1.6;">Warm regards,<br><strong>Currumbin Valley Hideaway</strong></p>';
+
+        $html = class_exists('DG_Email_Brand')
+            ? DG_Email_Brand::wrap($inner, [
+                'theme' => 'cvh',
+                'footer_note' => 'Currumbin Valley Hideaway — Gold Coast hinterland stays',
+            ])
+            : '<!DOCTYPE html><html><body style="font-family:Arial,sans-serif;color:#2F2F2F;padding:20px;">'
+                . '<div style="max-width:600px;margin:0 auto;background:#fff;padding:30px;border-radius:16px;border:1px solid #E0D6CC;">'
+                . $inner . '</div></body></html>';
+
+        $headers = [
+            'Content-Type: text/html; charset=UTF-8',
+            'From: Currumbin Valley Hideaway <bookings@currumbinvalleyhideaway.com.au>',
+        ];
+
+        wp_mail($data['email'], $subject, $html, $headers);
     }
 
     /** @return array<string, mixed> */

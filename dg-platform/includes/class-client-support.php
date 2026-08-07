@@ -426,18 +426,33 @@ class DG_Client_Support {
         $user = get_userdata((int) $conversation->user_id);
         $to = apply_filters('dg_client_support_admin_email', 'support@digitalgate.com.au');
         $subject = 'Client support message — ' . ($user ? $user->display_name : 'Client');
-        $message = "New message in the client portal:\n\n";
-        $message .= $body . "\n\n";
-        $message .= "From: " . ($user ? $user->user_email : '') . "\n";
+        $inbox = admin_url('admin.php?page=dg-platform-support&conversation_id=' . (int) $conversation->id);
+        $rows = [
+            'From' => $user ? $user->display_name : 'Client',
+            'Email' => $user ? $user->user_email : '',
+            'Message' => $body,
+        ];
         if (
             class_exists('DG_Support_AI')
             && DG_Support_AI::enabled()
             && empty($conversation->ai_paused)
         ) {
-            $message .= "DigitalGate Assist may send a first-line reply in chat.\n";
+            $rows['Note'] = 'DigitalGate Assist may send a first-line reply in chat.';
         }
-        $message .= admin_url('admin.php?page=dg-platform-support&conversation_id=' . (int) $conversation->id);
 
+        if (class_exists('DG_Email_Brand')) {
+            $html = DG_Email_Brand::admin_notification('Client support message', $rows, [
+                'theme' => 'digitalgate',
+                'footer_note' => 'Internal notification from DigitalGate Support.',
+                'cta_url' => $inbox,
+                'cta_label' => 'Open conversation',
+            ]);
+            wp_mail($to, $subject, $html, DG_Email_Brand::mail_headers(true));
+            return;
+        }
+
+        $message = "New message in the client portal:\n\n" . $body . "\n\nFrom: "
+            . ($user ? $user->user_email : '') . "\n" . $inbox;
         wp_mail($to, $subject, $message, ['Content-Type: text/plain; charset=UTF-8']);
     }
 
@@ -448,16 +463,34 @@ class DG_Client_Support {
             return;
         }
         $subject = 'Reply from DigitalGate Support';
-        $message = 'Hi ' . DG_Email_Names::first_name($user) . ",\n\n";
-        $message .= "Ben from DigitalGate replied to your support message:\n\n";
-        $message .= $body . "\n\n";
-        $message .= "You can continue the conversation in your platform dashboard:\n";
-        $message .= class_exists('DG_Client_Portal')
+        $dashboard = class_exists('DG_Client_Portal')
             ? DG_Client_Portal::dashboard_url()
             : admin_url('admin.php?page=dg-platform');
-        $message .= "\n\n";
-        $message .= "— DigitalGate Support";
+        $first = DG_Email_Names::first_name($user);
 
+        if (class_exists('DG_Email_Brand')) {
+            $inner = '<p style="margin:0 0 14px;line-height:1.65;color:#E2E8F0;">Hi ' . esc_html($first) . ',</p>'
+                . '<p style="margin:0 0 14px;line-height:1.65;color:#E2E8F0;">Ben from DigitalGate replied to your support message:</p>'
+                . '<div style="margin:0 0 16px;padding:16px;border-radius:12px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);color:#E2E8F0;line-height:1.65;">'
+                . nl2br(esc_html($body)) . '</div>'
+                . (class_exists('DG_Marketing_Emails')
+                    ? DG_Marketing_Emails::cta($dashboard, 'Open your dashboard')
+                    : DG_Email_Brand::cta($dashboard, 'Open your dashboard', 'digitalgate'))
+                . '<p style="margin:16px 0 0;line-height:1.65;color:#94A3B8;">— DigitalGate Support</p>';
+            $html = DG_Email_Brand::wrap($inner, [
+                'theme' => 'digitalgate',
+                'footer_note' => 'DigitalGate Support — reply in your client portal.',
+            ]);
+            wp_mail($user->user_email, $subject, $html, [
+                'Content-Type: text/html; charset=UTF-8',
+                'From: DigitalGate Support <support@digitalgate.com.au>',
+            ]);
+            return;
+        }
+
+        $message = 'Hi ' . $first . ",\n\nBen from DigitalGate replied to your support message:\n\n"
+            . $body . "\n\nYou can continue the conversation in your platform dashboard:\n"
+            . $dashboard . "\n\n— DigitalGate Support";
         wp_mail($user->user_email, $subject, $message, [
             'Content-Type: text/plain; charset=UTF-8',
             'From: DigitalGate Support <support@digitalgate.com.au>',

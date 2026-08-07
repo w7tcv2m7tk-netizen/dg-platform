@@ -2603,8 +2603,25 @@ class DG_Module_Accommodation {
             ]
         ]);
         
-        wp_mail(get_option('admin_email'), '📬 New Enquiry from ' . $name,
-            "Name: $name\nEmail: $email\nPhone: $phone\nAccommodation: $accom\n\nMessage:\n$message");
+        wp_mail(
+            get_option('admin_email'),
+            'New Enquiry from ' . $name,
+            class_exists('DG_Email_Brand')
+                ? DG_Email_Brand::admin_notification('New accommodation enquiry', [
+                    'Name' => $name,
+                    'Email' => $email,
+                    'Phone' => $phone,
+                    'Accommodation' => $accom,
+                    'Message' => $message,
+                ], [
+                    'theme' => 'cvh',
+                    'footer_note' => 'Website enquiry — Currumbin Valley Hideaway',
+                ])
+                : "Name: $name\nEmail: $email\nPhone: $phone\nAccommodation: $accom\n\nMessage:\n$message",
+            class_exists('DG_Email_Brand')
+                ? DG_Email_Brand::mail_headers(true)
+                : ['Content-Type: text/plain; charset=UTF-8']
+        );
         
         wp_send_json_success(['ref' => 'ENQ-' . time()]);
     }
@@ -2626,16 +2643,47 @@ class DG_Module_Accommodation {
 
         $site_name = class_exists('DG_Site_Profile') ? DG_Site_Profile::label() : get_bloginfo('name');
         $admin_body = "Name: $name\nEmail: $email\nPhone: " . ($phone ?: 'Not provided') . "\n\nMessage:\n$message";
-        $headers = ['Content-Type: text/plain; charset=UTF-8', 'Reply-To: ' . $name . ' <' . $email . '>'];
 
-        $sent = wp_mail($recipient, '📩 Contact form: ' . $name, $admin_body, $headers);
+        if (class_exists('DG_Email_Brand')) {
+            $admin_html = DG_Email_Brand::admin_notification('Contact form enquiry', [
+                'Name' => $name,
+                'Email' => $email,
+                'Phone' => $phone ?: 'Not provided',
+                'Message' => $message,
+            ], [
+                'theme' => 'cvh',
+                'footer_note' => 'Website contact form — Currumbin Valley Hideaway',
+            ]);
+            $headers = array_merge(DG_Email_Brand::mail_headers(true), [
+                'Reply-To: ' . $name . ' <' . $email . '>',
+            ]);
+            $sent = wp_mail($recipient, 'Contact form: ' . $name, $admin_html, $headers);
 
-        $first_name = class_exists('DG_Email_Names') ? DG_Email_Names::first_name($name) : $name;
-        $guest_body = "Dear $first_name,\n\nThank you for contacting $site_name.\n\nWe have received your message and will respond within 24 hours.\n\nYour message:\n$message\n\nWarm regards,\n$site_name Team";
-        wp_mail($email, 'Thank you for your message — ' . $site_name, $guest_body, [
-            'Content-Type: text/plain; charset=UTF-8',
-            'From: ' . $site_name . ' <' . $recipient . '>',
-        ]);
+            $first_name = class_exists('DG_Email_Names') ? DG_Email_Names::first_name($name) : $name;
+            $guest_inner = '<p style="margin:0 0 14px;line-height:1.6;">Dear ' . esc_html($first_name) . ',</p>'
+                . '<p style="margin:0 0 14px;line-height:1.6;">Thank you for contacting ' . esc_html($site_name) . '.</p>'
+                . '<p style="margin:0 0 14px;line-height:1.6;">We have received your message and will respond within 24 hours.</p>'
+                . '<p style="margin:0 0 8px;color:#6B7A78;"><strong>Your message:</strong></p>'
+                . '<p style="margin:0 0 14px;line-height:1.6;">' . nl2br(esc_html($message)) . '</p>'
+                . '<p style="margin:0;line-height:1.6;">Warm regards,<br>' . esc_html($site_name) . ' Team</p>';
+            $guest_html = DG_Email_Brand::wrap($guest_inner, [
+                'theme' => 'cvh',
+                'footer_note' => 'Currumbin Valley Hideaway — Gold Coast hinterland stays',
+            ]);
+            wp_mail($email, 'Thank you for your message — ' . $site_name, $guest_html, array_merge(
+                DG_Email_Brand::mail_headers(true),
+                ['From: ' . $site_name . ' <' . $recipient . '>']
+            ));
+        } else {
+            $headers = ['Content-Type: text/plain; charset=UTF-8', 'Reply-To: ' . $name . ' <' . $email . '>'];
+            $sent = wp_mail($recipient, 'Contact form: ' . $name, $admin_body, $headers);
+            $first_name = class_exists('DG_Email_Names') ? DG_Email_Names::first_name($name) : $name;
+            $guest_body = "Dear $first_name,\n\nThank you for contacting $site_name.\n\nWe have received your message and will respond within 24 hours.\n\nYour message:\n$message\n\nWarm regards,\n$site_name Team";
+            wp_mail($email, 'Thank you for your message — ' . $site_name, $guest_body, [
+                'Content-Type: text/plain; charset=UTF-8',
+                'From: ' . $site_name . ' <' . $recipient . '>',
+            ]);
+        }
 
         if (class_exists('DG_Activities')) {
             DG_Activities::log([

@@ -32,20 +32,55 @@ function dg_re_process_contact_enquiry($data) {
     }
 
     $site_name = class_exists('DG_Site_Profile') ? DG_Site_Profile::label() : get_bloginfo('name');
-    $admin_body = "Name: $name\nEmail: $email\nPhone: " . ($phone ?: 'Not provided') . "\nSubject: $subject\n\nMessage:\n$message";
-    $headers = [
-        'Content-Type: text/plain; charset=UTF-8',
-        'Reply-To: ' . $name . ' <' . $email . '>',
+    $admin_rows = [
+        'Name' => $name,
+        'Email' => $email,
+        'Phone' => $phone ?: 'Not provided',
+        'Subject' => $subject,
+        'Message' => $message,
     ];
 
-    $sent = wp_mail($recipient, '📩 Contact form: ' . $name, $admin_body, $headers);
+    if (class_exists('DG_Email_Brand')) {
+        $admin_html = DG_Email_Brand::admin_notification('Contact form enquiry', $admin_rows, [
+            'theme' => 'roe',
+            'footer_note' => 'Website contact form — Roe Realty',
+        ]);
+        $headers = array_merge(DG_Email_Brand::mail_headers(true), [
+            'Reply-To: ' . $name . ' <' . $email . '>',
+        ]);
+        $sent = wp_mail($recipient, 'Contact form: ' . $name, $admin_html, $headers);
 
-    $first_name = class_exists('DG_Email_Names') ? DG_Email_Names::first_name($name) : $name;
-    $guest_body = "Dear $first_name,\n\nThank you for contacting $site_name.\n\nWe have received your message and will respond shortly.\n\nYour message:\n$message\n\nWarm regards,\n$site_name Team";
-    wp_mail($email, 'Thank you for contacting ' . $site_name, $guest_body, [
-        'Content-Type: text/plain; charset=UTF-8',
-        'From: ' . $site_name . ' <' . $recipient . '>',
-    ]);
+        $first_name = class_exists('DG_Email_Names') ? DG_Email_Names::first_name($name) : $name;
+        $guest_inner = '<p style="margin:0 0 14px;line-height:1.6;">Dear ' . esc_html($first_name) . ',</p>'
+            . '<p style="margin:0 0 14px;line-height:1.6;">Thank you for contacting ' . esc_html($site_name) . '.</p>'
+            . '<p style="margin:0 0 14px;line-height:1.6;">We have received your message and will respond shortly.</p>'
+            . '<p style="margin:0 0 8px;color:#6B7A78;"><strong>Your message:</strong></p>'
+            . '<p style="margin:0 0 14px;line-height:1.6;">' . nl2br(esc_html($message)) . '</p>'
+            . '<p style="margin:0;line-height:1.6;">Warm regards,<br>' . esc_html($site_name) . ' Team</p>';
+        $guest_html = DG_Email_Brand::wrap($guest_inner, [
+            'theme' => 'roe',
+            'footer_note' => 'Roe Realty — Currumbin & Southern Gold Coast',
+        ]);
+        wp_mail($email, 'Thank you for contacting ' . $site_name, $guest_html, array_merge(
+            DG_Email_Brand::mail_headers(true),
+            ['From: ' . $site_name . ' <' . $recipient . '>']
+        ));
+    } else {
+        $admin_body = "Name: $name\nEmail: $email\nPhone: " . ($phone ?: 'Not provided') . "\nSubject: $subject\n\nMessage:\n$message";
+        $headers = [
+            'Content-Type: text/plain; charset=UTF-8',
+            'Reply-To: ' . $name . ' <' . $email . '>',
+        ];
+        $sent = wp_mail($recipient, 'Contact form: ' . $name, $admin_body, $headers);
+        $first_name = class_exists('DG_Email_Names') ? DG_Email_Names::first_name($name) : $name;
+        $guest_body = "Dear $first_name,\n\nThank you for contacting $site_name.\n\nWe have received your message and will respond shortly.\n\nYour message:\n$message\n\nWarm regards,\n$site_name Team";
+        wp_mail($email, 'Thank you for contacting ' . $site_name, $guest_body, [
+            'Content-Type: text/plain; charset=UTF-8',
+            'From: ' . $site_name . ' <' . $recipient . '>',
+        ]);
+    }
+
+    $admin_body = "Name: $name\nEmail: $email\nPhone: " . ($phone ?: 'Not provided') . "\nSubject: $subject\n\nMessage:\n$message";
 
     if (class_exists('DG_RE_Buyer_Leads')) {
         $buyer_id = DG_RE_Buyer_Leads::create([

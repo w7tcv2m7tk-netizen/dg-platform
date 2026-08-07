@@ -267,9 +267,25 @@ class DG_RE_Property_Workspace {
         ], ['id' => $contract_id]);
         $sign_url = home_url('/sign-contract/' . $token . '/');
         $subject = 'Please sign: ' . $contract->title;
-        $body = "Hi " . DG_Email_Names::first_name($signer_name ?: 'there') . ",\n\nPlease review and sign the document for "
-            . self::property_label($contract->property_id) . ":\n\n" . $sign_url . "\n\n— Roe Realty";
-        wp_mail($signer_email, $subject, $body);
+        $first = DG_Email_Names::first_name($signer_name ?: 'there');
+        $property = self::property_label($contract->property_id);
+
+        if (class_exists('DG_Email_Brand')) {
+            $inner = '<p style="margin:0 0 14px;line-height:1.6;">Hi ' . esc_html($first) . ',</p>'
+                . '<p style="margin:0 0 14px;line-height:1.6;">Please review and sign the document for <strong>'
+                . esc_html($property) . '</strong>.</p>'
+                . DG_Email_Brand::cta($sign_url, 'Review &amp; sign', 'roe')
+                . '<p style="margin:16px 0 0;line-height:1.6;color:#8A9A98;">— Roe Realty</p>';
+            $body = DG_Email_Brand::wrap($inner, [
+                'theme' => 'roe',
+                'footer_note' => 'Roe Realty — secure e-signature request',
+            ]);
+            wp_mail($signer_email, $subject, $body, DG_Email_Brand::mail_headers(true));
+        } else {
+            $body = "Hi " . $first . ",\n\nPlease review and sign the document for "
+                . $property . ":\n\n" . $sign_url . "\n\n— Roe Realty";
+            wp_mail($signer_email, $subject, $body);
+        }
         wp_safe_redirect(get_edit_post_link($contract->property_id, 'url') . '#roe_property_files&sent=1');
         exit;
     }

@@ -168,73 +168,70 @@ class DG_Acc_Guest_Notifications {
         $checkout_time = !empty($details['checkout_time']) ? esc_html($details['checkout_time']) : '';
         $address = !empty($details['address']) ? esc_html($details['address']) : '';
 
-        ob_start();
-        ?>
-        <html>
-        <head>
-            <meta charset="utf-8">
-            <style>
-                body { font-family: Arial, sans-serif; color: #2F2F2F; background: #F7F4EE; padding: 24px; margin: 0; }
-                .container { max-width: 600px; margin: 0 auto; background: #fff; padding: 28px; border-radius: 16px; border: 1px solid #E0D6CC; }
-                h2 { color: #1C2B2A; border-bottom: 2px solid #B9A48A; padding-bottom: 10px; margin-top: 0; }
-                .highlight { background: #FCF9F5; padding: 18px; border-radius: 12px; margin: 16px 0; border-left: 4px solid #B9A48A; }
-                .instructions { line-height: 1.6; margin: 16px 0; }
-                .cta { display: inline-block; margin: 16px 0; padding: 12px 22px; background: #B9A48A; color: #fff !important; text-decoration: none; border-radius: 999px; font-weight: 600; }
-                .muted { color: #6B7A78; font-size: 14px; }
-            </style>
-        </head>
-        <body>
-            <div class="container">
-                <h2>🏡 Your check-in details</h2>
-                <p>Hi <strong><?php echo $name; ?></strong>,</p>
-                <p>Your payment is confirmed — we can't wait to welcome you to <strong><?php echo $accommodation; ?></strong>.</p>
+        $highlight = 'background:#FCF9F5;padding:18px;border-radius:12px;margin:16px 0;border-left:4px solid #B9A48A;';
+        $cta = 'display:inline-block;margin:16px 0;padding:12px 22px;background:#B9A48A;color:#fff;text-decoration:none;border-radius:999px;font-weight:600;';
 
-                <div class="highlight">
-                    <?php if ($ref) : ?><p><strong>Booking reference:</strong> <?php echo $ref; ?></p><?php endif; ?>
-                    <?php if ($checkin_fmt) : ?><p><strong>Check-in:</strong> <?php echo $checkin_fmt; ?><?php echo $checkin_time ? ' from ' . $checkin_time : ''; ?></p><?php endif; ?>
-                    <?php if ($checkout_fmt) : ?><p><strong>Check-out:</strong> <?php echo $checkout_fmt; ?><?php echo $checkout_time ? ' by ' . $checkout_time : ''; ?></p><?php endif; ?>
-                    <?php if ($guests) : ?><p><strong>Guests:</strong> <?php echo $guests; ?></p><?php endif; ?>
-                    <?php if ($address) : ?><p><strong>Address:</strong> <?php echo $address; ?></p><?php endif; ?>
-                </div>
+        $inner = '<h2 style="color:#1C2B2A;border-bottom:2px solid #B9A48A;padding-bottom:10px;margin:0 0 16px;">Your check-in details</h2>'
+            . '<p style="margin:0 0 12px;line-height:1.6;">Hi <strong>' . $name . '</strong>,</p>'
+            . '<p style="margin:0 0 12px;line-height:1.6;">Your payment is confirmed — we can\'t wait to welcome you to <strong>' . $accommodation . '</strong>.</p>'
+            . '<div style="' . $highlight . '">';
+        if ($ref) {
+            $inner .= '<p style="margin:0 0 8px;"><strong>Booking reference:</strong> ' . $ref . '</p>';
+        }
+        if ($checkin_fmt) {
+            $inner .= '<p style="margin:0 0 8px;"><strong>Check-in:</strong> ' . $checkin_fmt . ($checkin_time ? ' from ' . $checkin_time : '') . '</p>';
+        }
+        if ($checkout_fmt) {
+            $inner .= '<p style="margin:0 0 8px;"><strong>Check-out:</strong> ' . $checkout_fmt . ($checkout_time ? ' by ' . $checkout_time : '') . '</p>';
+        }
+        if ($guests) {
+            $inner .= '<p style="margin:0 0 8px;"><strong>Guests:</strong> ' . $guests . '</p>';
+        }
+        if ($address) {
+            $inner .= '<p style="margin:0;"><strong>Address:</strong> ' . $address . '</p>';
+        }
+        $inner .= '</div>';
 
-                <?php if ($instructions) : ?>
-                    <h3 style="color:#1C2B2A;margin-bottom:8px;">Arrival instructions</h3>
-                    <div class="instructions"><?php echo $instructions; ?></div>
-                <?php endif; ?>
+        if ($instructions) {
+            $inner .= '<h3 style="color:#1C2B2A;margin:16px 0 8px;">Arrival instructions</h3>'
+                . '<div style="line-height:1.6;margin:0 0 16px;">' . $instructions . '</div>';
+        }
 
-                <?php if ($wifi) : ?>
-                    <div class="highlight">
-                        <p><strong>Wi‑Fi password:</strong> <?php echo $wifi; ?></p>
-                    </div>
-                <?php endif; ?>
+        if ($wifi) {
+            $inner .= '<div style="' . $highlight . '"><p style="margin:0;"><strong>Wi‑Fi password:</strong> ' . $wifi . '</p></div>';
+        }
 
-                <?php if ($checkin_url) : ?>
-                    <div class="highlight">
-                        <p><strong>Your check-in guide:</strong> Everything you need for <?php echo $checkin_label; ?> — directions, access, and Wi‑Fi.</p>
-                        <p><a class="cta" href="<?php echo $checkin_url; ?>">Open <?php echo $checkin_label; ?> check-in page</a></p>
-                        <p class="muted">Save this link on your phone — <?php echo esc_html(str_replace(home_url(), '', $checkin_url)); ?></p>
-                    </div>
-                <?php endif; ?>
+        if ($checkin_url) {
+            $inner .= '<div style="' . $highlight . '">'
+                . '<p style="margin:0 0 8px;"><strong>Your check-in guide:</strong> Everything you need for ' . $checkin_label . ' — directions, access, and Wi‑Fi.</p>'
+                . '<p style="margin:0 0 8px;"><a href="' . $checkin_url . '" style="' . $cta . '">Open ' . $checkin_label . ' check-in page</a></p>'
+                . '<p style="margin:0;color:#6B7A78;font-size:14px;">Save this link on your phone — ' . esc_html(str_replace(home_url(), '', $checkin_url)) . '</p>'
+                . '</div>';
+        }
 
-                <?php
-                $portal_url = class_exists('DG_Site_Portal_Guest')
-                    ? DG_Site_Portal_Guest::portal_url_for_email($email)
-                    : '';
-                if ($portal_url) :
-                ?>
-                    <div class="highlight">
-                        <p><strong>Guest Portal:</strong> View all your bookings and check-in details anytime.</p>
-                        <p><a class="cta" href="<?php echo esc_url($portal_url); ?>">Open Guest Portal</a></p>
-                    </div>
-                <?php endif; ?>
+        $portal_url = class_exists('DG_Site_Portal_Guest')
+            ? DG_Site_Portal_Guest::portal_url_for_email($email)
+            : '';
+        if ($portal_url) {
+            $inner .= '<div style="' . $highlight . '">'
+                . '<p style="margin:0 0 8px;"><strong>Guest Portal:</strong> View all your bookings and check-in details anytime.</p>'
+                . '<p style="margin:0;"><a href="' . esc_url($portal_url) . '" style="' . $cta . '">Open Guest Portal</a></p>'
+                . '</div>';
+        }
 
-                <p>If you have any questions before you arrive, reply to this email or call us on <strong>0415 257 839</strong>.</p>
-                <p>Warm regards,<br><strong>Currumbin Valley Hideaway</strong></p>
-            </div>
-        </body>
-        </html>
-        <?php
-        return (string) ob_get_clean();
+        $inner .= '<p style="margin:16px 0 12px;line-height:1.6;">If you have any questions before you arrive, reply to this email or call us on <strong>0415 257 839</strong>.</p>'
+            . '<p style="margin:0;line-height:1.6;">Warm regards,<br><strong>Currumbin Valley Hideaway</strong></p>';
+
+        if (class_exists('DG_Email_Brand')) {
+            return DG_Email_Brand::wrap($inner, [
+                'theme' => 'cvh',
+                'footer_note' => 'Currumbin Valley Hideaway — Gold Coast hinterland stays',
+            ]);
+        }
+
+        return '<!DOCTYPE html><html><head><meta charset="utf-8"></head><body style="font-family:Arial,sans-serif;color:#2F2F2F;background:#F7F4EE;padding:24px;">'
+            . '<div style="max-width:600px;margin:0 auto;background:#fff;padding:28px;border-radius:16px;border:1px solid #E0D6CC;">'
+            . $inner . '</div></body></html>';
     }
 
     public static function handle_resend_admin() {

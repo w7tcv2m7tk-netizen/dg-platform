@@ -1,5 +1,12 @@
 # DG Platform Changelog
 
+## 10.56.0 — Branded email logos (August 2026)
+
+- **Roe / CVH email shells** now include absolute HTTPS logo images (live site assets); text wordmark fallback if URL empty
+- Shared helpers on `DG_Email_Brand`: `logo_url()`, `logo_img()`, `plain_to_html()`
+- Branded HTML for: RE templates, CVH guest check-in + booking confirmation, contact forms, support chat, discovery admin, e-sign invites, cleaning reports, CVH enquiries
+- DigitalGate marketing/onboarding/Stripe paths unchanged (already used `DG_Brand` lockup)
+
 ## 10.55.0 — Live Support AI first-line (August 2026)
 
 - DigitalGate Assist auto-replies in Live Support after client messages (OpenAI/Gemini via `DG_AI_Client`)

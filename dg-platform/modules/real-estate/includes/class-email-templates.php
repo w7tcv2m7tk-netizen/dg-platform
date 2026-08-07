@@ -320,14 +320,18 @@ class DG_RE_Email_Templates {
     private static function wrap_shell($content) {
         $logo_text = 'Roe Realty';
         $footer = 'Ben Roe | Roe Realty &nbsp;·&nbsp; 0420 227 227 &nbsp;·&nbsp; <a href="' . esc_url(self::site_url()) . '" style="color:#C9A46C;text-decoration:none;">roerealty.com.au</a>';
+        $logo = class_exists('DG_Email_Brand') ? DG_Email_Brand::logo_img('roe', 160, $logo_text) : '';
+        $header_mark = $logo !== ''
+            ? $logo
+            : '<div style="font-size:22px;font-weight:700;color:#1C2B2A;letter-spacing:0.02em;">' . esc_html($logo_text) . '</div>';
 
         return '<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>'
             . '<body style="margin:0;padding:0;background:#F5F0EB;font-family:Georgia,\'Times New Roman\',serif;">'
             . '<table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="background:#F5F0EB;padding:32px 16px;"><tr><td align="center">'
             . '<table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="max-width:600px;background:#ffffff;border:1px solid #E0D6CC;border-radius:16px;overflow:hidden;">'
-            . '<tr><td style="padding:28px 32px 16px;border-bottom:3px solid #C9A46C;">'
-            . '<div style="font-size:22px;font-weight:700;color:#1C2B2A;letter-spacing:0.02em;">' . esc_html($logo_text) . '</div>'
-            . '<div style="font-size:13px;color:#6B7A78;margin-top:4px;">Gold Coast Real Estate</div>'
+            . '<tr><td style="padding:28px 32px 16px;border-bottom:3px solid #C9A46C;text-align:center;">'
+            . $header_mark
+            . '<div style="font-size:13px;color:#6B7A78;margin-top:8px;">Gold Coast Real Estate</div>'
             . '</td></tr>'
             . '<tr><td style="padding:32px;">' . $content . '</td></tr>'
             . '<tr><td style="padding:20px 32px 28px;background:#FAF8F5;border-top:1px solid #EDE6DE;font-size:13px;line-height:1.6;color:#6B7A78;text-align:center;">'

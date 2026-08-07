@@ -499,6 +499,27 @@ class DG_Acc_Cleaning {
 
         $edit_link = admin_url('post.php?post=' . (int) $report_id . '&action=edit');
         $subject = sprintf('[CVH] Cleaning report — %s (%s)', $property->post_title, $report_date);
+
+        if (class_exists('DG_Email_Brand')) {
+            $rows = [
+                'Property' => $property->post_title,
+                'Date' => $report_date,
+                'Cleaner' => $cleaner,
+                'Tasks' => "{$completed}/{$total} complete",
+            ];
+            if ($notes !== '') {
+                $rows['Notes'] = $notes;
+            }
+            $body = DG_Email_Brand::admin_notification('Cleaning report submitted', $rows, [
+                'theme' => 'cvh',
+                'footer_note' => 'Housekeeping notification — Currumbin Valley Hideaway',
+                'cta_url' => $edit_link,
+                'cta_label' => 'View report',
+            ]);
+            wp_mail($admin_email, $subject, $body, DG_Email_Brand::mail_headers(true));
+            return;
+        }
+
         $body = "A cleaning report was submitted.\n\n"
             . "Property: {$property->post_title}\n"
             . "Date: {$report_date}\n"
