@@ -98,6 +98,9 @@ class DG_Acc_Guest_Notifications {
         $checkout = get_post_meta($booking_id, 'dg_booking_checkout', true);
         $ref = get_post_meta($booking_id, 'dg_booking_ref', true);
         $guests = get_post_meta($booking_id, 'dg_booking_guests', true);
+        $source = class_exists('DG_Email_Brand')
+            ? DG_Email_Brand::booking_source_label_for($booking_id)
+            : '';
 
         $checkin_data = class_exists('DG_Acc_Checkin')
             ? DG_Acc_Checkin::get_guest_checkin_details($accommodation_id)
@@ -118,13 +121,16 @@ class DG_Acc_Guest_Notifications {
             'checkout' => $checkout,
             'guests' => $guests,
             'ref' => $ref,
+            'source' => $source,
             'checkin_data' => $checkin_data,
         ]);
 
-        $headers = [
-            'Content-Type: text/html; charset=UTF-8',
-            'From: ' . self::guest_from_email(),
-        ];
+        $headers = class_exists('DG_Email_Brand')
+            ? array_merge(DG_Email_Brand::mail_headers(true), ['From: ' . self::guest_from_email()])
+            : [
+                'Content-Type: text/html; charset=UTF-8',
+                'From: ' . self::guest_from_email(),
+            ];
 
         $sent = wp_mail($email, $subject, $html, $headers);
 
@@ -153,6 +159,7 @@ class DG_Acc_Guest_Notifications {
         $checkout = $data['checkout'] ?? '';
         $guests = esc_html($data['guests'] ?? '');
         $ref = esc_html($data['ref'] ?? '');
+        $source = esc_html($data['source'] ?? '');
         $email = sanitize_email($data['email'] ?? '');
         $details = is_array($data['checkin_data'] ?? null) ? $data['checkin_data'] : [];
 
@@ -177,6 +184,9 @@ class DG_Acc_Guest_Notifications {
             . '<div style="' . $highlight . '">';
         if ($ref) {
             $inner .= '<p style="margin:0 0 8px;"><strong>Booking reference:</strong> ' . $ref . '</p>';
+        }
+        if ($source) {
+            $inner .= '<p style="margin:0 0 8px;"><strong>Source:</strong> ' . $source . '</p>';
         }
         if ($checkin_fmt) {
             $inner .= '<p style="margin:0 0 8px;"><strong>Check-in:</strong> ' . $checkin_fmt . ($checkin_time ? ' from ' . $checkin_time : '') . '</p>';

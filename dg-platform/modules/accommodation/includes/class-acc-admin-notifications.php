@@ -48,6 +48,9 @@ class DG_Acc_Admin_Notifications {
         $total = (float) get_post_meta($booking_id, 'dg_booking_total', true);
         $ref = get_post_meta($booking_id, 'dg_booking_ref', true);
         $email = get_post_meta($booking_id, 'dg_booking_email', true);
+        $source = class_exists('DG_Email_Brand')
+            ? DG_Email_Brand::booking_source_label_for($booking_id)
+            : (string) get_post_meta($booking_id, 'dg_booking_source', true);
 
         $acc_id = (int) get_post_meta($booking_id, 'dg_booking_accommodation_id', true);
         $checkin_url = class_exists('DG_Acc_Checkin') ? DG_Acc_Checkin::checkin_url_for_property($acc_id) : '';
@@ -58,6 +61,7 @@ class DG_Acc_Admin_Notifications {
             'Guest' => $name,
             'Email' => $email,
             'Property' => $accommodation,
+            'Source' => $source,
             'Check-in' => $checkin,
             'Check-out' => $checkout,
             'Total' => '$' . number_format($total, 2),
@@ -97,6 +101,9 @@ class DG_Acc_Admin_Notifications {
             }
             $name = get_post_meta($b->ID, 'dg_booking_name', true) ?: 'Guest';
             $accommodation = get_post_meta($b->ID, 'dg_booking_accommodation_name', true) ?: 'Property';
+            $source = class_exists('DG_Email_Brand')
+                ? DG_Email_Brand::booking_source_label_for($b->ID)
+                : (string) get_post_meta($b->ID, 'dg_booking_source', true);
             $acc_id = (int) get_post_meta($b->ID, 'dg_booking_accommodation_id', true);
             $checkin_url = class_exists('DG_Acc_Checkin') ? DG_Acc_Checkin::checkin_url_for_property($acc_id) : '';
             $cleaning_url = class_exists('DG_Acc_Cleaning') ? DG_Acc_Cleaning::cleaning_url_for_property($acc_id) : '';
@@ -105,6 +112,7 @@ class DG_Acc_Admin_Notifications {
             $rows = [
                 'Guest' => $name,
                 'Property' => $accommodation,
+                'Source' => $source,
                 'Date' => $tomorrow,
             ];
             $body = self::mail_body('Check-in reminder', $rows, admin_url('post.php?post=' . $b->ID . '&action=edit'), 'View booking');

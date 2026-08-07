@@ -2613,6 +2613,7 @@ class DG_Module_Accommodation {
                     'Email' => $email,
                     'Phone' => $phone,
                     'Accommodation' => $accom,
+                    'Source' => class_exists('DG_Email_Brand') ? DG_Email_Brand::booking_source_label('website') : 'Direct',
                     'Message' => $message,
                 ], [
                     'theme' => 'cvh',

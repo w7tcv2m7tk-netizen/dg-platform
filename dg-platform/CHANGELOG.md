@@ -1,5 +1,12 @@
 # DG Platform Changelog
 
+## 10.64.0 — CVH email logos + booking source (August 2026)
+
+- **Root cause:** CVH/Roe email logos pointed at live `/uploads/` URLs that return **403** behind CDN hotlink protection — clients never showed images
+- Bundle **CVH logo + icon** in `assets/brand/` and embed as **CID attachments** (with absolute HTTPS plugin URL fallback); header uses icon + wordmark lockup
+- Add **Source:** line to guest confirmation, guest check-in, owner booking confirmed, owner check-in reminder, and enquiry admin mail (`Airbnb` / `Booking.com` / `Direct` / `Manual`)
+- Helpers: `DG_Email_Brand::booking_source_label()`, `booking_source_label_for()`, `header_lockup()`, `brand_asset_url()`
+
 ## 10.62.0 — Manual blocked dates via Dev API (August 2026)
 
 - **GET `/accommodation/availability`** returns `manual_blocked_dates` (operator blocks from `dg_blocked_dates` only) alongside merged `blocked_dates`

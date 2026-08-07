@@ -148,6 +148,7 @@ class DG_Acc_Payments {
                 'dg_booking_paid' => $paid,
                 'dg_booking_payment_method' => $payment_method,
                 'dg_booking_status' => $paid === 'yes' ? 'confirmed' : 'pending',
+                'dg_booking_source' => 'website',
             ],
         ]);
 
@@ -170,6 +171,7 @@ class DG_Acc_Payments {
                 'booking_ref' => $booking_ref,
                 'payment_method' => $payment_method,
                 'is_paid' => $paid === 'yes',
+                'source' => 'website',
             ]);
         }
 
@@ -215,12 +217,17 @@ class DG_Acc_Payments {
         }
 
         $highlight = 'background:#f5f2ef;padding:20px;border-radius:10px;margin:15px 0;border-left:4px solid #C9A46C;';
+        $source_raw = $data['source'] ?? ($data['booking_source'] ?? 'website');
+        $source_label = class_exists('DG_Email_Brand')
+            ? DG_Email_Brand::booking_source_label($source_raw)
+            : 'Direct';
 
         $inner = '<h2 style="color:#1C2B2A;border-bottom:2px solid #C9A46C;padding-bottom:10px;margin:0 0 16px;">'
             . ($is_paid ? 'Booking Confirmed!' : 'Thank You for Your Booking!') . '</h2>'
             . '<p style="margin:0 0 12px;line-height:1.6;">Dear <strong>' . esc_html($guest_name) . '</strong>,</p>'
             . '<div style="' . $highlight . '">'
             . '<p style="margin:0 0 8px;"><strong>Accommodation:</strong> ' . esc_html($data['accommodation']) . '</p>'
+            . '<p style="margin:0 0 8px;"><strong>Source:</strong> ' . esc_html($source_label) . '</p>'
             . '<p style="margin:0 0 8px;"><strong>Check-in:</strong> ' . date('l, F j, Y', strtotime($data['checkin'])) . '</p>'
             . '<p style="margin:0 0 8px;"><strong>Check-out:</strong> ' . date('l, F j, Y', strtotime($data['checkout'])) . '</p>'
             . '<p style="margin:0 0 8px;"><strong>Nights:</strong> ' . esc_html($data['nights']) . '</p>'
@@ -239,10 +246,12 @@ class DG_Acc_Payments {
                 . '<div style="max-width:600px;margin:0 auto;background:#fff;padding:30px;border-radius:16px;border:1px solid #E0D6CC;">'
                 . $inner . '</div></body></html>';
 
-        $headers = [
-            'Content-Type: text/html; charset=UTF-8',
-            'From: Currumbin Valley Hideaway <bookings@currumbinvalleyhideaway.com.au>',
-        ];
+        $headers = class_exists('DG_Email_Brand')
+            ? DG_Email_Brand::mail_headers(true)
+            : [
+                'Content-Type: text/html; charset=UTF-8',
+                'From: Currumbin Valley Hideaway <bookings@currumbinvalleyhideaway.com.au>',
+            ];
 
         wp_mail($data['email'], $subject, $html, $headers);
     }
@@ -333,6 +342,7 @@ class DG_Acc_Payments {
                 'dg_booking_paid' => 'no',
                 'dg_booking_payment_method' => 'payid',
                 'dg_booking_status' => 'pending',
+                'dg_booking_source' => 'website',
             ],
         ], true);
 
@@ -356,6 +366,7 @@ class DG_Acc_Payments {
             'booking_ref' => $booking_ref,
             'payment_method' => 'payid',
             'is_paid' => false,
+            'source' => 'website',
         ]);
 
         do_action('dg_booking_created', (int) $booking_id, $booking_ref);
