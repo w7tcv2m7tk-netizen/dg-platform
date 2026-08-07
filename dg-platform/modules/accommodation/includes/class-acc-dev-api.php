@@ -481,6 +481,40 @@ class DG_Acc_Dev_API {
         return round(min(100, ($occupied / $capacity) * 100), 1);
     }
 
+    /** Known amenity keys from the accommodation CPT editor. */
+    private static function feature_labels() {
+        return [
+            'fire_pit' => 'Fire Pit',
+            'mountain_views' => 'Mountain Views',
+            'sauna' => 'Sauna',
+            'outdoor_shower' => 'Outdoor Shower',
+            'air_conditioning' => 'Air Conditioning',
+            'pet_friendly' => 'Pet Friendly',
+            'wifi' => 'WiFi',
+            'kitchenette' => 'Kitchenette',
+            'bbq' => 'BBQ',
+            'parking' => 'Parking',
+            'private_deck' => 'Private Deck',
+            'spa' => 'Spa',
+        ];
+    }
+
+    /** @return string[] public attachment URLs for gallery image IDs */
+    private static function gallery_urls_for($gallery_raw) {
+        $urls = [];
+        if (!$gallery_raw) {
+            return $urls;
+        }
+        $ids = array_filter(array_map('intval', preg_split('/[\s,]+/', (string) $gallery_raw)));
+        foreach ($ids as $aid) {
+            $url = wp_get_attachment_image_url($aid, 'large');
+            if ($url) {
+                $urls[] = $url;
+            }
+        }
+        return $urls;
+    }
+
     private static function format_property($p) {
         $airbnb_ical = (string) get_post_meta($p->ID, 'dg_ical_url', true);
         $bookingcom_ical = (string) get_post_meta($p->ID, 'dg_bookingcom_ical_url', true);
@@ -491,14 +525,83 @@ class DG_Acc_Dev_API {
             ? DG_Acc_Ical_Export::fallback_url_for($p->ID)
             : '';
 
+        $features_raw = get_post_meta($p->ID, 'dg_features', true);
+        $features = [];
+        if (is_array($features_raw)) {
+            foreach (self::feature_labels() as $key => $_label) {
+                $features[$key] = !empty($features_raw[$key]) ? 1 : 0;
+            }
+        } else {
+            foreach (array_keys(self::feature_labels()) as $key) {
+                $features[$key] = 0;
+            }
+        }
+
+        $gallery = (string) get_post_meta($p->ID, 'dg_gallery', true);
+        $type_terms = wp_get_object_terms($p->ID, 'dg_accommodation_type', ['fields' => 'all']);
+        $type_name = '';
+        $type_id = 0;
+        if (!is_wp_error($type_terms) && !empty($type_terms[0])) {
+            $type_name = $type_terms[0]->name;
+            $type_id = (int) $type_terms[0]->term_id;
+        }
+
+        $float_or_null = static function ($meta) use ($p) {
+            $v = get_post_meta($p->ID, $meta, true);
+            if ($v === '' || $v === null) {
+                return null;
+            }
+            return (float) $v;
+        };
+        $int_or_null = static function ($meta) use ($p) {
+            $v = get_post_meta($p->ID, $meta, true);
+            if ($v === '' || $v === null) {
+                return null;
+            }
+            return (int) $v;
+        };
+
         return [
             'id' => $p->ID,
             'title' => $p->post_title,
             'slug' => $p->post_name,
             'post_status' => $p->post_status,
-            'weekday_rate' => (float) get_post_meta($p->ID, 'dg_weekday_rate', true),
-            'weekend_rate' => (float) get_post_meta($p->ID, 'dg_weekend_rate', true),
-            'cleaning_fee' => (float) get_post_meta($p->ID, 'dg_cleaning_fee', true),
+            'description' => (string) get_post_meta($p->ID, 'dg_description', true),
+            'accommodation_type' => $type_name,
+            'accommodation_type_id' => $type_id,
+            'address' => (string) get_post_meta($p->ID, 'dg_address', true),
+            'latitude' => (string) get_post_meta($p->ID, 'dg_latitude', true),
+            'longitude' => (string) get_post_meta($p->ID, 'dg_longitude', true),
+            'weekday_rate' => $float_or_null('dg_weekday_rate'),
+            'weekend_rate' => $float_or_null('dg_weekend_rate'),
+            'weekday_peak_rate' => $float_or_null('dg_weekday_peak_rate'),
+            'weekend_peak_rate' => $float_or_null('dg_weekend_peak_rate'),
+            'peak_season_start' => (string) get_post_meta($p->ID, 'dg_peak_season_start', true),
+            'peak_season_end' => (string) get_post_meta($p->ID, 'dg_peak_season_end', true),
+            'last_minute_discount' => $int_or_null('dg_last_minute_discount'),
+            'early_bird_discount' => $int_or_null('dg_early_bird_discount'),
+            'cleaning_fee' => $float_or_null('dg_cleaning_fee'),
+            'security_deposit' => $float_or_null('dg_security_deposit'),
+            'extra_guest_fee' => $float_or_null('dg_extra_guest_fee'),
+            'sleeps' => $int_or_null('dg_sleeps'),
+            'bedrooms' => $int_or_null('dg_bedrooms'),
+            'bathrooms' => $float_or_null('dg_bathrooms'),
+            'max_guests' => $int_or_null('dg_max_guests'),
+            'min_nights' => $int_or_null('dg_min_nights'),
+            'size' => $float_or_null('dg_size'),
+            'checkin_time' => (string) (get_post_meta($p->ID, 'dg_checkin_time', true) ?: ''),
+            'checkout_time' => (string) (get_post_meta($p->ID, 'dg_checkout_time', true) ?: ''),
+            'features' => $features,
+            'feature_labels' => self::feature_labels(),
+            'gallery' => $gallery,
+            'gallery_urls' => self::gallery_urls_for($gallery),
+            'featured_image_url' => get_the_post_thumbnail_url($p->ID, 'large') ?: '',
+            'video_url' => (string) get_post_meta($p->ID, 'dg_video_url', true),
+            'virtual_tour' => (string) get_post_meta($p->ID, 'dg_virtual_tour', true),
+            'featured' => (bool) get_post_meta($p->ID, 'dg_featured', true),
+            'landing_page_id' => (int) get_post_meta($p->ID, 'dg_landing_page_id', true) ?: null,
+            'airbnb_id' => (string) get_post_meta($p->ID, 'dg_airbnb_id', true),
+            'bookingcom_id' => (string) get_post_meta($p->ID, 'dg_bookingcom_id', true),
             'housekeeping_status' => get_post_meta($p->ID, 'dg_housekeeping_status', true) ?: 'unknown',
             'housekeeping_notes' => get_post_meta($p->ID, 'dg_housekeeping_notes', true) ?: '',
             'last_cleaned' => get_post_meta($p->ID, 'dg_housekeeping_last_cleaned', true) ?: null,
@@ -633,12 +736,50 @@ class DG_Acc_Dev_API {
     public static function update_properties($request) {
         $updates = self::extract_updates($request);
         if (!$updates) {
-            return new WP_Error('missing_updates', 'Provide updates[{id,title?,weekday_rate?,weekend_rate?,cleaning_fee?,listing_status?,airbnb_ical_url?,bookingcom_ical_url?,block_dates?,unblock_dates?,manual_blocked_dates?}].', ['status' => 400]);
+            return new WP_Error('missing_updates', 'Provide updates[{id, …unit meta fields…, block_dates?, unblock_dates?, manual_blocked_dates?}].', ['status' => 400]);
         }
 
         $listing_labels = class_exists('DG_Acc_Listing_Status')
             ? DG_Acc_Listing_Status::labels()
             : ['bookable' => 'Open', 'coming_soon' => 'Coming soon', 'events_future' => 'Events'];
+
+        $float_fields = [
+            'weekday_rate' => 'dg_weekday_rate',
+            'weekend_rate' => 'dg_weekend_rate',
+            'weekday_peak_rate' => 'dg_weekday_peak_rate',
+            'weekend_peak_rate' => 'dg_weekend_peak_rate',
+            'cleaning_fee' => 'dg_cleaning_fee',
+            'security_deposit' => 'dg_security_deposit',
+            'extra_guest_fee' => 'dg_extra_guest_fee',
+            'bathrooms' => 'dg_bathrooms',
+            'size' => 'dg_size',
+        ];
+        $int_fields = [
+            'sleeps' => 'dg_sleeps',
+            'bedrooms' => 'dg_bedrooms',
+            'max_guests' => 'dg_max_guests',
+            'min_nights' => 'dg_min_nights',
+            'last_minute_discount' => 'dg_last_minute_discount',
+            'early_bird_discount' => 'dg_early_bird_discount',
+            'landing_page_id' => 'dg_landing_page_id',
+        ];
+        $text_fields = [
+            'address' => 'dg_address',
+            'latitude' => 'dg_latitude',
+            'longitude' => 'dg_longitude',
+            'peak_season_start' => 'dg_peak_season_start',
+            'peak_season_end' => 'dg_peak_season_end',
+            'checkin_time' => 'dg_checkin_time',
+            'checkout_time' => 'dg_checkout_time',
+            'gallery' => 'dg_gallery',
+            'airbnb_id' => 'dg_airbnb_id',
+            'bookingcom_id' => 'dg_bookingcom_id',
+            'housekeeping_notes' => 'dg_housekeeping_notes',
+        ];
+        $url_fields = [
+            'video_url' => 'dg_video_url',
+            'virtual_tour' => 'dg_virtual_tour',
+        ];
 
         $saved = [];
         foreach ($updates as $row) {
@@ -650,17 +791,91 @@ class DG_Acc_Dev_API {
                 continue;
             }
 
+            $post_update = ['ID' => $id];
             if (isset($row['title']) && is_string($row['title']) && trim($row['title']) !== '') {
-                wp_update_post([
-                    'ID' => $id,
-                    'post_title' => sanitize_text_field($row['title']),
-                ]);
+                $post_update['post_title'] = sanitize_text_field($row['title']);
+            }
+            if (isset($row['post_status']) && is_string($row['post_status'])) {
+                $status = sanitize_key($row['post_status']);
+                if (in_array($status, ['publish', 'draft', 'private', 'pending'], true)) {
+                    $post_update['post_status'] = $status;
+                }
+            }
+            if (count($post_update) > 1) {
+                wp_update_post($post_update);
             }
 
-            foreach (['weekday_rate' => 'dg_weekday_rate', 'weekend_rate' => 'dg_weekend_rate', 'cleaning_fee' => 'dg_cleaning_fee'] as $field => $meta) {
-                if (array_key_exists($field, $row) && $row[$field] !== null && $row[$field] !== '') {
+            if (array_key_exists('description', $row) && is_string($row['description'])) {
+                update_post_meta($id, 'dg_description', wp_kses_post($row['description']));
+            }
+
+            if (array_key_exists('accommodation_type_id', $row)) {
+                $term_id = (int) $row['accommodation_type_id'];
+                if ($term_id > 0) {
+                    wp_set_object_terms($id, $term_id, 'dg_accommodation_type');
+                } elseif ($row['accommodation_type_id'] === null || $row['accommodation_type_id'] === '' || $term_id === 0) {
+                    wp_set_object_terms($id, [], 'dg_accommodation_type');
+                }
+            }
+
+            foreach ($float_fields as $field => $meta) {
+                if (!array_key_exists($field, $row)) {
+                    continue;
+                }
+                if ($row[$field] === null || $row[$field] === '') {
+                    delete_post_meta($id, $meta);
+                } else {
                     update_post_meta($id, $meta, (float) $row[$field]);
                 }
+            }
+
+            foreach ($int_fields as $field => $meta) {
+                if (!array_key_exists($field, $row)) {
+                    continue;
+                }
+                if ($row[$field] === null || $row[$field] === '') {
+                    delete_post_meta($id, $meta);
+                } else {
+                    update_post_meta($id, $meta, (int) $row[$field]);
+                }
+            }
+
+            foreach ($text_fields as $field => $meta) {
+                if (!array_key_exists($field, $row)) {
+                    continue;
+                }
+                $val = is_string($row[$field]) || is_numeric($row[$field])
+                    ? sanitize_text_field((string) $row[$field])
+                    : '';
+                if ($val === '') {
+                    delete_post_meta($id, $meta);
+                } else {
+                    update_post_meta($id, $meta, $val);
+                }
+            }
+
+            foreach ($url_fields as $field => $meta) {
+                if (!array_key_exists($field, $row)) {
+                    continue;
+                }
+                $url = is_string($row[$field]) ? esc_url_raw(trim($row[$field])) : '';
+                if ($url === '') {
+                    delete_post_meta($id, $meta);
+                } else {
+                    update_post_meta($id, $meta, $url);
+                }
+            }
+
+            if (array_key_exists('featured', $row)) {
+                update_post_meta($id, 'dg_featured', !empty($row['featured']) ? 1 : 0);
+            }
+
+            if (array_key_exists('features', $row) && is_array($row['features'])) {
+                $normalized = [];
+                foreach (array_keys(self::feature_labels()) as $key) {
+                    $normalized[$key] = !empty($row['features'][$key]) ? 1 : 0;
+                }
+                update_post_meta($id, 'dg_features', $normalized);
             }
 
             if (!empty($row['listing_status']) && isset($listing_labels[$row['listing_status']])) {
@@ -690,6 +905,11 @@ class DG_Acc_Dev_API {
                 } else {
                     update_post_meta($id, 'dg_bookingcom_ical_url', $url);
                 }
+            }
+
+            // Ensure export token exists after OTA URL edits.
+            if (class_exists('DG_Acc_Ical_Export') && (array_key_exists('airbnb_ical_url', $row) || array_key_exists('bookingcom_ical_url', $row))) {
+                DG_Acc_Ical_Export::token_for($id);
             }
 
             // Manual operator blocks only — never touches dg_ota_blocked_dates.
