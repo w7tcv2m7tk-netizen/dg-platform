@@ -1,5 +1,11 @@
 # DG Platform Changelog
 
+## 10.61.0 — iCal URL fields on accommodation properties API (August 2026)
+
+- **GET/PATCH `/accommodation/properties`** includes OTA calendar fields: `airbnb_ical_url`, `bookingcom_ical_url`, `ical_export_url` (+ optional fallback), last sync / last error
+- PATCH accepts `airbnb_ical_url` / `bookingcom_ical_url` (empty string clears); export URL is derived and read-only
+- Enables Gen 2 Units iCal management (import URLs + copy DigitalGate export)
+
 ## 10.60.0 — Soft-delete bookings via Dev API (August 2026)
 
 - **DELETE `/accommodation/bookings`** soft-cancels bookings (`dg_booking_status=cancelled`) — same pattern as OTA iCal UID removal; does not hard-destroy posts

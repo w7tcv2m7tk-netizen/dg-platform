@@ -474,6 +474,15 @@ class DG_Acc_Dev_API {
     }
 
     private static function format_property($p) {
+        $airbnb_ical = (string) get_post_meta($p->ID, 'dg_ical_url', true);
+        $bookingcom_ical = (string) get_post_meta($p->ID, 'dg_bookingcom_ical_url', true);
+        $export_url = class_exists('DG_Acc_Ical_Export')
+            ? DG_Acc_Ical_Export::url_for($p->ID)
+            : '';
+        $export_fallback = class_exists('DG_Acc_Ical_Export')
+            ? DG_Acc_Ical_Export::fallback_url_for($p->ID)
+            : '';
+
         return [
             'id' => $p->ID,
             'title' => $p->post_title,
@@ -493,6 +502,15 @@ class DG_Acc_Dev_API {
             'cleaning_form_url' => class_exists('DG_Acc_Cleaning')
                 ? DG_Acc_Cleaning::cleaning_url_for_property($p->ID)
                 : '',
+            // OTA iCal — import URLs (editable) + DigitalGate export (readonly for OTAs).
+            'airbnb_ical_url' => $airbnb_ical,
+            'bookingcom_ical_url' => $bookingcom_ical,
+            'ical_export_url' => $export_url,
+            'ical_export_fallback_url' => ($export_fallback && $export_fallback !== $export_url) ? $export_fallback : '',
+            'airbnb_last_sync' => get_post_meta($p->ID, 'dg_ical_last_sync', true) ?: null,
+            'bookingcom_last_sync' => get_post_meta($p->ID, 'dg_bookingcom_ical_last_sync', true) ?: null,
+            'airbnb_last_error' => get_post_meta($p->ID, 'dg_ical_last_error', true) ?: null,
+            'bookingcom_last_error' => get_post_meta($p->ID, 'dg_bookingcom_ical_last_error', true) ?: null,
         ];
     }
 
@@ -607,7 +625,7 @@ class DG_Acc_Dev_API {
     public static function update_properties($request) {
         $updates = self::extract_updates($request);
         if (!$updates) {
-            return new WP_Error('missing_updates', 'Provide updates[{id,title?,weekday_rate?,weekend_rate?,cleaning_fee?,listing_status?}].', ['status' => 400]);
+            return new WP_Error('missing_updates', 'Provide updates[{id,title?,weekday_rate?,weekend_rate?,cleaning_fee?,listing_status?,airbnb_ical_url?,bookingcom_ical_url?}].', ['status' => 400]);
         }
 
         $listing_labels = class_exists('DG_Acc_Listing_Status')
@@ -645,6 +663,24 @@ class DG_Acc_Dev_API {
                 $hk = sanitize_key((string) $row['housekeeping_status']);
                 if (isset(DG_Acc_Housekeeping::STATUSES[$hk])) {
                     update_post_meta($id, 'dg_housekeeping_status', $hk);
+                }
+            }
+
+            // OTA iCal import URLs (empty string clears). Export URL is derived — not writable.
+            if (array_key_exists('airbnb_ical_url', $row)) {
+                $url = is_string($row['airbnb_ical_url']) ? esc_url_raw(trim($row['airbnb_ical_url'])) : '';
+                if ($url === '') {
+                    delete_post_meta($id, 'dg_ical_url');
+                } else {
+                    update_post_meta($id, 'dg_ical_url', $url);
+                }
+            }
+            if (array_key_exists('bookingcom_ical_url', $row)) {
+                $url = is_string($row['bookingcom_ical_url']) ? esc_url_raw(trim($row['bookingcom_ical_url'])) : '';
+                if ($url === '') {
+                    delete_post_meta($id, 'dg_bookingcom_ical_url');
+                } else {
+                    update_post_meta($id, 'dg_bookingcom_ical_url', $url);
                 }
             }
 
