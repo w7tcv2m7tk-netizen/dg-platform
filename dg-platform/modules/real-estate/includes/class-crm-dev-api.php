@@ -34,9 +34,16 @@ class DG_RE_CRM_Dev_API {
         ]);
 
         register_rest_route(DG_REST_NAMESPACE, '/leads/vendor/(?P<id>\d+)', [
-            'methods' => 'GET',
-            'callback' => [__CLASS__, 'get_vendor_lead'],
-            'permission_callback' => [__CLASS__, 'can_access'],
+            [
+                'methods' => 'GET',
+                'callback' => [__CLASS__, 'get_vendor_lead'],
+                'permission_callback' => [__CLASS__, 'can_access'],
+            ],
+            [
+                'methods' => 'PATCH',
+                'callback' => [__CLASS__, 'patch_vendor_lead'],
+                'permission_callback' => [__CLASS__, 'can_access'],
+            ],
         ]);
 
         register_rest_route(DG_REST_NAMESPACE, '/leads/buyer', [
@@ -44,6 +51,12 @@ class DG_RE_CRM_Dev_API {
             'callback' => [__CLASS__, 'list_buyer_leads'],
             'permission_callback' => [__CLASS__, 'can_access'],
             'args' => self::list_args(),
+        ]);
+
+        register_rest_route(DG_REST_NAMESPACE, '/leads/buyer/(?P<id>\d+)', [
+            'methods' => 'PATCH',
+            'callback' => [__CLASS__, 'patch_buyer_lead'],
+            'permission_callback' => [__CLASS__, 'can_access'],
         ]);
 
         register_rest_route(DG_REST_NAMESPACE, '/bookings/recent', [
@@ -174,6 +187,63 @@ class DG_RE_CRM_Dev_API {
         }
 
         return rest_ensure_response(self::format_vendor_lead($lead, true));
+    }
+
+    /**
+     * Gen 2 → WP stage write-back (WP-D-104). Gen 2 remains SoT; this keeps WP admin in sync.
+     */
+    public static function patch_vendor_lead($request) {
+        if (!class_exists('DG_RE_Vendor_Leads')) {
+            return new WP_Error('unavailable', 'Vendor leads unavailable.', ['status' => 503]);
+        }
+
+        $id = (int) $request['id'];
+        $body = $request->get_json_params();
+        if (!is_array($body)) {
+            return new WP_Error('invalid_body', 'Expected JSON body.', ['status' => 400]);
+        }
+
+        $stage = sanitize_text_field((string) ($body['stage'] ?? ''));
+        if ($stage === '') {
+            return new WP_Error('validation_error', 'stage is required.', ['status' => 422]);
+        }
+
+        if (!DG_RE_Vendor_Leads::advance_stage($id, $stage)) {
+            return new WP_Error('stage_failed', 'Could not update vendor stage.', ['status' => 422]);
+        }
+
+        $lead = DG_RE_Vendor_Leads::get($id);
+        return rest_ensure_response([
+            'ok' => true,
+            'lead' => $lead ? self::format_vendor_lead($lead, true) : ['id' => $id, 'stage' => $stage],
+        ]);
+    }
+
+    public static function patch_buyer_lead($request) {
+        if (!class_exists('DG_RE_Buyer_Leads')) {
+            return new WP_Error('unavailable', 'Buyer leads unavailable.', ['status' => 503]);
+        }
+
+        $id = (int) $request['id'];
+        $body = $request->get_json_params();
+        if (!is_array($body)) {
+            return new WP_Error('invalid_body', 'Expected JSON body.', ['status' => 400]);
+        }
+
+        $stage = sanitize_text_field((string) ($body['stage'] ?? ''));
+        if ($stage === '') {
+            return new WP_Error('validation_error', 'stage is required.', ['status' => 422]);
+        }
+
+        if (!DG_RE_Buyer_Leads::advance_stage($id, $stage)) {
+            return new WP_Error('stage_failed', 'Could not update buyer stage.', ['status' => 422]);
+        }
+
+        return rest_ensure_response([
+            'ok' => true,
+            'id' => $id,
+            'stage' => $stage,
+        ]);
     }
 
     public static function list_buyer_leads($request) {

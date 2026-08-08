@@ -111,6 +111,7 @@ class DG_Module_RealEstate {
             'class-re-contact-form.php',
             'class-re-property-brochure.php',
             'property-report-leads.php',
+            'class-re-platform-sync.php',
             'rest-api.php',
         ];
 
@@ -132,6 +133,9 @@ class DG_Module_RealEstate {
         }
         if (class_exists('DG_RE_Property_Workspace')) {
             DG_RE_Property_Workspace::init();
+        }
+        if (class_exists('DG_RE_Platform_Sync')) {
+            DG_RE_Platform_Sync::init();
         }
 
         return true;
