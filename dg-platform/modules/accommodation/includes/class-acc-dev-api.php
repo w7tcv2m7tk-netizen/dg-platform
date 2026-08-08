@@ -1364,7 +1364,7 @@ class DG_Acc_Dev_API {
 
             // OTA iCal import URLs (empty string clears). Export URL is derived — not writable.
             if (array_key_exists('airbnb_ical_url', $row)) {
-                $url = is_string($row['airbnb_ical_url']) ? esc_url_raw(trim($row['airbnb_ical_url'])) : '';
+                $url = self::sanitize_ical_import_url($row['airbnb_ical_url'] ?? '');
                 if ($url === '') {
                     delete_post_meta($id, 'dg_ical_url');
                 } else {
@@ -1372,7 +1372,7 @@ class DG_Acc_Dev_API {
                 }
             }
             if (array_key_exists('bookingcom_ical_url', $row)) {
-                $url = is_string($row['bookingcom_ical_url']) ? esc_url_raw(trim($row['bookingcom_ical_url'])) : '';
+                $url = self::sanitize_ical_import_url($row['bookingcom_ical_url'] ?? '');
                 if ($url === '') {
                     delete_post_meta($id, 'dg_bookingcom_ical_url');
                 } else {
@@ -1743,6 +1743,39 @@ class DG_Acc_Dev_API {
         $days = array_values(array_unique($days));
         sort($days);
         return $days;
+    }
+
+    /**
+     * Normalize OTA iCal import URLs (webcal → https; keep Booking.com token query strings).
+     *
+     * @param mixed $raw
+     * @return string
+     */
+    public static function sanitize_ical_import_url($raw) {
+        if (!is_string($raw) && !is_numeric($raw)) {
+            return '';
+        }
+        $url = trim((string) $raw);
+        if ($url === '') {
+            return '';
+        }
+        if (stripos($url, 'webcal://') === 0) {
+            $url = 'https://' . substr($url, strlen('webcal://'));
+        } elseif (stripos($url, 'webcals://') === 0) {
+            $url = 'https://' . substr($url, strlen('webcals://'));
+        }
+
+        $clean = esc_url_raw($url);
+        if ($clean !== '') {
+            return $clean;
+        }
+
+        // esc_url_raw can empty long Booking.com admin links — keep https hosts we trust.
+        if (preg_match('#^https?://([a-z0-9.-]+\.)?(booking\.com|airbnb\.[a-z.]+|airbnb\.com)/#i', $url)) {
+            return esc_url_raw($url, ['http', 'https']) ?: $url;
+        }
+
+        return '';
     }
 
     /**

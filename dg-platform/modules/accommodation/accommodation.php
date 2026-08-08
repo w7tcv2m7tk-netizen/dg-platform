@@ -1755,13 +1755,31 @@ class DG_Module_Accommodation {
 
         $fields = [
             'dg_airbnb_id' => 'sanitize_text_field',
-            'dg_ical_url' => 'esc_url_raw',
             'dg_bookingcom_id' => 'sanitize_text_field',
-            'dg_bookingcom_ical_url' => 'esc_url_raw',
         ];
         foreach ($fields as $field => $sanitize) {
             if (isset($_POST[$field])) {
                 update_post_meta($post_id, $field, call_user_func($sanitize, wp_unslash($_POST[$field])));
+            }
+        }
+        if (isset($_POST['dg_ical_url'])) {
+            $url = class_exists('DG_Acc_Dev_API')
+                ? DG_Acc_Dev_API::sanitize_ical_import_url(wp_unslash($_POST['dg_ical_url']))
+                : esc_url_raw(wp_unslash($_POST['dg_ical_url']));
+            if ($url === '') {
+                delete_post_meta($post_id, 'dg_ical_url');
+            } else {
+                update_post_meta($post_id, 'dg_ical_url', $url);
+            }
+        }
+        if (isset($_POST['dg_bookingcom_ical_url'])) {
+            $url = class_exists('DG_Acc_Dev_API')
+                ? DG_Acc_Dev_API::sanitize_ical_import_url(wp_unslash($_POST['dg_bookingcom_ical_url']))
+                : esc_url_raw(wp_unslash($_POST['dg_bookingcom_ical_url']));
+            if ($url === '') {
+                delete_post_meta($post_id, 'dg_bookingcom_ical_url');
+            } else {
+                update_post_meta($post_id, 'dg_bookingcom_ical_url', $url);
             }
         }
 
