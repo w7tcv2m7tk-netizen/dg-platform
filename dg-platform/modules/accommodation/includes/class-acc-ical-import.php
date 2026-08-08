@@ -81,19 +81,36 @@ class DG_Acc_Ical_Import {
     }
 
     /**
-     * @return string[]|WP_Error
+     * @return string|WP_Error
      */
     public static function fetch($url) {
-        $url = esc_url_raw(trim((string) $url));
+        $original = trim((string) $url);
+        $url = class_exists('DG_Acc_Dev_API')
+            ? DG_Acc_Dev_API::sanitize_ical_import_url($original)
+            : esc_url_raw($original);
+
         if ($url === '') {
-            return new WP_Error('dg_ical_empty_url', 'Calendar URL is empty.');
+            return new WP_Error(
+                'dg_ical_empty_url',
+                'Calendar URL is empty or was rejected. Paste the Booking.com/Airbnb export calendar link (https://…), not an import page.'
+            );
+        }
+
+        // DigitalGate export URLs belong in the OTA "import calendar" field — not here.
+        if (self::looks_like_dg_export_url($url)) {
+            return new WP_Error(
+                'dg_ical_wrong_direction',
+                'That looks like a DigitalGate export URL. Paste it into Booking.com/Airbnb as an imported calendar. Here you need the OTA’s own export calendar URL.'
+            );
         }
 
         $response = wp_remote_get($url, [
-            'timeout' => 30,
+            'timeout' => 45,
             'redirection' => 5,
+            'sslverify' => true,
             'headers' => [
-                'User-Agent' => 'DG-Platform-Calendar-Sync/1.0 (+WordPress)',
+                // Calendar clients / Booking.com accept browser-like agents better than custom bots.
+                'User-Agent' => 'Mozilla/5.0 (compatible; DigitalGate-Calendar/1.0; +https://digitalgate.com.au)',
                 'Accept' => 'text/calendar, text/plain, application/octet-stream, */*',
             ],
         ]);
@@ -104,15 +121,44 @@ class DG_Acc_Ical_Import {
 
         $code = (int) wp_remote_retrieve_response_code($response);
         if ($code < 200 || $code >= 300) {
-            return new WP_Error('dg_ical_http_error', sprintf('Calendar feed returned HTTP %d.', $code));
+            return new WP_Error(
+                'dg_ical_http_error',
+                sprintf(
+                    'Calendar feed returned HTTP %d. Re-copy the export calendar URL from Booking.com (Rates & Availability → Sync calendars → Export).',
+                    $code
+                )
+            );
         }
 
         $body = (string) wp_remote_retrieve_body($response);
-        if ($body === '' || stripos($body, 'BEGIN:VCALENDAR') === false) {
-            return new WP_Error('dg_ical_invalid', 'Response is not a valid iCalendar feed.');
+        if ($body === '') {
+            return new WP_Error('dg_ical_invalid', 'Calendar feed returned an empty body.');
+        }
+
+        if (stripos($body, 'BEGIN:VCALENDAR') === false) {
+            $hint = 'Response is not a valid iCalendar feed.';
+            if (stripos($body, '<html') !== false || stripos($body, '<!DOCTYPE') !== false) {
+                $hint .= ' Booking.com returned a web page (often a login/admin URL). Use Export calendar → copy link, not the Calendar page address.';
+            }
+            return new WP_Error('dg_ical_invalid', $hint);
         }
 
         return $body;
+    }
+
+    /** @return bool */
+    private static function looks_like_dg_export_url($url) {
+        $url = (string) $url;
+        if ($url === '') {
+            return false;
+        }
+        if (stripos($url, 'dg_ical_token=') !== false || stripos($url, 'dg_ical_export=') !== false) {
+            return true;
+        }
+        if (stripos($url, 'dg-accommodation.ics') !== false || stripos($url, '/feed/dg-accommodation') !== false) {
+            return true;
+        }
+        return false;
     }
 
     /**

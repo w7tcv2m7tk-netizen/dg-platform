@@ -1304,7 +1304,7 @@ class DG_Module_Accommodation {
             <div class="dg-booking-settings-field">
                 <label for="dg_bookingcom_ical_url">iCal Import URL</label>
                 <input type="url" name="dg_bookingcom_ical_url" value="<?php echo esc_url($bookingcom_ical_url); ?>" placeholder="https://www.booking.com/.../ical">
-                <div style="font-size:11px;color:#666;margin-top:4px;">🔄 Last synced: <?php echo $bookingcom_last_sync ? date_i18n('M j, Y g:i A', strtotime($bookingcom_last_sync)) : 'Never'; ?></div>
+                <div style="font-size:11px;color:#666;margin-top:4px;">Export calendar URL from Booking.com (Rates → Sync calendars → Export). Last synced: <?php echo $bookingcom_last_sync ? date_i18n('M j, Y g:i A', strtotime($bookingcom_last_sync)) : 'Never'; ?></div>
             </div>
 
             <!-- iCal Export (for Booking.com / Airbnb) -->

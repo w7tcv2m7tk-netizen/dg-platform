@@ -1363,26 +1363,42 @@ class DG_Acc_Dev_API {
             }
 
             // OTA iCal import URLs (empty string clears). Export URL is derived — not writable.
+            $ota_urls_changed = false;
             if (array_key_exists('airbnb_ical_url', $row)) {
+                $prev = (string) get_post_meta($id, 'dg_ical_url', true);
                 $url = self::sanitize_ical_import_url($row['airbnb_ical_url'] ?? '');
                 if ($url === '') {
                     delete_post_meta($id, 'dg_ical_url');
                 } else {
                     update_post_meta($id, 'dg_ical_url', $url);
                 }
+                if ($url !== $prev) {
+                    $ota_urls_changed = true;
+                    delete_post_meta($id, 'dg_ical_last_error');
+                }
             }
             if (array_key_exists('bookingcom_ical_url', $row)) {
+                $prev = (string) get_post_meta($id, 'dg_bookingcom_ical_url', true);
                 $url = self::sanitize_ical_import_url($row['bookingcom_ical_url'] ?? '');
                 if ($url === '') {
                     delete_post_meta($id, 'dg_bookingcom_ical_url');
                 } else {
                     update_post_meta($id, 'dg_bookingcom_ical_url', $url);
                 }
+                if ($url !== $prev) {
+                    $ota_urls_changed = true;
+                    delete_post_meta($id, 'dg_bookingcom_ical_last_error');
+                }
             }
 
             // Ensure export token exists after OTA URL edits.
             if (class_exists('DG_Acc_Ical_Export') && (array_key_exists('airbnb_ical_url', $row) || array_key_exists('bookingcom_ical_url', $row))) {
                 DG_Acc_Ical_Export::token_for($id);
+            }
+
+            // Validate / pull feed immediately when import URLs change so Gen 2 shows last_error.
+            if ($ota_urls_changed && class_exists('DG_Acc_Ical_Import')) {
+                DG_Acc_Ical_Import::sync_accommodation($id, 'all');
             }
 
             // Manual operator blocks only — never touches dg_ota_blocked_dates.
@@ -1759,10 +1775,21 @@ class DG_Acc_Dev_API {
         if ($url === '') {
             return '';
         }
+
+        // Pastes from email/docs often include entities or wrapped lines.
+        $url = html_entity_decode($url, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+        $url = preg_replace('/\s+/', '', $url);
+        $url = trim($url, " \t\n\r\0\x0B\"'<>");
+
         if (stripos($url, 'webcal://') === 0) {
             $url = 'https://' . substr($url, strlen('webcal://'));
         } elseif (stripos($url, 'webcals://') === 0) {
             $url = 'https://' . substr($url, strlen('webcals://'));
+        }
+
+        // Protocol-relative
+        if (strpos($url, '//') === 0) {
+            $url = 'https:' . $url;
         }
 
         $clean = esc_url_raw($url);
@@ -1770,9 +1797,9 @@ class DG_Acc_Dev_API {
             return $clean;
         }
 
-        // esc_url_raw can empty long Booking.com admin links — keep https hosts we trust.
+        // esc_url_raw can empty long Booking.com admin / ical.booking.com token links.
         if (preg_match('#^https?://([a-z0-9.-]+\.)?(booking\.com|airbnb\.[a-z.]+|airbnb\.com)/#i', $url)) {
-            return esc_url_raw($url, ['http', 'https']) ?: $url;
+            return $url;
         }
 
         return '';
