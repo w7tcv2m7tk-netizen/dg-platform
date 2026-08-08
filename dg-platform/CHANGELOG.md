@@ -1,5 +1,13 @@
 # DG Platform Changelog
 
+## 10.67.0 — Acc StayBooking dual-write push (August 2026)
+
+- **Acc:** `DG_Acc_Platform_Sync` listens to `dg_booking_created` / `dg_booking_confirmed` and POSTs the booking row to Gen 2 `/api/webhooks/dg-stay-booking` (non-blocking)
+- Keeps Neon **StayBooking** warm for Gen 2 read SoT while public book-now / PayID / Stripe / Dev API create still originate on WordPress calendar
+- Auth: `DG_STAY_BOOKING_WEBHOOK_SECRET` / option `dg_stay_booking_webhook_secret`, else discovery webhook secret, else Dev API key (match Gen 2 `DG_WP_ACCOMMODATION_API_KEY`)
+- Optional org pin: `DG_ACC_ORGANISATION_ID` or option `dg_platform_organisation_id`
+- **Dev API:** public `format_bookings_for_platform()` for dual-write payload shape
+
 ## 10.66.0 — RE inspection times + Acc ops guards (August 2026)
 
 - **RE:** **POST `/properties` upsert** accepts `inspection_times` → `roe_property_inspection_times` (open homes); **GET `/properties`** returns `inspection_times` for Gen 2 listing sync / publish round-trip

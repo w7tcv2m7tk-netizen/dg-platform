@@ -50,6 +50,7 @@ class DG_Module_Accommodation {
             'class-acc-ota.php',
             'class-acc-ical-import.php',
             'class-acc-payments.php',
+            'class-acc-platform-sync.php',
             'class-acc-admin-pages.php',
             'class-acc-dev-api.php',
             'class-acc-admin-notifications.php',
@@ -77,6 +78,7 @@ class DG_Module_Accommodation {
         foreach ([
             'DG_Acc_Ota',
             'DG_Acc_Payments',
+            'DG_Acc_Platform_Sync',
             'DG_Acc_Admin_Pages',
             'DG_Acc_Admin_Menus',
             'DG_Acc_Admin_Notifications',

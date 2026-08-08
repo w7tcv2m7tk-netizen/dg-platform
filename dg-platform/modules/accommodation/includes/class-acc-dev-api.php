@@ -758,6 +758,16 @@ class DG_Acc_Dev_API {
         ];
     }
 
+    /**
+     * Public formatter for dual-write / platform sync (WP-D-403).
+     *
+     * @param WP_Post[] $posts
+     * @return array<int,array<string,mixed>>
+     */
+    public static function format_bookings_for_platform($posts) {
+        return self::format_bookings($posts);
+    }
+
     private static function format_bookings($posts) {
         $out = [];
         foreach ($posts as $b) {
