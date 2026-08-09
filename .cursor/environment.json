@@ -1,0 +1,22 @@
+{
+  "name": "dg-platform",
+  "build": {
+    "dockerfile": "Dockerfile",
+    "context": ".."
+  },
+  "install": "bash .cursor/scripts/install-wordpress.sh",
+  "start": "bash .cursor/scripts/start-mariadb.sh",
+  "terminals": [
+    {
+      "name": "wordpress",
+      "command": "cd \"$HOME/wordpress\" && wp server --host=0.0.0.0 --port=8080 --allow-root",
+      "description": "WordPress PHP built-in server hosting the dg-platform plugin on :8080"
+    }
+  ],
+  "ports": [
+    {
+      "name": "wordpress",
+      "port": 8080
+    }
+  ]
+}
