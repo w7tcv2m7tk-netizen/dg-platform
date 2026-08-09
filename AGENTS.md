@@ -31,6 +31,7 @@ After clone, editing `/workspace/dg-platform` is live — the plugin is symlinke
 - Admin pages: `admin.php?page=dg-platform` (dashboard), `admin.php?page=dg-platform-contacts` (Contacts)
 
 ### Non-obvious notes
+- `start-mariadb.sh` bridges PHP's mysqli socket (`/var/run/mysqld/mysqld.sock`) to the real MariaDB socket under `/run/mysqld` when `/var/run` is not symlinked to `/run` (common in agent images). Always start MariaDB via that script, not bare `mysqld_safe`.
 - All `wp` (WP-CLI) commands need `--allow-root` in this environment.
 - Plugin schema (`wp_dg_*` tables) auto-creates/upgrades on activation and admin requests (`DG_Activator`). No standalone migrations. If tables look missing: `wp plugin activate dg-platform --path="$HOME/wordpress" --allow-root`.
 - Activation enables only the `core` module first; industry modules load on the next admin request (deferred to avoid activation timeouts).
