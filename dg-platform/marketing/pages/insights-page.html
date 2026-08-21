@@ -1,0 +1,323 @@
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Insights | DigitalGate</title>
+<meta name="description" content="Practical thinking on AI visibility, search, lead generation and connected business from DigitalGate.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&amp;display=swap" onload="this.onload=null;this.rel='stylesheet'">
+<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&amp;display=swap"></noscript>
+<style>
+  .dg-insights * { margin: 0; padding: 0; box-sizing: border-box; }
+  .dg-insights {
+    font-family: Inter, system-ui, sans-serif;
+    background: #0A0E17;
+    color: #F9FAFB;
+    line-height: 1.6;
+  }
+  .dg-insights .container { max-width: 1100px; margin: 0 auto; padding: 0 2rem; }
+  .dg-insights h1, .dg-insights h2, .dg-insights h3 { color: #F9FAFB !important; }
+  .dg-insights a { color: inherit; text-decoration: none; }
+
+  .dg-insights section { padding: 3.75rem 0; border-top: 1px solid #1E293B; }
+  .dg-insights section.alt { background: #111827; }
+  .dg-insights .sub-label {
+    display: inline-block; font-size: 0.68rem; font-weight: 700; letter-spacing: 0.12em;
+    text-transform: uppercase; color: #93C5FD; margin-bottom: 0.65rem;
+  }
+  .dg-insights .section-header { max-width: 760px; margin: 0 0 2rem; }
+  .dg-insights .section-header.center { text-align: center; margin-left: auto; margin-right: auto; }
+  .dg-insights .section-header h2 {
+    font-size: clamp(1.45rem, 3vw, 2rem); font-weight: 800; margin-bottom: 0.55rem;
+  }
+  .dg-insights .section-header p { color: #94A3B8; font-size: 1rem; line-height: 1.65; }
+
+  .insights-hero {
+    padding: 7rem 0 4.5rem;
+    background: linear-gradient(180deg, #05070A 0%, #0A0E17 100%);
+    text-align: center;
+    border-top: none;
+  }
+  .insights-hero h1 {
+    font-size: clamp(2rem, 4.5vw, 3rem); font-weight: 800; line-height: 1.12;
+    letter-spacing: -0.02em; margin-bottom: 0.9rem;
+  }
+  .insights-hero .lead {
+    color: #CBD5E1; font-size: 1.08rem; max-width: 780px; margin: 0 auto 0.9rem; line-height: 1.7;
+  }
+  .insights-hero .lead-sm {
+    color: #94A3B8; font-size: 0.98rem; max-width: 740px; margin: 0 auto 1.75rem; line-height: 1.7;
+  }
+  .insights-hero .actions, .dg-insights .actions {
+    display: flex; flex-wrap: wrap; gap: 0.55rem; justify-content: center;
+  }
+
+  .btn-primary, .btn-secondary {
+    display: inline-flex; align-items: center; gap: 8px; padding: 0.85rem 1.6rem;
+    border-radius: 999px; font-weight: 700; font-size: 0.9rem; transition: all 0.2s;
+  }
+  .btn-primary { background: linear-gradient(105deg, #3B82F6, #2563EB); color: #fff !important; }
+  .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(59,130,246,0.35); }
+  .btn-secondary { background: rgba(30,41,59,0.9); border: 1px solid #334155; color: #E2E8F0 !important; }
+  .btn-secondary:hover { border-color: #3B82F6; color: #fff !important; }
+
+  .topic-grid {
+    display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem;
+  }
+  .topic-card {
+    display: block; background: #0A0E17; border: 1px solid #334155; border-radius: 16px;
+    padding: 1.25rem 1.2rem; min-height: 100%; transition: border-color 0.2s, transform 0.2s;
+  }
+  .topic-card:hover { border-color: #3B82F6; transform: translateY(-2px); }
+  .topic-card h3 { font-size: 1.02rem; font-weight: 800; margin-bottom: 0.45rem; }
+  .topic-card p { color: #94A3B8; font-size: 0.88rem; line-height: 1.55; }
+
+  .featured-card {
+    display: grid; gap: 1rem; background: #0A0E17; border: 1px solid rgba(59,130,246,0.35);
+    border-radius: 22px; padding: clamp(1.4rem, 3vw, 2.1rem); text-align: left;
+  }
+  .featured-card h2 {
+    font-size: clamp(1.45rem, 3vw, 2.05rem); font-weight: 800; line-height: 1.2; margin-bottom: 0.65rem;
+  }
+  .featured-card p { color: #94A3B8; font-size: 1.02rem; line-height: 1.65; max-width: 46rem; margin-bottom: 1.1rem; }
+
+  .insight-grid {
+    display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1.1rem;
+  }
+  .insight-card {
+    display: flex; flex-direction: column; background: #0A0E17; border: 1px solid #334155;
+    border-radius: 18px; padding: 1.25rem 1.2rem 1.2rem; min-height: 100%;
+    transition: border-color 0.2s, transform 0.2s, box-shadow 0.2s;
+  }
+  .insight-card:hover {
+    border-color: #3B82F6; transform: translateY(-3px); box-shadow: 0 12px 28px rgba(0,0,0,0.28);
+  }
+  .insight-kicker {
+    display: block; font-size: 0.68rem; font-weight: 800; letter-spacing: 0.1em;
+    text-transform: uppercase; color: #93C5FD; margin-bottom: 0.7rem;
+  }
+  .insight-card h3 { font-size: 1.08rem; font-weight: 800; line-height: 1.3; margin-bottom: 0.55rem; }
+  .insight-card p { color: #94A3B8; font-size: 0.9rem; line-height: 1.55; margin-bottom: 1rem; }
+  .insight-more { margin-top: auto; font-size: 0.85rem; font-weight: 700; color: #93C5FD; }
+
+  .subscribe-box {
+    max-width: 560px; margin: 0 auto; text-align: center;
+  }
+  .subscribe-box p { color: #94A3B8; font-size: 0.95rem; line-height: 1.65; margin-bottom: 1.1rem; }
+  .subscribe-box form {
+    display: flex; gap: 0.5rem; justify-content: center; flex-wrap: wrap;
+  }
+  .subscribe-box input[type="email"] {
+    flex: 1 1 16rem; min-width: 12rem; padding: 0.8rem 1rem; border-radius: 999px;
+    border: 1px solid #334155; background: #0A0E17; color: #F9FAFB; font: inherit;
+  }
+  .subscribe-note { margin-top: 0.75rem; font-size: 0.78rem; color: #64748B; }
+
+  .insights-cta {
+    text-align: center; padding: 4.5rem 0;
+    background: linear-gradient(180deg, #111827, #05070A);
+  }
+  .insights-cta h2 { font-size: clamp(1.4rem, 3vw, 1.9rem); font-weight: 800; margin-bottom: 0.65rem; }
+  .insights-cta p { color: #94A3B8; max-width: 620px; margin: 0 auto 1.35rem; font-size: 0.98rem; line-height: 1.65; }
+
+  @media (max-width: 900px) {
+    .topic-grid, .insight-grid { grid-template-columns: 1fr 1fr; }
+  }
+  @media (max-width: 640px) {
+    .insights-hero { padding-top: 5.25rem; }
+    .topic-grid, .insight-grid { grid-template-columns: 1fr; }
+  }
+</style>
+
+<div class="dg-insights">
+
+  <section class="insights-hero">
+    <div class="container">
+      <span class="sub-label">DigitalGate Insights</span>
+      <h1>The future of search, AI and connected business</h1>
+      <p class="lead">Practical thinking for businesses navigating a digital world where search, AI, websites, customers and business systems are becoming increasingly connected.</p>
+      <p class="lead-sm">Explore how AI is changing discovery, how businesses can improve their digital visibility, and how connected technology can create better ways to operate and grow.</p>
+      <div class="actions">
+        <a href="https://audit.digitalgate.com.au" class="btn-primary">Get Your Free Business Audit →</a>
+        <a href="https://digitalgate.com.au/" class="btn-secondary">Explore the DigitalGate Platform →</a>
+      </div>
+    </div>
+  </section>
+
+  <section id="topics">
+    <div class="container">
+      <div class="section-header">
+        <span class="sub-label">Content architecture</span>
+        <h2>Explore by topic</h2>
+        <p>Every Insight is an entry point into a broader DigitalGate theme — not an isolated blog post.</p>
+      </div>
+      <div class="topic-grid">
+        <a class="topic-card" href="#ai-visibility">
+          <h3>AI Visibility</h3>
+          <p>How Google, ChatGPT, Gemini and other AI systems understand and recommend businesses.</p>
+        </a>
+        <a class="topic-card" href="#search-seo">
+          <h3>Search &amp; SEO</h3>
+          <p>The changing search landscape, technical SEO, entity visibility and organic discovery.</p>
+        </a>
+        <a class="topic-card" href="#lead-generation">
+          <h3>Lead Generation</h3>
+          <p>How businesses can turn visibility into enquiries, opportunities and customers.</p>
+        </a>
+        <a class="topic-card" href="#automation-ai">
+          <h3>Automation &amp; AI</h3>
+          <p>Practical applications of AI and automation in everyday business operations.</p>
+        </a>
+        <a class="topic-card" href="#business-systems">
+          <h3>Business Systems</h3>
+          <p>CRM, websites, communications, data and the move towards connected business platforms.</p>
+        </a>
+        <a class="topic-card" href="#industry-insights">
+          <h3>Industry Insights</h3>
+          <p>Real-world applications across real estate, accommodation, professional services and other industries.</p>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <section class="alt" id="featured">
+    <div class="container">
+      <div class="section-header">
+        <span class="sub-label">Featured Insight</span>
+        <h2>Start here</h2>
+      </div>
+      <a class="featured-card" href="/from-dumb-businesses-to-smart-businesses/">
+        <span class="insight-kicker">Connected Business · Business Brain™</span>
+        <h2>From Dumb Businesses to Smart Businesses: Why AI Needs a Connected Business</h2>
+        <p>AI doesn’t make a business intelligent simply because you add a chatbot. It becomes useful when AI can understand how the business actually works — Connect your business. Give it a brain.</p>
+        <span class="btn-primary" style="justify-self:start;">Read the Insight →</span>
+      </a>
+      <a class="featured-card" href="https://digitalgate.com.au/how-chatgpt-chooses-which-businesses-to-recommend" style="margin-top:1rem;opacity:0.95;">
+        <span class="insight-kicker">AI Visibility</span>
+        <h2>How ChatGPT Chooses Which Businesses To Recommend in 2026</h2>
+        <p>As businesses begin to understand the impact of AI search, one question is becoming increasingly important: how does ChatGPT decide which businesses to recommend — and what signals does your business need to be understood?</p>
+        <span class="btn-primary" style="justify-self:start;">Read the Insight →</span>
+      </a>
+    </div>
+  </section>
+
+  <section id="latest">
+    <div class="container">
+      <div class="section-header">
+        <span class="sub-label">Latest Insights</span>
+        <h2>Authority clusters</h2>
+        <p>AI search and visibility first — then lead generation, SEO and industry application.</p>
+      </div>
+
+      <p class="insight-kicker" id="ai-visibility" style="margin-bottom:0.85rem;">AI Search &amp; Visibility</p>
+      <div class="insight-grid" style="margin-bottom:2rem;">
+        <a class="insight-card" href="https://digitalgate.com.au/how-gemini-recommends-local-businesses">
+          <span class="insight-kicker">AI Visibility</span>
+          <h3>How Gemini Recommends Local Businesses and Service Providers</h3>
+          <p>As AI-powered search becomes more common, businesses are asking how Gemini decides which local businesses to recommend — and what that means for discovery.</p>
+          <span class="insight-more">Read article →</span>
+        </a>
+        <a class="insight-card" href="https://digitalgate.com.au/will-ai-replace-google-search">
+          <span class="insight-kicker">AI Visibility</span>
+          <h3>Will AI Replace Google Search?</h3>
+          <p>Artificial intelligence is changing the way people find information online. Here’s what businesses need to understand about search, AI answers and discovery.</p>
+          <span class="insight-more">Read article →</span>
+        </a>
+        <a class="insight-card" href="https://digitalgate.com.au/ai-search-vs-traditional-seo">
+          <span class="insight-kicker">AI Visibility · Search &amp; SEO</span>
+          <h3>AI Search vs Traditional SEO</h3>
+          <p>The way people discover businesses online is changing. Traditional SEO still matters — but it is no longer the whole visibility picture.</p>
+          <span class="insight-more">Read article →</span>
+        </a>
+        <a class="insight-card" href="https://digitalgate.com.au/entity-seo-for-real-estate-agencies">
+          <span class="insight-kicker">AI Visibility · Real Estate</span>
+          <h3>Entity SEO for Real Estate Agencies</h3>
+          <p>Search engines and AI systems are evolving beyond keyword matching. Here’s how Google and AI understand your agency as an entity.</p>
+          <span class="insight-more">Read article →</span>
+        </a>
+        <a class="insight-card" href="https://digitalgate.com.au/chatgpt-vs-google-for-real-estate-marketing">
+          <span class="insight-kicker">AI Visibility · Real Estate</span>
+          <h3>ChatGPT vs Google for Real Estate Marketing</h3>
+          <p>The way homeowners research real estate agents is changing. Google still matters — AI answers are becoming a second discovery layer.</p>
+          <span class="insight-more">Read article →</span>
+        </a>
+        <a class="insight-card" href="https://digitalgate.com.au/ai-visibility-for-real-estate-agencies">
+          <span class="insight-kicker">AI Visibility · Real Estate</span>
+          <h3>AI Visibility for Real Estate Agencies</h3>
+          <p>AI visibility is becoming one of the most important competitive advantages for agencies competing for attention in a changing discovery landscape.</p>
+          <span class="insight-more">Read article →</span>
+        </a>
+      </div>
+
+      <p class="insight-kicker" id="lead-generation" style="margin-bottom:0.85rem;">Lead Generation</p>
+      <div class="insight-grid" style="margin-bottom:2rem;">
+        <a class="insight-card" href="https://digitalgate.com.au/why-ai-search-changes-lead-generation-for-real-estate-agencies">
+          <span class="insight-kicker">Lead Generation · Real Estate</span>
+          <h3>Why AI Search Changes Lead Generation for Real Estate Agencies</h3>
+          <p>The way homeowners discover and choose real estate agencies is changing. Here’s what agencies need to understand about AI-driven discovery.</p>
+          <span class="insight-more">Read article →</span>
+        </a>
+        <a class="insight-card" href="https://digitalgate.com.au/local-seo-real-estate-vendor-leads">
+          <span class="insight-kicker">Lead Generation · Real Estate</span>
+          <h3>How Local SEO Helps Real Estate Agents Generate Vendor Leads</h3>
+          <p>Build local authority, attract sellers earlier, and reduce reliance on paid leads as discovery shifts across search and AI.</p>
+          <span class="insight-more">Read article →</span>
+        </a>
+        <a class="insight-card" href="#automation-ai">
+          <span class="insight-kicker">Coming next</span>
+          <h3>Automation, systems and conversion</h3>
+          <p>The next cluster will cover how visibility becomes enquiry — and how connected systems reduce the manual work in between.</p>
+          <span class="insight-more">Cluster in build →</span>
+        </a>
+      </div>
+
+      <p class="insight-kicker" id="search-seo" style="margin-bottom:0.85rem;">Search &amp; SEO</p>
+      <div class="insight-grid">
+        <a class="insight-card" href="https://digitalgate.com.au/local-seo-in-the-age-of-ai-search">
+          <span class="insight-kicker">Search &amp; SEO</span>
+          <h3>Local SEO in the Age of AI Search</h3>
+          <p>Local SEO used to mean ranking in the map pack. AI search now also asks whether your business is clear, consistent and recommendable.</p>
+          <span class="insight-more">Read article →</span>
+        </a>
+        <div class="insight-card" id="automation-ai" style="border-style:dashed;">
+          <span class="insight-kicker">Automation &amp; AI</span>
+          <h3>Practical automation in everyday operations</h3>
+          <p>This cluster is next: workflows, communications and the manual work that disconnected systems create.</p>
+        </div>
+        <div class="insight-card" id="business-systems" style="border-style:dashed;">
+          <span class="insight-kicker">Business Systems</span>
+          <h3>CRM, websites and connected platforms</h3>
+          <p>How businesses move from collections of tools toward one operating foundation — Core, Apps and a Digital Twin™.</p>
+        </div>
+      </div>
+      <p id="industry-insights" class="subscribe-note" style="margin-top:1.25rem;text-align:left;">Industry Insights currently concentrate on real estate. Accommodation, professional services and other verticals will follow as DigitalGate’s founding work expands.</p>
+    </div>
+  </section>
+
+  <section class="alt" id="subscribe">
+    <div class="container">
+      <div class="subscribe-box">
+        <span class="sub-label">Occasional briefing</span>
+        <h2>Stay ahead of the digital shift</h2>
+        <p>Practical insights on AI search, visibility, automation and connected business — delivered occasionally. The free Business Audit remains the primary next step.</p>
+        <form action="https://digitalgate.com.au/contact" method="get">
+          <input type="hidden" name="interest" value="Insights">
+          <input type="email" name="email" required placeholder="Email address" aria-label="Email address">
+          <button type="submit" class="btn-secondary">Subscribe →</button>
+        </form>
+        <p class="subscribe-note">Secondary to the Business Audit. No daily newsletter.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="insights-cta">
+    <div class="container">
+      <h2>How visible is your business to search and AI?</h2>
+      <p>Run a free DigitalGate Business Audit to see whether your business has the digital signals AI search systems need to understand and recommend you — then book a strategy session to discuss what we’d fix first.</p>
+      <div class="actions">
+        <a href="https://audit.digitalgate.com.au" class="btn-primary">Get My Free Business Audit →</a>
+        <a href="https://digitalgate.com.au/strategy-session" class="btn-secondary">Book a Strategy Session →</a>
+      </div>
+    </div>
+  </section>
+
+</div>

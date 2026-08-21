@@ -1,0 +1,256 @@
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Business Brain™ | DigitalGate</title>
+<meta name="description" content="Connect the systems that run your business, give AI the context to understand them, and turn disconnected information into intelligent action.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Sora:wght@600;700;800&amp;family=Inter:wght@400;600;700;800&amp;display=swap" onload="this.onload=null;this.rel='stylesheet'">
+<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sora:wght@600;700;800&amp;family=Inter:wght@400;600;700;800&amp;display=swap"></noscript>
+<style>
+  .dg-bb * { margin: 0; padding: 0; box-sizing: border-box; }
+  .dg-bb {
+    font-family: Inter, system-ui, sans-serif;
+    background: #0A0E17;
+    color: #F9FAFB;
+    line-height: 1.65;
+  }
+  .dg-bb .container { max-width: 920px; margin: 0 auto; padding: 0 2rem; }
+  .dg-bb h1, .dg-bb h2, .dg-bb h3 { font-family: Sora, Inter, sans-serif; color: #F9FAFB; }
+  .dg-bb a { color: inherit; text-decoration: none; }
+  .dg-bb section { padding: 3.5rem 0; border-top: 1px solid #1E293B; }
+  .dg-bb section.alt { background: #111827; }
+  .dg-bb .sub-label {
+    display: inline-block; font-size: 0.68rem; font-weight: 700; letter-spacing: 0.12em;
+    text-transform: uppercase; color: #93C5FD; margin-bottom: 0.65rem;
+  }
+  .dg-bb .hero {
+    padding: 7rem 0 4.5rem; text-align: center; border-top: none;
+    background: linear-gradient(180deg, #05070A 0%, #0A0E17 100%);
+  }
+  .dg-bb .hero h1 {
+    font-size: clamp(2rem, 4.5vw, 3.1rem); font-weight: 800; line-height: 1.12;
+    letter-spacing: -0.03em; margin-bottom: 1rem;
+  }
+  .dg-bb .hero .lead {
+    color: #CBD5E1; font-size: 1.08rem; max-width: 720px; margin: 0 auto 1.75rem; line-height: 1.7;
+  }
+  .dg-bb .actions { display: flex; flex-wrap: wrap; gap: 0.55rem; justify-content: center; }
+  .btn-primary, .btn-secondary {
+    display: inline-flex; align-items: center; gap: 8px; padding: 0.85rem 1.6rem;
+    border-radius: 999px; font-weight: 700; font-size: 0.9rem; transition: all 0.2s;
+  }
+  .btn-primary { background: linear-gradient(105deg, #3B82F6, #2563EB); color: #fff !important; }
+  .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(59,130,246,0.35); }
+  .btn-secondary { background: rgba(30,41,59,0.9); border: 1px solid #334155; color: #E2E8F0 !important; }
+  .btn-secondary:hover { border-color: #3B82F6; color: #fff !important; }
+  .dg-bb .section-header { max-width: 760px; margin-bottom: 1.5rem; }
+  .dg-bb .section-header h2 {
+    font-size: clamp(1.35rem, 2.8vw, 1.85rem); font-weight: 800; margin-bottom: 0.55rem;
+  }
+  .dg-bb .section-header p, .dg-bb .prose p { color: #94A3B8; margin-bottom: 0.85rem; }
+  .dg-bb .prose strong { color: #E2E8F0; }
+  .stack-list { list-style: none; display: grid; gap: 0.45rem; margin: 1rem 0; }
+  .stack-list li {
+    padding: 0.7rem 1rem; border-radius: 10px; border: 1px solid #334155;
+    background: #0A0E17; color: #CBD5E1; font-size: 0.92rem;
+  }
+  .chip-row { display: flex; flex-wrap: wrap; gap: 0.45rem; margin: 1rem 0; }
+  .chip-row span {
+    font-size: 0.75rem; font-weight: 600; padding: 0.35rem 0.8rem; border-radius: 999px;
+    border: 1px solid #334155; background: rgba(15,23,42,0.8); color: #CBD5E1;
+  }
+  .flow-steps { display: grid; gap: 0.35rem; margin: 1rem 0; max-width: 28rem; }
+  .flow-steps span {
+    display: block; padding: 0.65rem 1rem; border-radius: 10px;
+    background: #0A0E17; border: 1px solid #334155; color: #E2E8F0; font-size: 0.9rem;
+  }
+  .flow-steps .arrow { text-align: center; color: #64748B; border: none; background: transparent; padding: 0.15rem; }
+  .example {
+    margin: 1.25rem 0; padding: 1.15rem 1.25rem; border-radius: 14px;
+    border: 1px solid rgba(59,130,246,0.35); background: rgba(59,130,246,0.08);
+    color: #E2E8F0; font-size: 0.95rem; line-height: 1.65;
+  }
+  .map-table { width: 100%; border-collapse: collapse; margin: 1.25rem 0; font-size: 0.85rem; }
+  .map-table th, .map-table td {
+    text-align: left; padding: 0.65rem 0.75rem; border-bottom: 1px solid #1E293B; vertical-align: top;
+  }
+  .map-table th { color: #93C5FD; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.08em; }
+  .map-table td { color: #CBD5E1; }
+  .map-table td:nth-child(2) { color: #94A3B8; }
+  .cta-band {
+    text-align: center; padding: 4.5rem 0;
+    background: linear-gradient(180deg, #111827, #05070A);
+  }
+  .cta-band h2 { font-size: clamp(1.4rem, 3vw, 1.9rem); font-weight: 800; margin-bottom: 0.65rem; }
+  .cta-band p { color: #94A3B8; max-width: 560px; margin: 0 auto 1.35rem; }
+  @media (max-width: 640px) {
+    .dg-bb .hero { padding-top: 5.25rem; }
+    .map-table { font-size: 0.78rem; }
+  }
+</style>
+
+<div class="dg-bb">
+
+  <section class="hero">
+    <div class="container">
+      <span class="sub-label">Business Brain™</span>
+      <h1>Give your business a brain.</h1>
+      <p class="lead">Connect the systems that run your business, give AI the context to understand them, and turn disconnected information into intelligent action.</p>
+      <div class="actions">
+        <a href="https://app.digitalgate.com.au" class="btn-primary">Explore DigitalGate →</a>
+        <a href="/#connected-business" class="btn-secondary">See Connected Business</a>
+      </div>
+    </div>
+  </section>
+
+  <section id="disconnected">
+    <div class="container">
+      <div class="section-header">
+        <span class="sub-label">01 — The disconnected business</span>
+        <h2>Most businesses aren’t lacking software. They’re lacking connection.</h2>
+      </div>
+      <div class="prose">
+        <p>Website in one place. CRM somewhere else. Marketing somewhere else. Accounting somewhere else. Customer conversations elsewhere. Analytics somewhere else.</p>
+        <p><strong>The owner is forced to join the dots</strong> — remembering who called, what needs following up, which leads came from where, what the website is doing, which invoices are outstanding.</p>
+        <p>That’s an unreasonable amount of processing for one person.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="alt" id="connect">
+    <div class="container">
+      <div class="section-header">
+        <span class="sub-label">02 — Connect the business</span>
+        <h2>DigitalGate connects the parts into one operating platform</h2>
+      </div>
+      <div class="chip-row">
+        <span>CRM</span><span>Website</span><span>Infrastructure</span><span>Commerce</span>
+        <span>Industry Apps</span><span>Growth Apps</span><span>Communications</span>
+        <span>Analytics</span><span>Reputation</span><span>Automation</span><span>External connectors</span>
+      </div>
+      <p class="prose" style="color:#94A3B8;">One business context. One source of truth. One place to understand what is happening.</p>
+    </div>
+  </section>
+
+  <section id="context">
+    <div class="container">
+      <div class="section-header">
+        <span class="sub-label">03 — Create business context</span>
+        <h2>Digital Twin™ — awareness of the living business</h2>
+        <p>Your Digital Twin gives DigitalGate a continuously developing picture of your business.</p>
+      </div>
+      <div class="chip-row">
+        <span>Business Profile</span><span>Customers</span><span>Opportunities</span><span>Website</span>
+        <span>Marketing</span><span>Revenue</span><span>Goals</span><span>Activity</span><span>Performance</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="alt" id="brain">
+    <div class="container">
+      <div class="section-header">
+        <span class="sub-label">04 — Give it a brain</span>
+        <h2>Business Brain™ — the intelligence layer</h2>
+        <p>Built on connected business context so AI can understand what matters — not invent generic advice.</p>
+      </div>
+      <ul class="stack-list">
+        <li>Business knowledge &amp; documents</li>
+        <li>Goals and positioning</li>
+        <li>Digital Twin live state</li>
+        <li>CRM records and opportunities</li>
+        <li>Website and performance data</li>
+        <li>Industry context &amp; platform documentation</li>
+      </ul>
+    </div>
+  </section>
+
+  <section id="think">
+    <div class="container">
+      <div class="section-header">
+        <span class="sub-label">05 — Think</span>
+        <h2>AI Advisor / Platform Intelligence</h2>
+      </div>
+      <div class="example">
+        “Your commercial enquiries have increased 23% this month, but follow-up time has increased. Three opportunities have had no activity for more than five days.”
+      </div>
+      <div class="chip-row">
+        <span>What matters</span><span>Why it matters</span><span>What should happen next</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="alt" id="act">
+    <div class="container">
+      <div class="section-header">
+        <span class="sub-label">06 — Act</span>
+        <h2>Automation and AI Actions</h2>
+        <p>Intelligence without action isn’t enough.</p>
+      </div>
+      <div class="flow-steps">
+        <span>New lead arrives</span>
+        <span class="arrow">↓</span>
+        <span>CRM creates contact</span>
+        <span class="arrow">↓</span>
+        <span>Opportunity created · Lead scored</span>
+        <span class="arrow">↓</span>
+        <span>Follow-up task · Email / SMS · Salesperson notified</span>
+        <span class="arrow">↓</span>
+        <span>Outcome recorded</span>
+      </div>
+    </div>
+  </section>
+
+  <section id="learn">
+    <div class="container">
+      <div class="section-header">
+        <span class="sub-label">07 — Learn</span>
+        <h2>The business continuously becomes more understandable</h2>
+      </div>
+      <div class="prose">
+        <p>Results feed back into the Digital Twin and Business Brain.</p>
+        <p>DigitalGate isn’t “AI gives you answers.” It’s a living system where understanding compounds — so the next recommendation is sharper than the last.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="alt" id="body">
+    <div class="container">
+      <div class="section-header">
+        <span class="sub-label">Connected systems</span>
+        <h2>Your business has many parts. They work better when they’re connected.</h2>
+        <p>A strategic map — not a medical diagram. The exact analogy stays illustrative.</p>
+      </div>
+      <table class="map-table">
+        <thead>
+          <tr><th>Business function</th><th>Analogy</th><th>DigitalGate</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Business knowledge</td><td>Memory</td><td>Business Brain / Knowledge</td></tr>
+          <tr><td>Digital Twin</td><td>Awareness</td><td>Digital Twin™</td></tr>
+          <tr><td>AI</td><td>Intelligence</td><td>Business Brain™</td></tr>
+          <tr><td>CRM</td><td>Relationships</td><td>CRM</td></tr>
+          <tr><td>Automation</td><td>Nervous system</td><td>Automation</td></tr>
+          <tr><td>Communications</td><td>Voice</td><td>AI Communications</td></tr>
+          <tr><td>Website / Brand</td><td>Appearance</td><td>Design Studio</td></tr>
+          <tr><td>Commerce</td><td>Circulation</td><td>Commerce</td></tr>
+          <tr><td>Infrastructure</td><td>Foundations</td><td>Infrastructure</td></tr>
+          <tr><td>Analytics</td><td>Senses</td><td>Analytics</td></tr>
+          <tr><td>Growth</td><td>Movement</td><td>Growth Apps</td></tr>
+        </tbody>
+      </table>
+      <p class="prose"><strong>A business doesn’t become powerful because it has more parts. It becomes powerful when those parts work together.</strong></p>
+    </div>
+  </section>
+
+  <section class="cta-band">
+    <div class="container">
+      <h2>Connect your business. Give it a brain.</h2>
+      <p>DigitalGate — The Gateway to Your Digital World™</p>
+      <div class="actions">
+        <a href="https://app.digitalgate.com.au" class="btn-primary">Explore DigitalGate →</a>
+        <a href="/from-dumb-businesses-to-smart-businesses/" class="btn-secondary">Read the Featured Insight</a>
+      </div>
+    </div>
+  </section>
+
+</div>
