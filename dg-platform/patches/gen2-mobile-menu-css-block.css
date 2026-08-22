@@ -1,0 +1,51 @@
+/* Gen 2: ensure DG mobile drawer can expand (chrome CSS is hoisted; scripts are stripped) */
+@media (max-width: 880px) {
+  .wb-site-chrome .dg-mobile-menu-btn {
+    display: flex !important;
+    pointer-events: auto !important;
+    z-index: 120 !important;
+  }
+
+  .wb-site-chrome .dg-nav-links {
+    position: absolute !important;
+    top: 100% !important;
+    left: 0 !important;
+    right: 0 !important;
+    width: 100% !important;
+    /* Avoid max-height transitions — live chrome CSS + min() left the drawer stuck at 0 */
+    max-height: none !important;
+    height: auto !important;
+    transition: none !important;
+    overflow: hidden !important;
+    display: none !important;
+    flex-direction: column !important;
+    background: #0b1120 !important;
+    z-index: 200 !important;
+    pointer-events: none !important;
+    padding: 0 !important;
+  }
+
+  .wb-site-chrome .dg-nav-links.open {
+    display: flex !important;
+    max-height: 85vh !important;
+    overflow-y: auto !important;
+    padding: 20px 16px 24px !important;
+    pointer-events: auto !important;
+    box-shadow: 0 20px 30px rgba(0, 0, 0, 0.35) !important;
+  }
+
+  /* Only hide the Gen2 fallback hamburger once native DG menu is bound.
+     Hiding on :has(#dgMobileBtn) alone left a dead native button with no fallback. */
+  .wb-chrome-html.dg-menu-bound:has(#dgMobileBtn) .wb-chrome-html-menu-btn,
+  .wb-chrome-html.dg-menu-bound:has(.dg-mobile-menu-btn) .wb-chrome-html-menu-btn {
+    display: none !important;
+  }
+
+  .wb-site-chrome .dg-header {
+    overflow: visible !important;
+  }
+
+  .wb-site-chrome .dg-header-container {
+    z-index: 121 !important;
+  }
+}

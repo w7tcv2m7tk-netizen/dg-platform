@@ -199,6 +199,18 @@
   }
 
   /* ===== MOBILE MENU BUTTON ===== */
+  .dg-mobile-nav-toggle {
+    position: absolute;
+    opacity: 0;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    border: 0;
+    pointer-events: none;
+  }
   .dg-mobile-menu-btn {
     display: none;
     background: rgba(59, 130, 246, 0.1);
@@ -215,6 +227,7 @@
     align-items: center;
     justify-content: center;
     transition: all 0.2s;
+    box-sizing: border-box;
   }
   .dg-mobile-menu-btn:hover {
     background: rgba(59, 130, 246, 0.2);
@@ -265,6 +278,22 @@
       padding: 20px 16px 24px;
       gap: 4px;
       overflow-y: auto;
+    }
+    /* No-JS / Gen2 script-stripped fallback: checkbox label toggle.
+       Higher specificity + !important beats Gen2 chrome max-height:0 rules. */
+    .wb-site-chrome:has(#dgMobileNavToggle:checked) .dg-nav-links,
+    .dg-header-container:has(#dgMobileNavToggle:checked) .dg-nav-links,
+    #dgMobileNavToggle:checked ~ .dg-nav-links {
+      display: flex !important;
+      max-height: 85vh !important;
+      transition: none !important;
+      overflow-y: auto !important;
+      padding: 20px 16px 24px !important;
+      pointer-events: auto !important;
+      gap: 4px !important;
+    }
+    #dgMobileNavToggle:checked + .dg-mobile-menu-btn .fa-bars::before {
+      content: "\f00d";
     }
     .dg-nav-links > li {
       width: 100%;
@@ -375,9 +404,10 @@
       <img src="https://digitalgate.com.au/wp-content/uploads/2026/05/Gate-Icon-Light-Door-scaled.png" alt="DigitalGate" class="dg-gate-icon">
       <img src="https://digitalgate.com.au/wp-content/uploads/2026/05/DigitalGate-Banner-Light.png" alt="DigitalGate Logo" class="dg-full-logo">
     </a>
-    <button class="dg-mobile-menu-btn" id="dgMobileBtn" aria-label="Menu" aria-expanded="false">
-      <i class="fas fa-bars"></i>
-    </button>
+    <input type="checkbox" id="dgMobileNavToggle" class="dg-mobile-nav-toggle" tabindex="-1" aria-hidden="true">
+    <label class="dg-mobile-menu-btn" id="dgMobileBtn" for="dgMobileNavToggle" aria-label="Menu" aria-controls="dgNavLinks" aria-expanded="false" role="button">
+      <i class="fas fa-bars" aria-hidden="true"></i>
+    </label>
     <ul class="dg-nav-links" id="dgNavLinks">
 
       <!-- Platform -->
@@ -478,6 +508,7 @@
 <script>
   (function() {
     var mobileBtn = document.getElementById('dgMobileBtn');
+    var navToggle = document.getElementById('dgMobileNavToggle');
     var navMenu = document.getElementById('dgNavLinks');
     var body = document.body;
     var toggles = document.querySelectorAll('.dg-dropdown-toggle');
@@ -493,33 +524,35 @@
       });
     }
 
-    function closeMobileMenu() {
+    function setMobileMenuOpen(isOpen) {
       if (!navMenu) return;
-      navMenu.classList.remove('open');
-      body.classList.remove('menu-open');
+      navMenu.classList.toggle('open', isOpen);
+      body.classList.toggle('menu-open', isOpen);
+      if (navToggle) navToggle.checked = !!isOpen;
       if (mobileBtn) {
-        mobileBtn.setAttribute('aria-expanded', 'false');
-        var icon = mobileBtn.querySelector('i');
-        if (icon) {
-          icon.classList.remove('fa-times');
-          icon.classList.add('fa-bars');
-        }
-      }
-      closeAllDropdowns();
-    }
-
-    if (mobileBtn && navMenu) {
-      mobileBtn.addEventListener('click', function(e) {
-        e.stopPropagation();
-        var isOpen = navMenu.classList.toggle('open');
-        body.classList.toggle('menu-open', isOpen);
         mobileBtn.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
         var icon = mobileBtn.querySelector('i');
         if (icon) {
           icon.classList.toggle('fa-bars', !isOpen);
-          icon.classList.toggle('fa-times', isOpen);
+          icon.classList.toggle('fa-times', !!isOpen);
         }
-        if (!isOpen) closeAllDropdowns();
+      }
+      if (!isOpen) closeAllDropdowns();
+    }
+
+    function closeMobileMenu() {
+      setMobileMenuOpen(false);
+    }
+
+    if (navToggle && navMenu) {
+      navToggle.addEventListener('change', function() {
+        setMobileMenuOpen(navToggle.checked);
+      });
+    } else if (mobileBtn && navMenu) {
+      mobileBtn.addEventListener('click', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        setMobileMenuOpen(!navMenu.classList.contains('open'));
       });
     }
 
