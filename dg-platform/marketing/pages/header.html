@@ -250,15 +250,18 @@
       flex-direction: column;
       padding: 0;
       gap: 0;
-      max-height: 0;
+      max-height: none;
+      height: auto;
+      display: none;
       overflow: hidden;
-      transition: max-height 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+      transition: none;
       z-index: 999;
       box-shadow: 0 20px 30px rgba(0, 0, 0, 0.3);
       border-bottom: 1px solid rgba(59, 130, 246, 0.2);
     }
     .dg-nav-links.open {
-      max-height: 920px;
+      display: flex;
+      max-height: 85vh;
       padding: 20px 16px 24px;
       gap: 4px;
       overflow-y: auto;
@@ -351,7 +354,7 @@
     .dg-gate-icon { width: 24px; height: 24px; }
     .dg-full-logo { height: 20px; }
     .dg-mobile-menu-btn { width: 40px; height: 40px; font-size: 16px; }
-    .dg-nav-links.open { padding: 16px 12px 20px; max-height: 85vh; }
+    .dg-nav-links.open { display: flex; padding: 16px 12px 20px; max-height: 85vh; }
     .dg-nav-links > li > a { font-size: 15px; padding: 12px 10px; }
     .dg-dropdown a { font-size: 14px; padding: 10px 16px; }
     .dg-nav-links .dg-nav-cta,
