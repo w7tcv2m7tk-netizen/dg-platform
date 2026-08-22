@@ -21,6 +21,11 @@ Align Stripe with the DigitalGate pricing framework (Platform · Growth Systems 
 
 > **Do not delete** old links if existing customers subscribe through them. **Deactivate** and set redirects in Stripe (Payment Link settings → After payment → or use Stripe Dashboard note).
 
+**Public website Professional Services:**  
+- **Website Migration & DigitalGate Setup** — From $1,497 one-time (existing site → live on DigitalGate Infrastructure; no redesign)  
+- **Website Build** — From $1,997 one-time (new site only; do not publish Launch/Growth/Business/Custom package tables)  
+Internal Build quote bands: Entry $1,997+ · Growth $3,497+ · Business $5,497+ · Custom $7,500+.
+
 ---
 
 ## 2. Create new Products (Stripe → Product catalogue)
@@ -44,19 +49,27 @@ Enterprise = **no Payment Link** → Contact Sales only.
 | DG Growth — Authority | A$1,997.00 | Monthly |
 | DG Growth — Growth Partner | A$2,997.00 | Monthly |
 
-### Industry Apps (+$99/mo each)
-| Product name | Stripe key in HTML |
-|--------------|-------------------|
-| DG App — Real Estate | `app-real-estate` |
-| DG App — Finance | `app-finance` |
-| DG App — Accommodation | `app-accommodation` |
-| DG App — Services | `app-services` |
-| DG App — Automotive | `app-automotive` |
-| DG App — Commercial | `app-commercial` |
+### Industry Apps (+$99/mo) + Industry Templates (+$29/mo each extra)
+
+Canonical rule: **Industry App $99** includes **1 Template**; additional Templates **+$29/mo**. Do not create separate $99 Industry products for Real Estate, Commercial, or Accommodation — those are Templates under Property / Hospitality & Accommodation.
+
+| Product name | Stripe key in HTML | Notes |
+|--------------|-------------------|--------|
+| DG Industry — Property | `app-property` | Includes 1 Template (e.g. Real Estate) |
+| DG Industry — Hospitality & Accommodation | `app-hospitality-accommodation` | Includes 1 Template (e.g. Short-Stay) |
+| DG Industry — Services | `app-services` | Includes 1 Template (e.g. Cleaning) |
+| DG Industry — Finance | `app-finance` | Includes 1 Template (e.g. Accounting) |
+| DG Industry — Automotive | `app-automotive` | |
+| DG Industry — Creator & Media | `app-creator` | |
+| DG Template — additional (generic) | `template-extra` | A$29/mo — or one product per Template |
+| Legacy: Real Estate / Accommodation / Commercial | `app-real-estate` etc. | Alias / migrate to Industry + Template; do not sell as separate Industries |
+
+Platform checkout already computes Industry + extra Template line items via `industryCheckoutLines()` in platform-core.
 
 ### Premium Apps
 | Product name | Stripe key in HTML |
 |--------------|-------------------|
+| DG Premium — Prospecting & Opportunity Engine (+$99/mo) | `premium-prospecting` — create Payment Link when Stripe product exists |
 | DG Premium — AI Visibility Pro | `premium-ai-visibility` |
 | DG Premium — SEO Pro | `premium-seo` |
 | DG Premium — Automation Pro | `premium-automation` |

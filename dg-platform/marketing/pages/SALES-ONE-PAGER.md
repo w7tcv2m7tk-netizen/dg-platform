@@ -41,11 +41,12 @@ DigitalGate is a **multi-vertical business operating platform** — CRM, automat
 |--------|-------|----------|
 | SEO Pro | +$99/mo | Semrush Guru (~$390/mo) + Rank Math |
 | AI Visibility Pro | +$99/mo | AI SEO tools (~$310/mo) |
+| Prospecting & Opportunity Engine | +$99/mo | Separate prospecting CRM / list tools (~$100–300/mo) |
 | Automation Pro | +$49/mo | Zapier Pro + AC sequences (~$220/mo) |
 | Analytics Pro | +$49/mo | Databox (~$130/mo) |
 | Social Pro | +$79/mo | Hootsuite/Buffer (~$230/mo) |
 | Industry app (each) | +$99/mo | Vertical CRM (~$200–$450/mo) |
-| Voice AI | +$99/mo | Vapi + CRM wiring (~$150/mo) |
+| AI Communications / Voice | +$99/mo | Vapi + CRM wiring (~$150/mo) |
 | White Label | +$199/mo | SuiteDash white-label |
 | Extra users | +$29/user | — |
 | Training & onboarding | $497 one-time | — |
@@ -119,7 +120,7 @@ DigitalGate is a **multi-vertical business operating platform** — CRM, automat
 | Buyer Portal (Roe) | Not built | Don't mention unless asked |
 | Finance, Services, Automotive, Commercial | Preview | "Pipeline CRM available — full workflows on roadmap. Founding pricing." |
 | Visual workflow builder | Coming soon | "Automation Pro handles multi-step today; visual builder next" |
-| REA/Domain syndication | Not built | "Manual listing management today" |
+| REA / Domain syndication | REA partner verified; publish in progress · Domain sandbox MVP | "Realestate.com.au integration — Partner-enabled" · manual listing management where needed |
 | DocuSign integration | Coming soon | "Token-based e-sign works; DocuSign next" |
 | GSC / Google Business Profile | Stubs | Don't sell as live integrations |
 

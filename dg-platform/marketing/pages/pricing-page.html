@@ -1,7 +1,7 @@
 <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <title>DigitalGate Platform | Business Operating System for Modern Businesses</title>
-  <meta name="description" content="The Business Operating System for modern businesses. Connect website, CRM, marketing, AI, automation, payments and customer data into one intelligent platform. Modular industry apps. From $99/mo.">
+  <title>Pricing | DigitalGate Business Platform</title>
+  <meta name="description" content="Platform from $99/mo. Industry Apps $99 with 1 Template included; extra Templates +$29. Website Build from $1,997.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
   <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&amp;display=swap" onload="this.onload=null;this.rel='stylesheet'">
@@ -47,20 +47,19 @@
     }
     .container { max-width: 1280px; margin: 0 auto; padding: 0 2rem; }
 
-    /* ============================================================ */
-    /* ===== HERO - FULL SCREEN WITH ANIMATIONS ===== */
-    /* ============================================================ */
+    /* ===== HERO — compact (aligned with inner pages; home only is fullscreen) ===== */
     .hero-pricing {
       position: relative;
       width: 100%;
-      height: 100vh;
-      height: 100dvh;
+      min-height: 0;
+      height: auto;
       display: flex;
       align-items: center;
       justify-content: center;
       overflow: hidden;
       background: #05070A;
-      padding: 0;
+      padding: 7rem 0 4.5rem;
+      text-align: center;
     }
 
     .hero-pricing .hero-bg-glow {
@@ -581,6 +580,7 @@
       transition: all 0.2s; 
     }
     .cta-button:hover { background: linear-gradient(105deg, #5695ff, #3B82F6); transform: translateY(-2px); gap: 16px; }
+    .cta-section .hero-cta-row { margin-top: 0.25rem; }
 
     /* ============================================================ */
     /* ===== FAQ SECTION ===== */
@@ -615,6 +615,8 @@
       text-decoration: none; transition: all 0.25s ease; font-family: 'Inter', sans-serif;
     }
     .dg-app-card .btn-app:hover { border-color: #3B82F6; color: #FFFFFF; background: rgba(59,130,246,0.08); }
+    .dg-app-card .app-name a { color: inherit; text-decoration: none; }
+    .dg-app-card .app-name a:hover { color: #93C5FD; }
     @media (max-width: 1200px) { .apps-grid-6 { grid-template-columns: repeat(3, 1fr); } .apps-grid-7 { grid-template-columns: repeat(4, 1fr); } }
     @media (max-width: 1024px) { .pricing-grid-4 { grid-template-columns: repeat(2, 1fr); } .how-buy { grid-template-columns: 1fr; } .apps-grid-5 { grid-template-columns: repeat(3, 1fr); } .apps-grid-6 { grid-template-columns: repeat(2, 1fr); } .apps-grid-7 { grid-template-columns: repeat(3, 1fr); } .apps-grid-4 { grid-template-columns: repeat(2, 1fr); } .apps-grid-3 { grid-template-columns: repeat(2, 1fr); } }
     @media (max-width: 768px) { .pricing-grid-4 { grid-template-columns: 1fr; } .apps-grid-5 { grid-template-columns: repeat(2, 1fr); } .apps-grid-6 { grid-template-columns: 1fr; } .apps-grid-7 { grid-template-columns: repeat(2, 1fr); } .apps-grid-4 { grid-template-columns: repeat(2, 1fr); } .apps-grid-3 { grid-template-columns: 1fr; } .apps-grid-2 { grid-template-columns: 1fr; max-width: 320px; } }
@@ -633,7 +635,7 @@
     }
 
     @media (max-width: 768px) {
-      .hero-pricing { height: auto; min-height: 100vh; min-height: 100dvh; padding: 100px 0 60px; }
+      .hero-pricing { padding: 6rem 0 3.5rem; }
       .hero-pricing h1 { font-size: clamp(28px, 6vw, 38px); }
       .hero-pricing .hero-subtitle { font-size: 1rem; }
       .hero-pricing .hero-text { font-size: 0.95rem; }
@@ -679,6 +681,14 @@
     .hero-cta-ghost:hover { border-color: #64748B; color: #E2E8F0; }
     .hero-tagline { font-size: 1.15rem; color: #CBD5E1; max-width: 680px; margin: 0 auto 0.5rem; line-height: 1.65; }
     .hero-lede { font-size: 1rem; color: #94A3B8; max-width: 620px; margin: 0 auto; line-height: 1.6; }
+    .commercial-callout {
+      max-width: 820px; margin: 0 auto 2rem; padding: 1.25rem 1.35rem;
+      background: rgba(59,130,246,0.08); border: 1px solid rgba(59,130,246,0.22);
+      border-radius: 14px; text-align: center;
+    }
+    .commercial-callout h3 { font-size: 1.05rem; font-weight: 700; margin-bottom: 0.45rem; color: #F9FAFB !important; }
+    .commercial-callout p { color: #94A3B8; font-size: 0.92rem; line-height: 1.65; margin: 0; }
+    .commercial-callout a { color: #93C5FD; }
 
     .narrative-section, .twin-section, .stack-section, .journey-section, .core-section, .ai-section, .screenshots-section, .trust-section, .infra-section {
       padding: 72px 0; border-top: 1px solid #1E293B;
@@ -780,13 +790,20 @@
     .roadmap-col li:last-child { border-bottom: none; }
 
     .plan-outcome { font-style: italic; color: #BFDBFE; font-size: 0.88rem; margin-bottom: 0.75rem; min-height: 2.5em; }
+    .trial-note { margin-top: 0.75rem; font-size: 0.72rem; color: #64748B; line-height: 1.4; text-align: center; }
+    .how-buy { display: grid; grid-template-columns: repeat(5, 1fr); gap: 0.75rem; }
+    .how-buy-card { background:#1E293B; border:1px solid #334155; border-radius:12px; padding:1rem 0.85rem; text-align:center; }
+    .how-buy-card strong { display:block; color:#F9FAFB; font-size:0.88rem; margin-bottom:0.35rem; }
+    .how-buy-card span { color:#94A3B8; font-size:0.75rem; line-height:1.4; }
+    @media (max-width: 1024px) { .how-buy { grid-template-columns: repeat(2, 1fr); } }
+    @media (max-width: 640px) { .how-buy { grid-template-columns: 1fr; } }
 
     /* Pricing structure jump nav */
     .pricing-nav {
       padding: 2.5rem 0; background: #0A0E17; border-top: 1px solid #1E293B; border-bottom: 1px solid #1E293B;
     }
     .pricing-nav-inner {
-      display: flex; flex-wrap: wrap; justify-content: center; gap: 0.75rem; max-width: 900px; margin: 0 auto;
+      display: flex; flex-wrap: wrap; justify-content: center; gap: 0.6rem; max-width: 1100px; margin: 0 auto;
     }
     .pricing-nav a {
       display: inline-flex; align-items: center; gap: 8px; padding: 0.65rem 1.25rem; border-radius: 999px;
@@ -824,16 +841,29 @@
     .pro-service-card:hover { border-color: #3B82F6; transform: translateY(-3px); }
     .pro-service-card .pro-icon { font-size: 1.75rem; margin-bottom: 0.5rem; }
     .pro-service-card h4 { font-size: 1rem; font-weight: 700; color: #F9FAFB; margin-bottom: 0.35rem; }
-    .pro-service-card p { color: #94A3B8; font-size: 0.82rem; line-height: 1.5; flex: 1; margin-bottom: 0.75rem; }
+    .pro-service-card p { color: #94A3B8; font-size: 0.82rem; line-height: 1.5; margin-bottom: 0.75rem; }
+    .pro-service-card .pro-features {
+      list-style: none; margin: 0 0 0.85rem; padding: 0; flex: 1;
+      display: flex; flex-direction: column; gap: 0.28rem;
+    }
+    .pro-service-card .pro-features li {
+      color: #94A3B8; font-size: 0.78rem; line-height: 1.4;
+      padding-left: 0.9rem; position: relative;
+    }
+    .pro-service-card .pro-features li::before {
+      content: ""; position: absolute; left: 0; top: 0.45em;
+      width: 0.35rem; height: 0.35rem; border-radius: 50%; background: #3B82F6;
+    }
     .pro-service-card .pro-price { color: #93C5FD; font-weight: 700; font-size: 0.95rem; margin-bottom: 0.75rem; }
     .pro-service-card .pro-price span { color: #64748B; font-weight: 400; font-size: 0.78rem; }
+    .pro-service-card .pro-note { color: #64748B; font-size: 0.72rem; line-height: 1.45; margin: -0.35rem 0 0.75rem; }
 
     /* Support plans */
     .support-section { padding: 60px 0; background: #0A0E17; border-top: 1px solid #1E293B; }
-    .support-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1.25rem; }
+    .support-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1.25rem; }
     .support-card {
       background: #1E293B; border: 1px solid #334155; border-radius: 20px; padding: 1.5rem;
-      display: flex; flex-direction: column; position: relative;
+      display: flex; flex-direction: column; position: relative; min-width: 0; max-width: 100%;
     }
     .support-card.popular { border: 2px solid #3B82F6; background: #1a2a3a; }
     .support-card.included { border-color: rgba(16,185,129,0.35); background: rgba(16,185,129,0.04); }
@@ -844,13 +874,16 @@
     .support-card .support-tagline { font-size: 0.82rem; color: #94A3B8; font-style: italic; margin-bottom: 1rem; min-height: 2.5em; }
 
     @media (max-width: 1024px) {
-      .pro-services-grid, .support-grid { grid-template-columns: repeat(2, 1fr); }
-    }
-    @media (max-width: 768px) {
-      .pro-services-grid, .support-grid { grid-template-columns: 1fr; }
+      .pro-services-grid, .support-grid { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
     }
 
     @media (max-width: 768px) {
+      .pro-services-grid, .support-grid { grid-template-columns: 1fr !important; gap: 1rem; }
+      .support-section .container { padding-left: 1rem; padding-right: 1rem; }
+      .support-card .support-tagline { min-height: 0; }
+      .support-card { padding: 1.25rem; }
+      .support-card .support-price { font-size: 1.65rem; }
+      .support-card .btn-primary { width: 100%; justify-content: center; text-align: center; box-sizing: border-box; }
       .journey-grid { grid-template-columns: repeat(2, 1fr); }
       .core-grid { grid-template-columns: 1fr 1fr; }
       .ai-grid { grid-template-columns: repeat(2, 1fr); }
@@ -870,9 +903,7 @@
 
 
 
-  <!-- ============================================================ -->
-  <!-- ===== HERO - FULL SCREEN WITH ANIMATIONS ===== -->
-  <!-- ============================================================ -->
+  <!-- ===== HERO ===== -->
   <section class="hero-pricing">
 
     <!-- Background Glows -->
@@ -890,15 +921,16 @@
     <div class="constellation" id="pricingConstellation" aria-hidden="true"></div>
 
     <div class="hero-container">
-      <div class="hero-badge">AI-POWERED BUSINESS OPERATING PLATFORM</div>
-      <h1>The Gateway to Your <span class="highlight">Digital World</span>™</h1>
+      <div class="hero-badge">DIGITALGATE BUSINESS PLATFORM</div>
+      <h1>Build your business on <span class="highlight">DigitalGate</span>.</h1>
       <p class="hero-tagline">
-        Connect your website, CRM, AI, automation, payments, marketing and customer data into one intelligent Business Operating Platform.
+        AI-powered Business Operating Platform — one foundation for your operations, digital presence, industry workflows and growth.
       </p>
       <p class="hero-lede">One platform. One login. One source of truth.</p>
       <div class="hero-cta-row">
-        <a href="https://digitalgate.com.au/onboarding/" class="hero-cta-primary">Start Free Trial</a>
-        <a href="#screenshots" class="hero-cta-secondary">▶ Watch Demo</a>
+        <a href="https://digitalgate.com.au/founding-customers/#application" class="hero-cta-primary">Apply for Founding 10 →</a>
+        <a href="https://audit.digitalgate.com.au" class="hero-cta-secondary">Get My Free Business Audit →</a>
+        <a href="#platform" class="hero-cta-ghost">View pricing</a>
       </div>
     </div>
   </section>
@@ -909,12 +941,12 @@
       <div class="section-header">
         <span class="sub-label">HERO FEATURE</span>
         <h2>Your Business Digital Twin™</h2>
-        <p>A live digital representation of your business — not just another CRM.</p>
+        <p>Business context that helps you understand what matters — and what to do next.</p>
       </div>
       <div class="twin-card">
-        <h3>One model. Every system. Always learning.</h3>
+        <h3>One connected business context</h3>
         <p>
-          Your Digital Twin understands customers, marketing, website performance, SEO, AI visibility, revenue, and opportunities — then powers recommendations across every App you install.
+          As you connect CRM, website, marketing, reviews and revenue, your Digital Twin builds a clearer picture of customers, opportunities and performance — so recommendations stay grounded in how your business actually operates.
         </p>
         <div class="twin-pills">
           <span>Customers</span><span>Marketing</span><span>Website</span><span>SEO</span>
@@ -960,7 +992,7 @@
         <div class="journey-node">Social</div>
         <div class="journey-node">CRM</div>
         <div class="journey-node">Email</div>
-        <div class="journey-node">Reviews</div>
+        <div class="journey-node">Reputation</div>
         <div class="journey-node">Analytics</div>
         <div class="journey-gate">
           <strong>DigitalGate</strong>
@@ -998,21 +1030,33 @@
       <div class="section-header">
         <span class="sub-label">PLATFORM CAPABILITY</span>
         <h2>Your website isn&apos;t a separate service — it&apos;s part of the operating system</h2>
-        <p>Build, publish, and optimise from one platform. SEO and AI visibility connect directly to your CRM and automation.</p>
+        <p>Three different concepts: connect what you have, build something new, or create and manage in-product.</p>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:1rem;max-width:960px;margin:0 auto 1.75rem;">
+        <div style="background:#111827;border:1px solid #1E293B;border-radius:14px;padding:1.25rem;">
+          <p style="margin:0 0 0.4rem;font-size:0.68rem;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:#93C5FD;">Existing website</p>
+          <p style="margin:0 0 0.5rem;color:#F9FAFB;font-weight:700;font-size:0.95rem;">Website Migration &amp; DigitalGate Setup</p>
+          <p style="margin:0;color:#94A3B8;font-size:0.82rem;line-height:1.5;">Move your current site into DigitalGate Infrastructure so it runs and is managed on the platform. Not a redesign.</p>
+        </div>
+        <div style="background:#111827;border:1px solid #1E293B;border-radius:14px;padding:1.25rem;">
+          <p style="margin:0 0 0.4rem;font-size:0.68rem;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:#93C5FD;">New website</p>
+          <p style="margin:0 0 0.5rem;color:#F9FAFB;font-weight:700;font-size:0.95rem;">Website Build</p>
+          <p style="margin:0;color:#94A3B8;font-size:0.82rem;line-height:1.5;">Optional Professional Service — a new site designed, configured and launched on DigitalGate.</p>
+        </div>
+        <div style="background:#111827;border:1px solid #1E293B;border-radius:14px;padding:1.25rem;">
+          <p style="margin:0 0 0.4rem;font-size:0.68rem;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:#93C5FD;">Self-serve</p>
+          <p style="margin:0 0 0.5rem;color:#F9FAFB;font-weight:700;font-size:0.95rem;">Website Builder</p>
+          <p style="margin:0;color:#94A3B8;font-size:0.82rem;line-height:1.5;">Platform software capability — create and manage websites in DigitalGate, progressively by platform tier.</p>
+        </div>
       </div>
       <div class="stack-funnel">
-        <div class="stack-step">Platform</div><div class="stack-arrow">↓</div>
-        <div class="stack-step">Website Builder</div><div class="stack-arrow">↓</div>
-        <div class="stack-step">Choose Template</div><div class="stack-arrow">↓</div>
-        <div class="stack-step">AI Generates Content</div><div class="stack-arrow">↓</div>
-        <div class="stack-step">Publish</div><div class="stack-arrow">↓</div>
-        <div class="stack-step">SEO</div><div class="stack-arrow">↓</div>
-        <div class="stack-step">AI Visibility</div><div class="stack-arrow">↓</div>
-        <div class="stack-step">CRM</div><div class="stack-arrow">↓</div>
-        <div class="stack-step">Automation</div><div class="stack-arrow">↓</div>
-        <div class="stack-step stack-result">Analytics &amp; Business Health</div>
+        <div class="stack-step">Existing site → Migration</div><div class="stack-arrow">or</div>
+        <div class="stack-step">New site → Website Build</div><div class="stack-arrow">↓</div>
+        <div class="stack-step">DigitalGate Infrastructure</div><div class="stack-arrow">↓</div>
+        <div class="stack-step">Website Builder (manage by tier)</div><div class="stack-arrow">↓</div>
+        <div class="stack-step stack-result">One connected digital presence</div>
       </div>
-      <p style="text-align:center;margin-top:1.5rem;color:#94A3B8;font-size:0.88rem;max-width:640px;margin-left:auto;margin-right:auto;">Core platform includes website management. Advanced SEO and AI Visibility unlock as Apps when you need them.</p>
+      <p style="text-align:center;margin-top:1.5rem;color:#94A3B8;font-size:0.88rem;max-width:720px;margin-left:auto;margin-right:auto;"><strong style="color:#CBD5E1;">Platform Core</strong> includes website connection &amp; management. Migration and Build are optional Professional Services. Continuous improvement after launch sits under Professional Services, Success Plans or Growth Apps — not the migration fee.</p>
     </div>
   </section>
 
@@ -1022,17 +1066,20 @@
       <div class="section-header">
         <span class="sub-label">AI-POWERED</span>
         <h2>AI isn&apos;t a feature — it&apos;s the intelligence layer</h2>
-        <p>Every recommendation, report, and workflow is powered by connected business data.</p>
+        <p>Connected business data makes AI useful — available capabilities today; deeper AI evolving on the same foundation.</p>
+      </div>
+      <div class="commercial-callout" style="margin-bottom:2rem;">
+        <p>AI is built into DigitalGate&apos;s intelligence layer. Core AI capabilities are included according to your platform tier. Specialist AI capabilities, such as AI Visibility and AI Communications, are licensed separately where applicable.</p>
       </div>
       <div class="ai-grid">
         <div class="ai-card"><div class="ai-icon">🧠</div><h4>AI Business Advisor</h4><p>Daily briefing and strategic priorities</p></div>
-        <div class="ai-card"><div class="ai-icon">🎙️</div><h4>AI Voice Agent</h4><p>Inbound calls, qualification, CRM sync</p></div>
         <div class="ai-card"><div class="ai-icon">✍️</div><h4>AI Content</h4><p>Emails, pages, and campaign copy</p></div>
-        <div class="ai-card"><div class="ai-icon">📊</div><h4>AI Reports</h4><p>Growth reports and executive summaries</p></div>
+        <div class="ai-card"><div class="ai-icon">📊</div><h4>AI Reports</h4><p>Executive summaries from connected data</p></div>
         <div class="ai-card"><div class="ai-icon">💡</div><h4>AI Recommendations</h4><p>Opportunities ranked by impact</p></div>
-        <div class="ai-card"><div class="ai-icon">⚡</div><h4>AI Workflows</h4><p>Smart automation triggers</p></div>
-        <div class="ai-card"><div class="ai-icon">🔍</div><h4>AI Search Visibility</h4><p>Visibility across Google and AI engines</p></div>
-        <div class="ai-card"><div class="ai-icon">📈</div><h4>Business Health Score</h4><p>Live score from your Digital Twin</p></div>
+        <div class="ai-card"><div class="ai-icon">⚡</div><h4>Workflow automation</h4><p>Platform workflows across Core and Apps</p></div>
+        <div class="ai-card"><div class="ai-icon">🔍</div><h4>AI Visibility</h4><p>Readiness for Google and AI search</p></div>
+        <div class="ai-card"><div class="ai-icon">📈</div><h4>Business Health</h4><p>Signals from your Digital Twin context</p></div>
+        <div class="ai-card" style="opacity:0.75;border-style:dashed;"><div class="ai-icon">🎙️</div><h4>AI Voice Agents</h4><p>In development — inbound calls and qualification</p></div>
       </div>
     </div>
   </section>
@@ -1081,13 +1128,13 @@
     <div class="container">
       <div class="section-header">
         <span class="sub-label">PROVEN IN PRODUCTION</span>
-        <h2>Built and tested in real businesses before public release</h2>
-        <p>Not a concept — live deployments powering daily operations.</p>
+        <h2>Built in real businesses. Opening to founding customers.</h2>
+        <p>DigitalGate, Currumbin Valley Hideaway and Roe Realty run on the platform today — the Founding Customer Programme opens that foundation to more businesses.</p>
       </div>
       <div class="trust-logos">
-        <div class="trust-logo"><strong>Roe Realty</strong><span>Real Estate · Scale tier · Live</span></div>
-        <div class="trust-logo"><strong>Currumbin Valley Hideaway</strong><span>Accommodation · Live</span></div>
-        <div class="trust-logo"><strong>DigitalGate</strong><span>Platform · Command Centre · Live</span></div>
+        <div class="trust-logo"><strong>Roe Realty</strong><span>Real Estate · Founding reference</span></div>
+        <div class="trust-logo"><strong>Currumbin Valley Hideaway</strong><span>Hospitality &amp; Accommodation · Founding reference</span></div>
+        <div class="trust-logo"><strong>DigitalGate</strong><span>Platform · Command Centre</span></div>
       </div>
     </div>
   </section>
@@ -1099,340 +1146,399 @@
         <a href="#platform"><span class="num">1</span> Platform</a>
         <a href="#apps"><span class="num">2</span> Apps</a>
         <a href="#professional-services"><span class="num">3</span> Professional Services</a>
-        <a href="#support-plans"><span class="num">4</span> Support Plans</a>
+        <a href="#customer-success"><span class="num">4</span> Customer Success</a>
+        <a href="#founding"><span class="num">★</span> Founding</a>
       </div>
     </div>
   </nav>
 
-  <!-- ===== PLATFORM PRICING ===== -->
+  <!-- ===== COMMERCIAL MODEL LOCK ===== -->
+  <section class="stack-section" id="commercial-model" style="padding:2.5rem 0;background:#111827;">
+    <div class="container">
+      <div class="section-header" style="margin:0 auto 1.5rem;">
+        <span class="sub-label">HOW DIGITALGATE IS SOLD</span>
+        <h2>Platform · Apps · Services · Success · Intelligence</h2>
+        <p>Clear commercial layers — so you always know what you&apos;re buying.</p>
+      </div>
+      <div class="how-buy" style="max-width:960px;margin:0 auto;">
+        <div class="how-buy-card"><strong>Platform</strong><span>The operating system</span></div>
+        <div class="how-buy-card"><strong>Apps</strong><span>Add-ons — Core · Infra · Industry · Growth</span></div>
+        <div class="how-buy-card"><strong>Professional Services</strong><span>People — optional; never required</span></div>
+        <div class="how-buy-card"><strong>Customer Success</strong><span>Ongoing support plans</span></div>
+        <div class="how-buy-card"><strong>Intelligence layer</strong><span>AI · Twin · Automation · Intelligence — across everything</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== 01 PLATFORM ===== -->
   <section class="platform-section" id="platform">
     <div class="container">
       <div class="section-header">
-        <span class="sub-label">☁️ 1 · PLATFORM</span>
+        <span class="sub-label">01 · PLATFORM</span>
         <h2>The platform is the product</h2>
         <p>Start with the core operating system. Add Apps and services only when you need them.</p>
+      </div>
+      <div class="commercial-callout founding-benefit">
+        <span class="sub-label" style="display:block;margin-bottom:0.5rem;">FOUNDING CUSTOMER BENEFIT</span>
+        <p>Founding customers receive early access to selected Apps and capabilities as they become commercially ready.</p>
       </div>
       <div class="pricing-grid pricing-grid-4">
 
         <div class="pricing-card" data-dg-plan="platform-starter">
           <div class="plan-name"><span class="plan-icon">🚀</span>Starter</div>
-          <p class="plan-outcome">&ldquo;For businesses replacing spreadsheets.&rdquo;</p>
-          <div class="plan-price">$99<span>/month</span></div>
+          <p class="plan-outcome">&ldquo;Platform Core essentials for one operator.&rdquo;</p>
+          <div class="plan-price">$99<span>/mo</span></div>
           <div class="plan-users">1 User</div>
           <ul class="feature-list">
-            <li><span class="dg-ic dg-ic-check" aria-hidden="true"></span> Platform Core</li>
-            <li><span class="dg-ic dg-ic-check" aria-hidden="true"></span> CRM &amp; Dashboard</li>
+            <li><span class="dg-ic dg-ic-check" aria-hidden="true"></span> Platform Core essentials</li>
             <li><span class="dg-ic dg-ic-check" aria-hidden="true"></span> AI Assistant</li>
-            <li><span class="dg-ic dg-ic-check" aria-hidden="true"></span> Digital Twin snapshot</li>
+            <li><span class="dg-ic dg-ic-check" aria-hidden="true"></span> Standard support</li>
           </ul>
-          <a href="https://digitalgate.com.au/onboarding/" class="btn-primary"><span class="dg-ic dg-ic-card" aria-hidden="true"></span> Start Free Trial</a>
+          <a href="https://digitalgate.com.au/founding-customers/#application" class="btn-primary"><span class="dg-ic dg-ic-card" aria-hidden="true"></span> Apply for Founding 10 →</a>
         </div>
 
         <div class="pricing-card popular" data-dg-plan="platform-professional">
           <div class="popular-badge">MOST POPULAR</div>
           <div class="plan-name"><span class="plan-icon">📈</span>Growth</div>
-          <p class="plan-outcome">&ldquo;For businesses ready to automate growth.&rdquo;</p>
-          <div class="plan-price">$249<span>/month</span></div>
-          <div class="plan-users">5 Users</div>
+          <p class="plan-outcome">&ldquo;Automate, report, and run Growth-tier platform capabilities.&rdquo;</p>
+          <div class="plan-price">$249<span>/mo</span></div>
+          <div class="plan-users">Up to 5 Users</div>
           <ul class="feature-list">
             <li><span class="dg-ic dg-ic-check" aria-hidden="true"></span> <strong>Everything in Starter</strong></li>
-            <li><span class="dg-ic dg-ic-check" aria-hidden="true"></span> Automation &amp; workflows</li>
-            <li><span class="dg-ic dg-ic-check" aria-hidden="true"></span> Email + SMS</li>
-            <li><span class="dg-ic dg-ic-check" aria-hidden="true"></span> 1 Industry App included</li>
-            <li><span class="dg-ic dg-ic-check" aria-hidden="true"></span> Website Manager</li>
+            <li><span class="dg-ic dg-ic-check" aria-hidden="true"></span> Workflow automation</li>
+            <li><span class="dg-ic dg-ic-check" aria-hidden="true"></span> Website connection &amp; management</li>
+            <li><span class="dg-ic dg-ic-check" aria-hidden="true"></span> Advanced AI</li>
+            <li><span class="dg-ic dg-ic-check" aria-hidden="true"></span> Reporting</li>
+            <li><span class="dg-ic dg-ic-check" aria-hidden="true"></span> Growth capabilities</li>
+            <li><span class="dg-ic dg-ic-check" aria-hidden="true"></span> Email / communications</li>
           </ul>
-          <a href="https://digitalgate.com.au/onboarding/" class="btn-primary"><span class="dg-ic dg-ic-card" aria-hidden="true"></span> Start Free Trial</a>
+          <a href="https://digitalgate.com.au/founding-customers/#application" class="btn-primary"><span class="dg-ic dg-ic-card" aria-hidden="true"></span> Apply for Founding 10 →</a>
         </div>
 
         <div class="pricing-card" data-dg-plan="platform-business">
           <div class="plan-name"><span class="plan-icon">🏢</span>Scale</div>
-          <p class="plan-outcome">&ldquo;For teams running their entire operation.&rdquo;</p>
-          <div class="plan-price">$499<span>/month</span></div>
+          <p class="plan-outcome">&ldquo;Unlimited seats and advanced controls — Apps remain add-ons.&rdquo;</p>
+          <div class="plan-price">$499<span>/mo</span></div>
           <div class="plan-users">Unlimited Users</div>
           <ul class="feature-list">
             <li><span class="dg-ic dg-ic-check" aria-hidden="true"></span> <strong>Everything in Growth</strong></li>
-            <li><span class="dg-ic dg-ic-check" aria-hidden="true"></span> Unlimited Industry Apps</li>
-            <li><span class="dg-ic dg-ic-check" aria-hidden="true"></span> Advanced AI &amp; automation</li>
-            <li><span class="dg-ic dg-ic-check" aria-hidden="true"></span> API access</li>
             <li><span class="dg-ic dg-ic-check" aria-hidden="true"></span> Multiple pipelines</li>
+            <li><span class="dg-ic dg-ic-check" aria-hidden="true"></span> Advanced workflow automation &amp; AI</li>
+            <li><span class="dg-ic dg-ic-check" aria-hidden="true"></span> API access</li>
+            <li><span class="dg-ic dg-ic-check" aria-hidden="true"></span> Advanced reporting, permissions &amp; BI</li>
           </ul>
-          <a href="https://digitalgate.com.au/onboarding/" class="btn-primary"><span class="dg-ic dg-ic-card" aria-hidden="true"></span> Start Free Trial</a>
+          <a href="https://digitalgate.com.au/founding-customers/#application" class="btn-primary"><span class="dg-ic dg-ic-card" aria-hidden="true"></span> Apply for Founding 10 →</a>
         </div>
 
         <div class="pricing-card">
           <div class="plan-name"><span class="plan-icon">🏛️</span>Enterprise</div>
-          <p class="plan-outcome">&ldquo;For organisations needing complete customisation.&rdquo;</p>
+          <p class="plan-outcome">&ldquo;Custom integrations, deployment, and partnership.&rdquo;</p>
           <div class="plan-price">Custom</div>
           <div class="plan-users">Unlimited Users</div>
           <ul class="feature-list">
             <li><span class="dg-ic dg-ic-check" aria-hidden="true"></span> <strong>Everything in Scale</strong></li>
-            <li><span class="dg-ic dg-ic-check" aria-hidden="true"></span> White label</li>
-            <li><span class="dg-ic dg-ic-check" aria-hidden="true"></span> Priority support &amp; SLA</li>
             <li><span class="dg-ic dg-ic-check" aria-hidden="true"></span> Custom integrations</li>
+            <li><span class="dg-ic dg-ic-check" aria-hidden="true"></span> Advanced permissions</li>
+            <li><span class="dg-ic dg-ic-check" aria-hidden="true"></span> Dedicated support &amp; SLA</li>
+            <li><span class="dg-ic dg-ic-check" aria-hidden="true"></span> Custom deployment</li>
           </ul>
-          <a href="/contact/" class="btn-primary"><span class="dg-ic dg-ic-mail" aria-hidden="true"></span> Contact Sales</a>
+          <a href="/contact/" class="btn-primary"><span class="dg-ic dg-ic-mail" aria-hidden="true"></span> Talk to Sales</a>
         </div>
       </div>
     </div>
   </section>
 
-  <!-- ===== ADD-ONS (platform extensions) ===== -->
-  <section class="apps-section" id="addons" style="background:#111827;">
-    <div class="container">
-      <div class="section-header">
-        <span class="sub-label">➕ PLATFORM ADD-ONS</span>
-        <h2>Extend your platform</h2>
-        <p>Extra users and white label — add to any tier</p>
-      </div>
-      <div class="apps-grid apps-grid-2">
-        <div class="dg-app-card" data-dg-stripe="addon-extra-users">
-          <div class="app-icon">👥</div>
-          <div class="app-name">Extra Users</div>
-          <div class="app-price">+$29<span>/user</span></div>
-          <div class="app-desc">Additional team seats beyond your plan limit</div>
-          <a href="https://digitalgate.com.au/onboarding/" class="btn-app"><span class="dg-ic dg-ic-plus" aria-hidden="true"></span> Add On</a>
-        </div>
-        <div class="dg-app-card" data-dg-stripe="addon-white-label">
-          <div class="app-icon">🏷️</div>
-          <div class="app-name">White Label</div>
-          <div class="app-price">+$199<span>/mo</span></div>
-          <div class="app-desc">Your brand on the platform — for agencies &amp; resellers</div>
-          <a href="https://digitalgate.com.au/onboarding/" class="btn-app"><span class="dg-ic dg-ic-plus" aria-hidden="true"></span> Add On</a>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- ===== APPS (unified) ===== -->
+  <!-- ===== 02 APPS ===== -->
   <section class="apps-section" id="apps">
     <div class="container">
       <div class="section-header">
-        <span class="sub-label">🧩 2 · APPS</span>
-        <h2>Build the platform your business needs</h2>
-        <p>Install only what you need — industry verticals, growth intelligence, and platform capabilities.</p>
+        <span class="sub-label">02 · APPS</span>
+        <h2>Core → Infrastructure → Industry → Growth</h2>
+        <p>An operating platform with Apps — not an App marketplace. Add only what you need. <a href="/apps/" style="color:#93C5FD;font-weight:600;">Explore the Apps hub →</a></p>
+      </div>
+      <div class="commercial-callout apps-addon">
+        <h3>Apps are optional add-ons</h3>
+        <p>Your Platform subscription gives you the operating foundation. Add Industry, Infrastructure and Growth Apps as your business needs them.</p>
       </div>
 
-      <div class="apps-subsection" id="industry-apps">
+      <div class="apps-subsection" id="core-apps">
+        <div class="apps-subsection-header">
+          <h3>Core — Included with platform</h3>
+          <p>run — every business operates here</p>
+        </div>
         <div class="apps-grid apps-grid-4">
-          <div class="dg-app-card" data-dg-stripe="app-real-estate">
-            <span class="app-badge app-badge-live">Live</span>
+          <div class="dg-app-card"><span class="app-badge app-badge-core">Included</span><div class="app-icon">👥</div><div class="app-name"><a href="/apps/core/crm/">CRM</a></div><div class="app-price">Included</div><div class="app-desc">Contacts, companies and customer records</div></div>
+          <div class="dg-app-card"><span class="app-badge app-badge-core">Included</span><div class="app-icon">📇</div><div class="app-name"><a href="/apps/core/contacts/">Contacts</a></div><div class="app-price">Included</div><div class="app-desc">One person record across every App</div></div>
+          <div class="dg-app-card"><span class="app-badge app-badge-core">Included</span><div class="app-icon">🎯</div><div class="app-name"><a href="/apps/core/opportunities/">Opportunities</a></div><div class="app-price">Included</div><div class="app-desc">Pipeline opportunities on Core</div></div>
+          <div class="dg-app-card"><span class="app-badge app-badge-core">Included</span><div class="app-icon">✅</div><div class="app-name"><a href="/apps/core/tasks/">Tasks</a></div><div class="app-price">Included</div><div class="app-desc">Activities and follow-ups</div></div>
+          <div class="dg-app-card"><span class="app-badge app-badge-core">Included</span><div class="app-icon">📅</div><div class="app-name"><a href="/apps/core/calendar/">Calendar</a></div><div class="app-price">Included</div><div class="app-desc">Bookings and schedule</div></div>
+          <div class="dg-app-card"><span class="app-badge app-badge-core">Included</span><div class="app-icon">📄</div><div class="app-name"><a href="/apps/core/documents/">Documents</a></div><div class="app-price">Included</div><div class="app-desc">Files attached to business records</div></div>
+          <div class="dg-app-card"><span class="app-badge app-badge-core">Included</span><div class="app-icon">💬</div><div class="app-name"><a href="/apps/core/communications/">Communications</a></div><div class="app-price">Included</div><div class="app-desc">Email and message history in context</div></div>
+          <div class="dg-app-card"><span class="app-badge app-badge-soon">Early Access</span><div class="app-icon">💳</div><div class="app-name"><a href="/apps/core/commerce/">Commerce</a></div><div class="app-price">Included with Core when available</div><div class="app-desc">Quotes, invoices and payments — progressively rolling out</div></div>
+        </div>
+      </div>
+
+      <div class="apps-subsection section-spacer" id="infrastructure-apps">
+        <div class="apps-subsection-header">
+          <h3>Infrastructure — Connect &amp; manage digital presence</h3>
+          <p>power — priced progressively as capabilities become commercially ready</p>
+        </div>
+        <div class="apps-grid apps-grid-3">
+          <div class="dg-app-card"><span class="app-badge app-badge-core">Available</span><div class="app-icon">🛠️</div><div class="app-name"><a href="/apps/infrastructure/website/">Website connection &amp; management</a></div><div class="app-price">Platform Core</div><div class="app-desc">Connect and manage your website with CRM, SEO and platform context — expands with platform tier</div></div>
+          <div class="dg-app-card"><span class="app-badge app-badge-soon">Growth+</span><div class="app-icon">🌐</div><div class="app-name"><a href="/apps/infrastructure/website-builder/">Website Builder</a></div><div class="app-price">Progressive</div><div class="app-desc">Advanced creation, AI generation, publishing and management — not included in every plan</div></div>
+          <div class="dg-app-card"><span class="app-badge app-badge-soon">Early Access</span><div class="app-icon">🔗</div><div class="app-name"><a href="/apps/infrastructure/domains/">Domains</a></div><div class="app-price">Progressive</div><div class="app-desc">Connect and manage domains from the platform</div></div>
+          <div class="dg-app-card"><span class="app-badge app-badge-soon">Early Access</span><div class="app-icon">🧭</div><div class="app-name"><a href="/apps/infrastructure/dns/">DNS</a></div><div class="app-price">Progressive</div><div class="app-desc">DNS records alongside your digital identity</div></div>
+          <div class="dg-app-card"><span class="app-badge app-badge-soon">Coming Soon</span><div class="app-icon">☁️</div><div class="app-name"><a href="/apps/infrastructure/hosting/">Hosting</a></div><div class="app-price">Progressive</div><div class="app-desc">Hosting abstraction as commercially ready</div></div>
+          <div class="dg-app-card"><span class="app-badge app-badge-soon">Early Access</span><div class="app-icon">✉️</div><div class="app-name"><a href="/apps/infrastructure/email/">Email</a></div><div class="app-price">Progressive</div><div class="app-desc">Mailbox and transactional email infrastructure</div></div>
+          <div class="dg-app-card"><span class="app-badge app-badge-soon">Coming Soon</span><div class="app-icon">🔒</div><div class="app-name"><a href="/apps/infrastructure/ssl/">SSL</a></div><div class="app-price">Progressive</div><div class="app-desc">Certificates managed with your site</div></div>
+          <div class="dg-app-card"><span class="app-badge app-badge-soon">Coming Soon</span><div class="app-icon">💾</div><div class="app-name"><a href="/apps/infrastructure/backups/">Backups</a></div><div class="app-price">Progressive</div><div class="app-desc">Backup and restore for managed presence</div></div>
+          <div class="dg-app-card"><span class="app-badge app-badge-soon">Coming Soon</span><div class="app-icon">🛡️</div><div class="app-name"><a href="/apps/infrastructure/cloudflare/">Cloudflare</a></div><div class="app-price">Progressive</div><div class="app-desc">CDN and edge controls when ready</div></div>
+        </div>
+        <p style="text-align:center;margin-top:1.25rem;color:#94A3B8;font-size:0.85rem;">Infrastructure pricing is introduced as each capability is commercially ready — progressive readiness, not placeholder pricing.</p>
+      </div>
+
+      <div class="apps-subsection section-spacer" id="industry-apps">
+        <div class="apps-subsection-header">
+          <h3>Industry — Specialise your workflows</h3>
+          <p>Industry Apps are vertical operating platforms ($99/mo · 1 Template included · +$29/mo each additional). Architecture spans twelve Industries — public pricing stays honest about readiness.</p>
+        </div>
+        <p style="text-align:center;color:#94A3B8;font-size:0.85rem;margin:0 0 1rem;">Available · Early Access · Coming Soon · Architecture Reserved</p>
+        <div class="apps-grid apps-grid-4">
+          <div class="dg-app-card" data-dg-stripe="app-property">
+            <span class="app-badge app-badge-live">Available</span>
             <div class="app-icon">🏠</div>
-            <div class="app-name">Real Estate</div>
+            <div class="app-name"><a href="/apps/industry/property/">Property</a></div>
             <div class="app-price">+$99<span>/mo</span></div>
-            <div class="app-desc">Vendor leads, appraisals, listings &amp; buyer pipelines</div>
-            <a href="https://digitalgate.com.au/onboarding/" class="btn-app"><span class="dg-ic dg-ic-plus" aria-hidden="true"></span> Add App</a>
-          </div>
-          <div class="dg-app-card" data-dg-stripe="app-accommodation">
-            <span class="app-badge app-badge-live">Live</span>
-            <div class="app-icon">🏨</div>
-            <div class="app-name">Accommodation</div>
-            <div class="app-price">+$99<span>/mo</span></div>
-            <div class="app-desc">Bookings, guests, housekeeping &amp; OTA sync</div>
-            <a href="https://digitalgate.com.au/onboarding/" class="btn-app"><span class="dg-ic dg-ic-plus" aria-hidden="true"></span> Add App</a>
+            <div class="app-desc">Real Estate, PM, Commercial, Development, Buyers Agency — Real Estate Template live</div>
+            <a href="https://digitalgate.com.au/founding-customers/" class="btn-app"><span class="dg-ic dg-ic-plus" aria-hidden="true"></span> Add Industry</a>
           </div>
           <div class="dg-app-card" data-dg-stripe="app-services">
-            <span class="app-badge app-badge-live">Live</span>
+            <span class="app-badge app-badge-live">Available</span>
             <div class="app-icon">🔧</div>
-            <div class="app-name">Services</div>
+            <div class="app-name"><a href="/apps/industry/services/">Services</a></div>
             <div class="app-price">+$99<span>/mo</span></div>
-            <div class="app-desc">Jobs, quotes, scheduling &amp; trades CRM</div>
-            <a href="https://digitalgate.com.au/onboarding/" class="btn-app"><span class="dg-ic dg-ic-plus" aria-hidden="true"></span> Add App</a>
+            <div class="app-desc">Jobs, quotes and scheduling — one App with trade Templates</div>
+            <a href="https://digitalgate.com.au/founding-customers/" class="btn-app"><span class="dg-ic dg-ic-plus" aria-hidden="true"></span> Add Industry</a>
           </div>
-          <div class="dg-app-card soon" data-dg-stripe="app-finance">
-            <span class="app-badge app-badge-soon">Coming soon</span>
+          <div class="dg-app-card" data-dg-stripe="app-hospitality-accommodation">
+            <span class="app-badge app-badge-live">Early Access</span>
+            <div class="app-icon">🏨</div>
+            <div class="app-name"><a href="/apps/industry/hospitality-accommodation/">Hospitality &amp; Accommodation</a></div>
+            <div class="app-price">+$99<span>/mo</span></div>
+            <div class="app-desc">Short-stay, holiday rentals, hotels, F&amp;B and venues — Accommodation early access</div>
+            <a href="https://digitalgate.com.au/founding-customers/" class="btn-app"><span class="dg-ic dg-ic-plus" aria-hidden="true"></span> Add Industry</a>
+          </div>
+          <div class="dg-app-card soon">
+            <span class="app-badge app-badge-soon">Early Access</span>
             <div class="app-icon">💰</div>
-            <div class="app-name">Finance</div>
+            <div class="app-name"><a href="/apps/industry/finance/">Finance</a></div>
             <div class="app-price">+$99<span>/mo</span></div>
-            <div class="app-desc">Loans, lenders, borrowers &amp; finance pipeline</div>
+            <div class="app-desc">Accounting first — broking, planning, insurance and advisory Templates</div>
             <a href="/contact/" class="btn-app">Enquire</a>
           </div>
-          <div class="dg-app-card" data-dg-stripe="app-creator">
-            <span class="app-badge app-badge-live">Live</span>
+          <div class="dg-app-card soon">
+            <span class="app-badge app-badge-soon">Early Access</span>
             <div class="app-icon">✨</div>
-            <div class="app-name">Creator</div>
+            <div class="app-name"><a href="/apps/industry/creator/">Creator &amp; Media</a></div>
             <div class="app-price">+$99<span>/mo</span></div>
-            <div class="app-desc">Audience tools, content &amp; creator studio</div>
-            <a href="https://digitalgate.com.au/onboarding/" class="btn-app"><span class="dg-ic dg-ic-plus" aria-hidden="true"></span> Add App</a>
+            <div class="app-desc">Audience, content and studio — founding interest welcome</div>
+            <a href="https://digitalgate.com.au/founding-customers/" class="btn-app">Founding interest</a>
           </div>
-          <div class="dg-app-card soon" data-dg-stripe="app-automotive">
-            <span class="app-badge app-badge-soon">Coming soon</span>
+          <div class="dg-app-card soon">
+            <span class="app-badge app-badge-soon">Coming Soon</span>
+            <div class="app-icon">⚖️</div>
+            <div class="app-name">Professional</div>
+            <div class="app-price">+$99<span>/mo</span></div>
+            <div class="app-desc">Legal, Surveying, Engineering, Architecture, Consulting — Templates, not separate Apps</div>
+            <a href="/contact/" class="btn-app">Enquire</a>
+          </div>
+          <div class="dg-app-card soon">
+            <span class="app-badge app-badge-soon">Coming Soon</span>
             <div class="app-icon">🚗</div>
-            <div class="app-name">Automotive</div>
+            <div class="app-name"><a href="/apps/industry/automotive/">Automotive</a></div>
             <div class="app-price">+$99<span>/mo</span></div>
-            <div class="app-desc">Inventory, test drives &amp; dealership pipelines</div>
+            <div class="app-desc">Dealerships, mechanical and auto services</div>
             <a href="/contact/" class="btn-app">Enquire</a>
           </div>
-          <div class="dg-app-card soon" data-dg-stripe="app-commercial">
-            <span class="app-badge app-badge-soon">Coming soon</span>
-            <div class="app-icon">🏢</div>
-            <div class="app-name">Commercial</div>
+          <div class="dg-app-card soon">
+            <span class="app-badge app-badge-soon">Coming Soon</span>
+            <div class="app-icon">🛒</div>
+            <div class="app-name">Retail &amp; Commerce</div>
             <div class="app-price">+$99<span>/mo</span></div>
-            <div class="app-desc">Leases, tenants &amp; commercial property pipelines</div>
+            <div class="app-desc">Retail, e-commerce, wholesale and distribution Templates</div>
             <a href="/contact/" class="btn-app">Enquire</a>
           </div>
+          <div class="dg-app-card soon">
+            <span class="app-badge app-badge-soon">Coming Soon</span>
+            <div class="app-icon">💚</div>
+            <div class="app-name">Health &amp; Wellness</div>
+            <div class="app-price">+$99<span>/mo</span></div>
+            <div class="app-desc">Medical, allied, dental and vet — privacy-first roadmap</div>
+            <a href="/contact/" class="btn-app">Enquire</a>
+          </div>
+          <div class="dg-app-card soon">
+            <span class="app-badge app-badge-soon">Coming Soon</span>
+            <div class="app-icon">🚚</div>
+            <div class="app-name">Transport &amp; Logistics</div>
+            <div class="app-price">+$99<span>/mo</span></div>
+            <div class="app-desc">Transport, logistics and courier operators</div>
+            <a href="/contact/" class="btn-app">Enquire</a>
+          </div>
+          <div class="dg-app-card soon">
+            <span class="app-badge app-badge-soon">Coming Soon</span>
+            <div class="app-icon">🎓</div>
+            <div class="app-name">Education &amp; Organisations</div>
+            <div class="app-price">+$99<span>/mo</span></div>
+            <div class="app-desc">Education, training and associations</div>
+            <a href="/contact/" class="btn-app">Enquire</a>
+          </div>
+          <div class="dg-app-card soon">
+            <span class="app-badge app-badge-soon">Reserved</span>
+            <div class="app-icon">🌾</div>
+            <div class="app-name">Agriculture &amp; Primary</div>
+            <div class="app-price">Architecture</div>
+            <div class="app-desc">Architecture reserved — not an active sell</div>
+            <a href="/contact/" class="btn-app">Enquire</a>
+          </div>
+        </div>
+        <p style="text-align:center;margin-top:1rem;color:#64748B;font-size:0.8rem;">Accommodation belongs under Hospitality &amp; Accommodation — not Property. Do not market twelve finished products.</p>
+        <div style="max-width:720px;margin:1.5rem auto 0;padding:1.25rem 1.5rem;border:1px solid #1E293B;border-radius:12px;background:#0F172A;">
+          <p style="margin:0 0 0.5rem;font-size:0.68rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#93C5FD;">Canonical pricing</p>
+          <p style="margin:0 0 0.75rem;color:#E2E8F0;font-size:0.95rem;"><strong>Industry App $99/mo</strong> includes <strong>1 Industry Template</strong>. Additional Templates <strong>+$29/mo</strong> each. The Industry App is the commercial boundary; Templates are the expansion layer.</p>
+          <p style="margin:0;color:#94A3B8;font-size:0.85rem;">Example: Property + Real Estate = $99. Add Property Management → $128/mo. Founding 10: Starter + Property + PM = $227 → 30% = $158.90/mo.</p>
         </div>
       </div>
 
-      <div class="apps-subsection" id="growth-apps">
+      <div class="apps-subsection section-spacer" id="growth-apps">
         <div class="apps-subsection-header">
-          <h3>Growth &amp; Intelligence Apps</h3>
-          <p>Unlock advanced SEO, AI visibility, automation, and analytics on top of the core platform</p>
+          <h3>Growth — Visibility, acquisition, conversion</h3>
+          <p>grow — optional · billed separately. Prospecting $99 · AI Visibility $99 · SEO $99 · Automation $49 · Analytics $49 · Social $79 · AI Communications $99 · Reputation Free.</p>
         </div>
-        <div class="apps-grid apps-grid-6">
+        <div class="apps-grid apps-grid-3">
+          <div class="dg-app-card" data-dg-stripe="premium-prospecting">
+            <div class="app-icon">◎</div>
+            <div class="app-name"><a href="/apps/growth/prospecting/">Prospecting &amp; Opportunity Engine</a></div>
+            <div class="app-price">+$99<span>/mo</span></div>
+            <div class="app-desc">Find businesses → discovery → opportunity score → pipeline → CRM — one Growth App</div>
+            <a href="https://digitalgate.com.au/founding-customers/" class="btn-app"><span class="dg-ic dg-ic-plus" aria-hidden="true"></span> Add App</a>
+          </div>
           <div class="dg-app-card" data-dg-stripe="premium-ai-visibility">
             <div class="app-icon">🤖</div>
-            <div class="app-name">AI Visibility</div>
+            <div class="app-name"><a href="/apps/growth/ai-visibility/">AI Visibility</a></div>
             <div class="app-price">+$99<span>/mo</span></div>
-            <div class="app-desc">AI search visibility scoring &amp; monitoring</div>
-            <a href="https://digitalgate.com.au/onboarding/" class="btn-app"><span class="dg-ic dg-ic-plus" aria-hidden="true"></span> Add App</a>
+            <div class="app-desc">Readiness for Google and AI search</div>
+            <a href="https://digitalgate.com.au/founding-customers/" class="btn-app"><span class="dg-ic dg-ic-plus" aria-hidden="true"></span> Add App</a>
           </div>
           <div class="dg-app-card" data-dg-stripe="premium-seo">
             <div class="app-icon">🔍</div>
-            <div class="app-name">SEO</div>
+            <div class="app-name"><a href="/apps/growth/seo/">SEO</a></div>
             <div class="app-price">+$99<span>/mo</span></div>
-            <div class="app-desc">Deep audits, rankings &amp; technical optimisation</div>
-            <a href="https://digitalgate.com.au/onboarding/" class="btn-app"><span class="dg-ic dg-ic-plus" aria-hidden="true"></span> Add App</a>
+            <div class="app-desc">Audits, rankings and technical optimisation</div>
+            <a href="https://digitalgate.com.au/founding-customers/" class="btn-app"><span class="dg-ic dg-ic-plus" aria-hidden="true"></span> Add App</a>
           </div>
           <div class="dg-app-card" data-dg-stripe="premium-automation">
             <div class="app-icon">⚡</div>
-            <div class="app-name">Automation</div>
+            <div class="app-name"><a href="/apps/growth/automation/">Automation</a></div>
             <div class="app-price">+$49<span>/mo</span></div>
-            <div class="app-desc">Multi-step workflows, triggers &amp; webhooks</div>
-            <a href="https://digitalgate.com.au/onboarding/" class="btn-app"><span class="dg-ic dg-ic-plus" aria-hidden="true"></span> Add App</a>
+            <div class="app-desc">Advanced multi-step workflows, triggers, webhooks and cross-App automation</div>
+            <a href="https://digitalgate.com.au/founding-customers/" class="btn-app"><span class="dg-ic dg-ic-plus" aria-hidden="true"></span> Add App</a>
           </div>
           <div class="dg-app-card" data-dg-stripe="premium-analytics">
             <div class="app-icon">📊</div>
-            <div class="app-name">Analytics</div>
+            <div class="app-name"><a href="/apps/growth/analytics/">Analytics</a></div>
             <div class="app-price">+$49<span>/mo</span></div>
-            <div class="app-desc">KPI snapshots, trends &amp; custom reporting</div>
-            <a href="https://digitalgate.com.au/onboarding/" class="btn-app"><span class="dg-ic dg-ic-plus" aria-hidden="true"></span> Add App</a>
+            <div class="app-desc">KPI snapshots, trends and reporting</div>
+            <a href="https://digitalgate.com.au/founding-customers/" class="btn-app"><span class="dg-ic dg-ic-plus" aria-hidden="true"></span> Add App</a>
           </div>
           <div class="dg-app-card" data-dg-stripe="premium-social">
             <div class="app-icon">📱</div>
-            <div class="app-name">Social</div>
+            <div class="app-name"><a href="/apps/growth/social/">Social</a></div>
             <div class="app-price">+$79<span>/mo</span></div>
-            <div class="app-desc">Publish to LinkedIn, Facebook, Instagram, X &amp; Pinterest</div>
-            <a href="https://digitalgate.com.au/onboarding/" class="btn-app"><span class="dg-ic dg-ic-plus" aria-hidden="true"></span> Add App</a>
+            <div class="app-desc">Publish and manage social from the platform</div>
+            <a href="https://digitalgate.com.au/founding-customers/" class="btn-app"><span class="dg-ic dg-ic-plus" aria-hidden="true"></span> Add App</a>
           </div>
           <div class="dg-app-card" data-dg-stripe="addon-voice-ai">
+            <span class="app-badge app-badge-soon">Early Access</span>
             <div class="app-icon">🎙️</div>
-            <div class="app-name">Voice AI</div>
+            <div class="app-name"><a href="/apps/growth/ai-communications/">AI Communications</a></div>
             <div class="app-price">+$99<span>/mo</span></div>
-            <div class="app-desc">Inbound calls, qualification &amp; CRM sync</div>
-            <a href="https://digitalgate.com.au/onboarding/" class="btn-app"><span class="dg-ic dg-ic-plus" aria-hidden="true"></span> Add App</a>
+            <div class="app-desc">AI-assisted communications — Voice Agents still in development</div>
+            <a href="https://digitalgate.com.au/founding-customers/" class="btn-app"><span class="dg-ic dg-ic-plus" aria-hidden="true"></span> Add App</a>
           </div>
-        </div>
-      </div>
-
-      <div class="apps-subsection" id="platform-apps">
-        <div class="apps-subsection-header">
-          <h3>Platform Capabilities</h3>
-          <p>Infrastructure and commerce — connected to your operating system, not bolted on</p>
-        </div>
-        <div class="apps-grid apps-grid-3">
           <div class="dg-app-card">
-            <span class="app-badge app-badge-core">Included on Growth+</span>
-            <div class="app-icon">🌐</div>
-            <div class="app-name">Website Builder</div>
-            <div class="app-price">Included</div>
-            <div class="app-desc">Templates, AI content, publish &amp; manage from the platform</div>
-            <a href="#website-capability" class="btn-app">Learn more</a>
-          </div>
-          <div class="dg-app-card soon">
-            <span class="app-badge app-badge-soon">Rolling out</span>
-            <div class="app-icon">🔧</div>
-            <div class="app-name">Infrastructure</div>
-            <div class="app-price">TBA</div>
-            <div class="app-desc">Domains, hosting, email, SSL, DNS &amp; deployment</div>
-          </div>
-          <div class="dg-app-card soon">
-            <span class="app-badge app-badge-soon">Coming soon</span>
-            <div class="app-icon">💳</div>
-            <div class="app-name">Commerce</div>
-            <div class="app-price">TBA</div>
-            <div class="app-desc">Payments, quotes, invoices, checkout &amp; subscriptions</div>
+            <span class="app-badge app-badge-live">Free</span>
+            <div class="app-icon">★</div>
+            <div class="app-name"><a href="/apps/growth/reputation/">Reputation</a></div>
+            <div class="app-price">Free</div>
+            <div class="app-desc">Review inbox and reputation surface — no Growth App charge</div>
+            <a href="https://app.digitalgate.com.au/apps/reviews" class="btn-app">Open in platform</a>
           </div>
         </div>
       </div>
     </div>
   </section>
 
-  <!-- ===== PROFESSIONAL SERVICES ===== -->
+  <!-- ===== 03 PROFESSIONAL SERVICES ===== -->
   <section class="pro-services-section" id="professional-services">
     <div class="container">
       <div class="section-header">
-        <span class="sub-label">🛠️ 3 · PROFESSIONAL SERVICES</span>
-        <h2>Expert help when you want it — not required</h2>
-        <p>Implementation, migration, training, and consulting for businesses that want hands-on support adopting the platform.</p>
+        <span class="sub-label">03 · PROFESSIONAL SERVICES</span>
+        <h2>Expert help when you want it — never required</h2>
+        <p>Optional people work on top of the platform — setup, migration, training, advice and website builds. DigitalGate remains Platform → Apps → Professional Services → Customer Success. One-off services are separate from your subscription.</p>
       </div>
       <div class="pro-services-grid">
-        <div class="pro-service-card">
-          <div class="pro-icon">🚀</div>
-          <h4>Implementation</h4>
-          <p>Full platform rollout — configuration, apps, connectors, and go-live support.</p>
-          <div class="pro-price">From $2,497 <span>one-time</span></div>
-          <a href="/contact/" class="btn-app">Get a quote</a>
-        </div>
-        <div class="pro-service-card">
-          <div class="pro-icon">⚙️</div>
-          <h4>Platform Setup</h4>
-          <p>Initial org setup, user provisioning, CRM structure, and first automations.</p>
-          <div class="pro-price">From $997 <span>one-time</span></div>
-          <a href="/contact/" class="btn-app">Get a quote</a>
-        </div>
-        <div class="pro-service-card">
+        <div class="pro-service-card" id="website-migration">
           <div class="pro-icon">🔄</div>
-          <h4>Website Migration</h4>
-          <p>Migrate your existing site, DNS, and content into the DigitalGate platform.</p>
+          <h4>Website Migration &amp; DigitalGate Setup</h4>
+          <p>Move your existing website, DNS and content into DigitalGate Infrastructure — so it runs and is managed on the platform.</p>
+          <ul class="pro-features">
+            <li>Website files and content migration</li>
+            <li>Page structure, images and media</li>
+            <li>DNS migration and domain connection</li>
+            <li>Hosting configuration and SSL</li>
+            <li>Forms and basic integrations</li>
+            <li>Redirects where required</li>
+            <li>Testing and launch</li>
+          </ul>
           <div class="pro-price">From $1,497 <span>one-time</span></div>
+          <p class="pro-note">Includes migration of an existing website into DigitalGate Infrastructure. This service does <strong style="color:#94A3B8;">not</strong> include a redesign or redevelopment of the website. Need a new site? See Website Build.</p>
           <a href="/contact/" class="btn-app">Get a quote</a>
         </div>
-        <div class="pro-service-card">
-          <div class="pro-icon">🎓</div>
-          <h4>Training</h4>
-          <p>Team onboarding sessions, role-based walkthroughs, and platform best practices.</p>
-          <div class="pro-price">From $497 <span>one-time</span></div>
+        <div class="pro-service-card" id="website-build">
+          <div class="pro-icon">🌐</div>
+          <h4>Website Build</h4>
+          <p>Create a new professional website on DigitalGate — design, structure, conversion and CRM connection.</p>
+          <ul class="pro-features">
+            <li>Conversion-focused website design</li>
+            <li>DigitalGate CRM integration</li>
+            <li>Lead capture and forms</li>
+            <li>SEO foundations</li>
+            <li>Analytics</li>
+            <li>Mobile optimisation</li>
+            <li>Launch and configuration</li>
+          </ul>
+          <div class="pro-price">From $1,997 <span>one-time</span></div>
+          <p class="pro-note">Website pricing depends on project scope, number of pages, integrations and content requirements. This is a new build — not migration of an existing site.</p>
           <a href="/contact/" class="btn-app">Get a quote</a>
         </div>
-        <div class="pro-service-card">
-          <div class="pro-icon">💻</div>
-          <h4>Custom Development</h4>
-          <p>Bespoke integrations, workflows, and features built on the platform API.</p>
-          <div class="pro-price">Custom</div>
-          <a href="/contact/" class="btn-app">Contact sales</a>
-        </div>
-        <div class="pro-service-card">
-          <div class="pro-icon">📋</div>
-          <h4>Consulting</h4>
-          <p>Business process review, platform architecture, and optimisation strategy.</p>
-          <div class="pro-price">From $297 <span>/hour</span></div>
-          <a href="/contact/" class="btn-app">Book a call</a>
-        </div>
-        <div class="pro-service-card">
-          <div class="pro-icon">🧠</div>
-          <h4>AI Strategy</h4>
-          <p>AI visibility roadmap, automation design, and Digital Twin optimisation.</p>
-          <div class="pro-price">From $1,497 <span>one-time</span></div>
-          <a href="/contact/" class="btn-app">Get a quote</a>
-        </div>
-        <div class="pro-service-card">
-          <div class="pro-icon">📦</div>
-          <h4>Data Migration</h4>
-          <p>Import contacts, deals, and history from your existing CRM or spreadsheets.</p>
-          <div class="pro-price">From $997 <span>one-time</span></div>
-          <a href="/contact/" class="btn-app">Get a quote</a>
-        </div>
+        <div class="pro-service-card"><div class="pro-icon">⚙️</div><h4>Setup</h4><p>Initial org setup, users, CRM structure and first automations.</p><div class="pro-price">From $997 <span>one-time</span></div><a href="/contact/" class="btn-app">Get a quote</a></div>
+        <div class="pro-service-card"><div class="pro-icon">🚀</div><h4>Implementation</h4><p>Full platform rollout — configuration, Apps, connectors and go-live support.</p><div class="pro-price">From $2,497 <span>one-time</span></div><a href="/contact/" class="btn-app">Get a quote</a></div>
+        <div class="pro-service-card"><div class="pro-icon">📦</div><h4>Migration</h4><p>Import contacts, deals and history from your existing CRM or spreadsheets (data migration — not website hosting).</p><div class="pro-price">From $997 <span>one-time</span></div><a href="/contact/" class="btn-app">Get a quote</a></div>
+        <div class="pro-service-card"><div class="pro-icon">🎓</div><h4>Training</h4><p>Team onboarding, role-based walkthroughs and platform best practices.</p><div class="pro-price">From $497 <span>one-time</span></div><a href="/contact/" class="btn-app">Get a quote</a></div>
+        <div class="pro-service-card"><div class="pro-icon">🧠</div><h4>AI Strategy</h4><p>AI visibility roadmap, automation design and Twin optimisation.</p><div class="pro-price">From $1,497 <span>one-time</span></div><a href="/contact/" class="btn-app">Get a quote</a></div>
+        <div class="pro-service-card"><div class="pro-icon">📋</div><h4>Consulting</h4><p>Business process review, architecture and optimisation strategy.</p><div class="pro-price">From $297 <span>/hour</span></div><a href="/contact/" class="btn-app">Book a call</a></div>
+        <div class="pro-service-card"><div class="pro-icon">💻</div><h4>Custom Development</h4><p>Bespoke integrations, workflows and features on the platform API.</p><div class="pro-price">Custom</div><a href="/contact/" class="btn-app">Contact sales</a></div>
       </div>
     </div>
   </section>
 
-  <!-- ===== SUPPORT PLANS ===== -->
-  <section class="support-section" id="support-plans">
+  <!-- ===== 04 SUPPORT & SUCCESS ===== -->
+  <section class="support-section" id="customer-success">
     <div class="container">
       <div class="section-header">
-        <span class="sub-label">🤝 4 · SUPPORT PLANS</span>
-        <h2>Customer success — not marketing retainers</h2>
-        <p>Help your team adopt the platform, improve results, and stay ahead. All platform tiers include Standard support.</p>
+        <span class="sub-label">04 · SUPPORT &amp; SUCCESS</span>
+        <h2>Support &amp; Success Plans</h2>
+        <p>Help your team adopt the platform and stay ahead. All platform tiers include Standard support.</p>
       </div>
       <div class="support-grid">
         <div class="support-card included">
@@ -1448,8 +1554,8 @@
         </div>
         <div class="support-card" data-dg-plan="support-priority">
           <div class="support-tier">Priority</div>
-          <p class="support-tagline">&ldquo;For teams that need faster response.&rdquo;</p>
-          <div class="support-price">$199<span>/month</span></div>
+          <p class="support-tagline">&ldquo;Faster response when you need it.&rdquo;</p>
+          <div class="support-price">$199<span>/mo</span></div>
           <ul class="feature-list">
             <li><span class="dg-ic dg-ic-check" aria-hidden="true"></span> <strong>Everything in Standard</strong></li>
             <li><span class="dg-ic dg-ic-check" aria-hidden="true"></span> Priority support queue</li>
@@ -1462,8 +1568,8 @@
         <div class="support-card popular" data-dg-plan="support-success-partner">
           <div class="popular-badge">RECOMMENDED</div>
           <div class="support-tier">Success Partner</div>
-          <p class="support-tagline">&ldquo;For businesses extracting maximum platform value.&rdquo;</p>
-          <div class="support-price">$499<span>/month</span></div>
+          <p class="support-tagline">&ldquo;Maximum value from the platform.&rdquo;</p>
+          <div class="support-price">$499<span>/mo</span></div>
           <ul class="feature-list">
             <li><span class="dg-ic dg-ic-check" aria-hidden="true"></span> <strong>Everything in Priority</strong></li>
             <li><span class="dg-ic dg-ic-check" aria-hidden="true"></span> Dedicated success manager</li>
@@ -1476,282 +1582,154 @@
         </div>
         <div class="support-card">
           <div class="support-tier">Enterprise Success</div>
-          <p class="support-tagline">&ldquo;For organisations needing complete partnership.&rdquo;</p>
+          <p class="support-tagline">&ldquo;Custom partnership for scale.&rdquo;</p>
           <div class="support-price">Custom</div>
           <ul class="feature-list">
             <li><span class="dg-ic dg-ic-check" aria-hidden="true"></span> <strong>Everything in Success Partner</strong></li>
-            <li><span class="dg-ic dg-ic-check" aria-hidden="true"></span> SLA &amp; dedicated account manager</li>
-            <li><span class="dg-ic dg-ic-check" aria-hidden="true"></span> Consulting hours included</li>
-            <li><span class="dg-ic dg-ic-check" aria-hidden="true"></span> Custom workshops</li>
-            <li><span class="dg-ic dg-ic-check" aria-hidden="true"></span> Executive Business Health reviews</li>
+            <li><span class="dg-ic dg-ic-check" aria-hidden="true"></span> Dedicated account team</li>
+            <li><span class="dg-ic dg-ic-check" aria-hidden="true"></span> Custom SLA &amp; escalation</li>
+            <li><span class="dg-ic dg-ic-check" aria-hidden="true"></span> Enterprise roadmap alignment</li>
+            <li><span class="dg-ic dg-ic-check" aria-hidden="true"></span> Multi-org deployment support</li>
           </ul>
-          <a href="/contact/" class="btn-primary"><span class="dg-ic dg-ic-mail" aria-hidden="true"></span> Contact Sales</a>
+          <a href="/contact/" class="btn-primary"><span class="dg-ic dg-ic-mail" aria-hidden="true"></span> Talk to Sales</a>
         </div>
       </div>
+      <p id="support-plans" style="position:absolute;left:-9999px;" aria-hidden="true">support-plans</p>
     </div>
   </section>
 
-  <!-- ============================================================ -->
-  <!-- ===== VALUE COMPARISON ===== -->
-  <!-- ============================================================ -->
-  <section class="value-section" id="value-comparison">
+  <!-- ===== WHY DIGITALGATE ===== -->
+  <section class="value-section" id="why-digitalgate">
     <div class="container">
       <div class="section-header">
-        <span class="sub-label">VALUE COMPARISON</span>
-        <h2>One platform. Up to 85% less than stacking separate tools.</h2>
-        <p>DigitalGate replaces a patchwork of CRM, automation, SEO, industry software, and client portals — with one login, one bill, and data that actually connects.</p>
+        <span class="sub-label">WHY DIGITALGATE</span>
+        <h2>One business context. One platform. One source of truth.</h2>
+        <p>DigitalGate is the intelligent layer that grows with you — not a pile of disconnected tools.</p>
+      </div>
+      <div class="why-points" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:1rem;max-width:960px;margin:0 auto 2.5rem;">
+        <div class="value-stat"><div class="num" style="font-size:1.1rem;color:#93C5FD;">Context</div><div class="lbl">One business Digital Twin™ — customers, opportunities, presence and performance</div></div>
+        <div class="value-stat"><div class="num" style="font-size:1.1rem;color:#93C5FD;">Platform</div><div class="lbl">One operating system — Core, Infrastructure, Industry and Growth Apps</div></div>
+        <div class="value-stat"><div class="num" style="font-size:1.1rem;color:#93C5FD;">Source of truth</div><div class="lbl">One login, one record, one timeline across your digital world</div></div>
+        <div class="value-stat"><div class="num" style="font-size:1.1rem;color:#93C5FD;">Intelligence</div><div class="lbl">AI, Automation, Twin and Intelligence across everything — not bolted-on Apps</div></div>
+        <div class="value-stat"><div class="num" style="font-size:1.1rem;color:#93C5FD;">Grows with you</div><div class="lbl">Start with the platform. Add Apps as you need them — honestly, as they&apos;re ready</div></div>
       </div>
 
-      <div class="value-stats">
-        <div class="value-stat">
-          <div class="num">40+</div>
-          <div class="lbl">Built-in capabilities across 7 industry verticals</div>
-        </div>
-        <div class="value-stat">
-          <div class="num">$99</div>
-          <div class="lbl">Platform from — vs ~$680/mo in separate solo tools</div>
-        </div>
-        <div class="value-stat">
-          <div class="num accent">73%</div>
-          <div class="lbl">Typical saving vs best-of-breed stack (Scale + Growth apps)</div>
-        </div>
-        <div class="value-stat">
-          <div class="num accent">$0</div>
-          <div class="lbl">Lock-in contracts — month-to-month on all plans</div>
-        </div>
-      </div>
-
-      <div class="value-table-wrap">
-        <table class="value-table">
-          <thead>
-            <tr>
-              <th>Typical business</th>
-              <th>DigitalGate</th>
-              <th>Separate tools (est.)</th>
-              <th>You save</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td>Solo operator — CRM, tasks, basic automation</td>
-              <td class="price-dg">$99/mo Starter</td>
-              <td class="price-market">~$680/mo</td>
-              <td class="save">~$581/mo (85%)</td>
-            </tr>
-            <tr>
-              <td>Growing team — CRM + 1 industry app + automation</td>
-              <td class="price-dg">$348/mo</td>
-              <td class="price-market">~$1,850/mo</td>
-              <td class="save">~$1,502/mo (81%)</td>
-            </tr>
-            <tr>
-              <td>Full stack — Scale + all Growth apps</td>
-              <td class="price-dg">$874/mo</td>
-              <td class="price-market">~$3,200/mo</td>
-              <td class="save">~$2,326/mo (73%)</td>
-            </tr>
-            <tr>
-              <td>Full adoption — Scale + Success Partner</td>
-              <td class="price-dg">$998/mo</td>
-              <td class="price-market">~$3,200/mo software + agency</td>
-              <td class="save">~$2,200/mo+</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-      <p class="value-footnote">*Professional Services and Support Plans are optional. Typical CRM + automation stacks start around $1,000–2,000/mo before onboarding. Market estimates based on published AUD list prices. August 2026.</p>
-
-      <div class="section-header" style="margin-top:3rem;">
+      <div class="section-header" style="margin-top:2rem;">
         <span class="sub-label">BY INDUSTRY</span>
-        <h2>Built for your vertical — not bolted on</h2>
-        <p>Industry Apps add specialised pipelines, workflows, and portals on top of the core platform.</p>
+        <h2>Industry Apps · Templates underneath</h2>
+        <p>Buy the Industry (+$99/mo · 1 Template included). Categories like Real Estate or Short-Stay are Templates — not separate Industry SKUs.</p>
       </div>
-
       <div class="value-industry-grid">
         <div class="value-industry-card">
-          <div class="ind-head">
-            <span class="ind-icon" aria-hidden="true">📊</span>
-            <h3>Agencies &amp; Professional Services</h3>
-            <span class="badge badge-ga">Live</span>
-          </div>
-          <p>Client CRM, visibility audits, voice agent leads, follow-up automations, client portal, onboarding, and progress reports.</p>
-          <div class="ind-pricing"><strong>From $249/mo</strong> <span>Platform Growth tier · optional Success Partner from $499/mo</span></div>
+          <div class="ind-head"><span class="ind-icon" aria-hidden="true">🏠</span><h3>Property</h3><span class="badge badge-ga">Available</span></div>
+          <p>One Industry App (+$99/mo · 1 Template included). Templates: <strong>Real Estate</strong> (Available) · Property Management · Commercial · Development · Buyers Agency.</p>
+          <div class="ind-pricing"><strong>+$99/mo</strong> <span>Industry App · Templates +$29/mo each extra</span></div>
         </div>
         <div class="value-industry-card">
-          <div class="ind-head">
-            <span class="ind-icon" aria-hidden="true">🏠</span>
-            <h3>Real Estate</h3>
-            <span class="badge badge-ga">Live</span>
-          </div>
-          <p>Vendor &amp; buyer pipelines, listings, appraisal booking, property workspace, brochures, and agent tools. Owner Portal coming soon.</p>
-          <div class="ind-pricing"><strong>+$99/mo</strong> <span>Industry App on Growth+ · replaces fragmented RE software stack</span></div>
+          <div class="ind-head"><span class="ind-icon" aria-hidden="true">🔧</span><h3>Services</h3><span class="badge badge-ga">Available</span></div>
+          <p>Jobs, quotes and scheduling — one Industry App with trade Templates (not separate Industry products).</p>
+          <div class="ind-pricing"><strong>+$99/mo</strong> <span>Industry App · Templates +$29/mo each extra</span></div>
         </div>
         <div class="value-industry-card">
-          <div class="ind-head">
-            <span class="ind-icon" aria-hidden="true">🏨</span>
-            <h3>Accommodation &amp; STR</h3>
-            <span class="badge badge-ga">Live</span>
-          </div>
-          <p>Direct bookings, Stripe/PayID, OTA sync, guest CRM, check-in QR, housekeeping, and Guest Portal for returning guests.</p>
-          <div class="ind-pricing"><strong>+$99/mo</strong> <span>Industry App · replaces Lodgify + guest comms + housekeeping tools</span></div>
+          <div class="ind-head"><span class="ind-icon" aria-hidden="true">🏨</span><h3>Hospitality &amp; Accommodation</h3><span class="badge badge-ga">Early Access</span></div>
+          <p>One Industry App. Templates: Short-Stay / Accommodation · Holiday Rentals · Hotels · F&amp;B · Venues. Accommodation is not under Property.</p>
+          <div class="ind-pricing"><strong>+$99/mo</strong> <span>Industry App · Early Access</span></div>
         </div>
         <div class="value-industry-card">
-          <div class="ind-head">
-            <span class="ind-icon" aria-hidden="true">✨</span>
-            <h3>Creator &amp; Personal Brand</h3>
-            <span class="badge badge-soon">Preview</span>
-          </div>
-          <p>Creator Studio portal and audience tools in active development. Platform CRM and Social available today.</p>
-          <div class="ind-pricing"><strong>+$99/mo</strong> <span>Industry App · early access for founding customers</span></div>
+          <div class="ind-head"><span class="ind-icon" aria-hidden="true">💰</span><h3>Finance</h3><span class="badge badge-ga">Early Access</span></div>
+          <p>Accounting first — broking, planning and insurance as Templates under Finance (not “Accounting” as a separate Industry).</p>
+          <div class="ind-pricing"><strong>+$99/mo</strong> <span>Industry App · Early Access</span></div>
         </div>
         <div class="value-industry-card">
-          <div class="ind-head">
-            <span class="ind-icon" aria-hidden="true">💰</span>
-            <h3>Finance &amp; Mortgage</h3>
-            <span class="badge badge-soon">Preview</span>
-          </div>
-          <p>Loan application pipeline from inquiry through settlement. Full broker workflows rolling out — enquire for early access.</p>
-          <div class="ind-pricing"><strong>+$99/mo</strong> <span>Industry App · pipeline CRM today</span></div>
+          <div class="ind-head"><span class="ind-icon" aria-hidden="true">✨</span><h3>Creator &amp; Media</h3><span class="badge badge-ga">Early Access</span></div>
+          <p>Audience, content and studio — founding interest welcome. Templates specialise creator workflows.</p>
+          <div class="ind-pricing"><strong>+$99/mo</strong> <span>Industry App · Early Access</span></div>
         </div>
         <div class="value-industry-card">
-          <div class="ind-head">
-            <span class="ind-icon" aria-hidden="true">🔧</span>
-            <h3>Services, Auto &amp; Commercial</h3>
-            <span class="badge badge-soon">Preview</span>
-          </div>
-          <p>Jobs, inventory, and tenancy pipelines built. Quoting, invoicing, and syndication on the roadmap.</p>
-          <div class="ind-pricing"><strong>+$99/mo each</strong> <span>Industry App · founding pricing available</span></div>
+          <div class="ind-head"><span class="ind-icon" aria-hidden="true">🚗</span><h3>Automotive</h3><span class="badge badge-soon">Coming Soon</span></div>
+          <p>Dealerships and workshops as Templates under one Automotive Industry App.</p>
+          <div class="ind-pricing"><strong>+$99/mo</strong> <span>Industry App · Coming Soon</span></div>
         </div>
-      </div>
-
-      <div class="value-includes">
-        <div class="value-includes-col">
-          <h4>Every Growth+ plan includes</h4>
-          <ul>
-            <li><span class="check" aria-hidden="true">✓</span> Full CRM — contacts, tasks, calendar, documents</li>
-            <li><span class="check" aria-hidden="true">✓</span> Growth Automations &amp; Intelligence reports</li>
-            <li><span class="check" aria-hidden="true">✓</span> AI Assist for emails, SEO, and content (BYO API key)</li>
-            <li><span class="check" aria-hidden="true">✓</span> Frontend SEO engine — meta, schema, sitemap, redirects</li>
-            <li><span class="check" aria-hidden="true">✓</span> Site Tools — cache, SMTP, image compression, Cloudflare</li>
-            <li><span class="check" aria-hidden="true">✓</span> Client portal, onboarding &amp; support chat (on platform sales)</li>
-          </ul>
+        <div class="value-industry-card">
+          <div class="ind-head"><span class="ind-icon" aria-hidden="true">⚖️</span><h3>Professional · Retail · Health · Transport · Education</h3><span class="badge badge-soon">Coming Soon</span></div>
+          <p>Each is an Industry App with Templates underneath — not twelve finished products today.</p>
+          <div class="ind-pricing"><strong>+$99/mo</strong> <span>Industry Apps · Coming Soon</span></div>
         </div>
-        <div class="value-includes-col">
-          <h4>Growth Apps (add as needed)</h4>
-          <ul>
-            <li><span class="check" aria-hidden="true">✓</span> SEO — audits, IndexNow, AI optimiser (+$99/mo)</li>
-            <li><span class="check" aria-hidden="true">✓</span> AI Visibility — scans, llms.txt, monitoring (+$99/mo)</li>
-            <li><span class="check" aria-hidden="true">✓</span> Automation — multi-step workflows &amp; webhooks (+$49/mo)</li>
-            <li><span class="check" aria-hidden="true">✓</span> Analytics — KPI snapshots &amp; trend reports (+$49/mo)</li>
-            <li><span class="check" aria-hidden="true">✓</span> Social — publish to 5 platforms (+$79/mo)</li>
-            <li><span class="check" aria-hidden="true">✓</span> Voice AI — inbound call leads to CRM (+$99/mo)</li>
-          </ul>
+        <div class="value-industry-card">
+          <div class="ind-head"><span class="ind-icon" aria-hidden="true">🌾</span><h3>Agriculture &amp; Primary</h3><span class="badge badge-soon">Reserved</span></div>
+          <p>Architecture reserved — not an active sell.</p>
+          <div class="ind-pricing"><strong>Architecture</strong> <span>Reserved</span></div>
         </div>
       </div>
     </div>
   </section>
 
-  <!-- ============================================================ -->
-  <!-- ===== WHY DIGITALGATE ===== -->
-  <!-- ============================================================ -->
-  <section class="why-section">
+  <!-- ===== FOUNDING CUSTOMER PROGRAMME ===== -->
+  <section class="cta-section" id="founding">
     <div class="container">
-      <div class="section-header">
-        <h2>One platform replaces entire categories</h2>
-        <p>DigitalGate consolidates the software stack — without naming competitors that change every year.</p>
-      </div>
-      <div class="compare-grid">
-        <div class="compare-col">
-          <h4>✅ DigitalGate includes</h4>
-          <ul>
-            <li><span class="dg-ic dg-ic-check" aria-hidden="true"></span> CRM</li>
-            <li><span class="dg-ic dg-ic-check" aria-hidden="true"></span> Marketing automation</li>
-            <li><span class="dg-ic dg-ic-check" aria-hidden="true"></span> AI visibility</li>
-            <li><span class="dg-ic dg-ic-check" aria-hidden="true"></span> SEO</li>
-            <li><span class="dg-ic dg-ic-check" aria-hidden="true"></span> Analytics</li>
-            <li><span class="dg-ic dg-ic-check" aria-hidden="true"></span> Website management</li>
-            <li><span class="dg-ic dg-ic-check" aria-hidden="true"></span> Social publishing</li>
-            <li><span class="dg-ic dg-ic-check" aria-hidden="true"></span> Client portal</li>
-            <li><span class="dg-ic dg-ic-check" aria-hidden="true"></span> Voice AI</li>
-            <li><span class="dg-ic dg-ic-check" aria-hidden="true"></span> Industry software</li>
-          </ul>
-        </div>
-        <div class="compare-col">
-          <h4>❌ Typical business stacks</h4>
-          <ul>
-            <li><span class="dg-ic dg-ic-x" aria-hidden="true"></span> Separate CRM subscription</li>
-            <li><span class="dg-ic dg-ic-x" aria-hidden="true"></span> Separate automation tool</li>
-            <li><span class="dg-ic dg-ic-x" aria-hidden="true"></span> Separate SEO plugin or agency</li>
-            <li><span class="dg-ic dg-ic-x" aria-hidden="true"></span> Separate scheduling app</li>
-            <li><span class="dg-ic dg-ic-x" aria-hidden="true"></span> Separate analytics dashboard</li>
-            <li><span class="dg-ic dg-ic-x" aria-hidden="true"></span> Separate social scheduler</li>
-            <li><span class="dg-ic dg-ic-x" aria-hidden="true"></span> Separate industry CRM</li>
-            <li><span class="dg-ic dg-ic-x" aria-hidden="true"></span> Data that never connects</li>
-          </ul>
-        </div>
+      <h2>Founding Customer Programme</h2>
+      <p style="color:#CBD5E1; max-width:720px; margin:0 auto 1rem;">Founding customers receive preferred commercial terms. <strong style="color:#E2E8F0;">Founding 10 is open now</strong> — 30% off qualifying Platform + Industry Apps + additional Templates at onboarding for 24 months, plus Founding Reseller Referral Tier (30% commission × 12 months per referral). Your own discount and referral earnings are completely separate.</p>
+      <p style="color:#94A3B8; max-width:720px; margin:0 auto 1.5rem; font-size:0.92rem;">Apps or Platform upgrades added after initial onboarding are charged at the published price applicable when purchased. Full cohort rules: <a href="/founding-customer-terms/" style="color:#93C5FD;">Founding Terms</a>.</p>
+      <div class="hero-cta-row">
+        <a href="https://digitalgate.com.au/founding-customers/#application" class="hero-cta-primary">Apply for Founding 10 →</a>
+        <a href="https://audit.digitalgate.com.au" class="hero-cta-secondary">Get My Free Business Audit →</a>
       </div>
     </div>
   </section>
 
-  <!-- ============================================================ -->
-  <!-- ===== CTA SECTION ===== -->
-  <!-- ============================================================ -->
-  <section class="cta-section">
-    <div class="container">
-      <h2>Ready to Build Your Business Operating System?</h2>
-      <p style="color:#CBD5E1; max-width:600px; margin:0 auto;">Choose your platform tier, add the Apps you need, and optional professional services or success support when you want expert help.</p>
-      <a href="https://digitalgate.com.au/onboarding/" class="cta-button">Start Your Free Trial →</a>
-    </div>
-  </section>
-
-  <!-- ============================================================ -->
-  <!-- ===== FAQ SECTION ===== -->
-  <!-- ============================================================ -->
+  <!-- ===== FAQ ===== -->
   <section class="faq-section">
     <div class="section-header">
       <h2>Frequently Asked Questions</h2>
       <p>Everything you need to know</p>
     </div>
     <div class="faq-item">
-      <div class="faq-question">What&apos;s the difference between Platform, Apps, and Services? <span class="dg-ic dg-ic-chevron" aria-hidden="true"></span></div>
-      <div class="faq-answer">The Platform is the core software — CRM, AI, automation, and your Digital Twin. Apps add industry verticals and advanced capabilities like SEO or AI Visibility. Professional Services and Support Plans are optional — for implementation, training, and ongoing customer success.</div>
+      <div class="faq-question">What&apos;s the difference between Platform, Apps, Services and Success? <span class="dg-ic dg-ic-chevron" aria-hidden="true"></span></div>
+      <div class="faq-answer">Platform is the operating system (Starter / Growth / Scale / Enterprise). Apps are add-ons in Core → Infrastructure → Industry → Growth order. Professional Services are optional people (implementation, migration, training). Customer Success is ongoing support (Standard included; Priority and Success Partner optional). AI is built into the intelligence layer by platform tier. <strong>Growth Apps are optional and billed separately:</strong> Prospecting &amp; Opportunity Engine $99 · AI Visibility $99 · SEO $99 · Automation $49 · Analytics $49 · Social $79 · AI Communications $99 · Reputation Free. Prospecting &amp; Opportunity Engine is one App (Prospecting, Discovery and scoring included — not separate SKUs).</div>
     </div>
     <div class="faq-item">
-      <div class="faq-question">Do I need Professional Services or a Support Plan? <span class="dg-ic dg-ic-chevron" aria-hidden="true"></span></div>
-      <div class="faq-answer">No. The platform is self-service from day one with Standard support included. Add Professional Services for setup, migration, or custom work. Add a Support Plan if you want dedicated success management, training, and strategy sessions.</div>
+      <div class="faq-question">Do I need Professional Services or Customer Success? <span class="dg-ic dg-ic-chevron" aria-hidden="true"></span></div>
+      <div class="faq-answer">No. The platform is self-service from day one with Standard support included. Add Professional Services for setup, migration or custom work. Add Priority or Success Partner if you want dedicated success management and strategy sessions.</div>
     </div>
     <div class="faq-item">
-      <div class="faq-question">What's included in the Industry Apps? <span class="dg-ic dg-ic-chevron" aria-hidden="true"></span></div>
-      <div class="faq-answer">Each Industry App adds specialised functionality for that vertical. Real Estate covers vendor leads and listings; Accommodation handles bookings and guests; Finance, Services, Automotive, and Commercial each include industry-specific pipelines and workflows.</div>
+      <div class="faq-question">What is the App hierarchy? <span class="dg-ic dg-ic-chevron" aria-hidden="true"></span></div>
+      <div class="faq-answer">Canonical order is Core (run) → Infrastructure (power) → Industry (specialise) → Growth (grow). Core is included with the platform. Infrastructure is priced progressively as commercially ready. Industry and Growth Apps are optional add-ons billed separately — Growth: Prospecting &amp; Opportunity Engine $99 · AI Visibility $99 · SEO $99 · Automation $49 · Analytics $49 · Social $79 · AI Communications $99 · Reputation Free. AI is an intelligence layer included by tier; specialist AI Apps are licensed as Growth Apps where applicable.</div>
     </div>
     <div class="faq-item">
-      <div class="faq-question">Is my website included or a separate service? <span class="dg-ic dg-ic-chevron" aria-hidden="true"></span></div>
-      <div class="faq-answer">Website management is a platform capability — not a separate agency retainer. Growth tier and above includes website tools, templates, and AI content. Advanced SEO and AI Visibility unlock as Apps. Need help migrating or building? That&apos;s Professional Services.</div>
+      <div class="faq-question">Is Website Builder fully included? <span class="dg-ic dg-ic-chevron" aria-hidden="true"></span></div>
+      <div class="faq-answer">No. Platform Core includes website connection &amp; management. <strong>Website Builder</strong> is software capability — create and manage websites in DigitalGate, progressively by platform tier. It is not a done-for-you agency build.</div>
+    </div>
+    <div class="faq-item">
+      <div class="faq-question">Website Migration vs Website Build — which do I need? <span class="dg-ic dg-ic-chevron" aria-hidden="true"></span></div>
+      <div class="faq-answer"><strong>Website Migration &amp; DigitalGate Setup (From $1,497)</strong> moves your <em>existing</em> website into DigitalGate Infrastructure so it runs and is managed on the platform (files, DNS, hosting, SSL, forms, redirects, testing and launch). It does <strong>not</strong> include redesign or redevelopment. <strong>Website Build (From $1,997)</strong> creates a <em>new</em> professional website on DigitalGate. After either path, you manage ongoing changes via Website Builder (by tier) or optional Professional Services / Success / Growth Apps.</div>
+    </div>
+    <div class="faq-item">
+      <div class="faq-question">What is a Website Build? <span class="dg-ic dg-ic-chevron" aria-hidden="true"></span></div>
+      <div class="faq-answer">An optional Professional Service — a new website designed, configured and launched on DigitalGate. Public pricing is <strong>From $1,997 one-time</strong>; project price depends on scope, pages, integrations and content. Separate from Platform subscription and from Website Builder. Founding discounts on Platform + Apps do not automatically apply unless expressly included in your Founding offer.</div>
     </div>
     <div class="faq-item">
       <div class="faq-question">What is Success Partner? <span class="dg-ic dg-ic-chevron" aria-hidden="true"></span></div>
-      <div class="faq-answer">Success Partner ($499/mo) is a customer success plan — not marketing execution. You get a dedicated success manager, monthly strategy sessions, AI optimisation reviews, team training, and quarterly roadmap planning to help you get maximum value from the platform.</div>
-    </div>
-    <div class="faq-item">
-      <div class="faq-question">What is the Social App? <span class="dg-ic dg-ic-chevron" aria-hidden="true"></span></div>
-      <div class="faq-answer">Social lets you compose, schedule, and publish posts to LinkedIn, Facebook, Instagram, X, and Pinterest from inside the platform. Add it as a Growth App (+$79/mo) on top of any platform plan.</div>
+      <div class="faq-answer">Success Partner ($499/mo) is a Customer Success plan — not marketing execution. You get a dedicated success manager, monthly strategy sessions, AI optimisation reviews, team training and quarterly roadmap planning.</div>
     </div>
     <div class="faq-item">
       <div class="faq-question">Are there lock-in contracts? <span class="dg-ic dg-ic-chevron" aria-hidden="true"></span></div>
       <div class="faq-answer">No. All plans are month-to-month. You can upgrade, downgrade, or cancel at any time.</div>
     </div>
-
     <div class="faq-item">
-      <div class="faq-question">What is the Founding Customer Program? <span class="dg-ic dg-ic-chevron" aria-hidden="true"></span></div>
-      <div class="faq-answer">We are onboarding a limited number of pilot agencies at a discounted rate while we validate workflows and gather case studies. Roe Realty is our first live deployment. Founding customers get priority support and input into the product roadmap.</div>
+      <div class="faq-question">What is the Founding Customer Programme? <span class="dg-ic dg-ic-chevron" aria-hidden="true"></span></div>
+      <div class="faq-answer">The early commercial path for businesses operating on DigitalGate. <strong>Founding 10 is open now</strong> — 30% off qualifying Platform + Industry Apps + additional Templates at onboarding for 24 months, plus referral tier benefits. Your own founding discount and referral commission are completely separate. Apps added after onboarding are at published pricing. Full rules: <a href="/founding-customer-terms/">Founding Customer Terms</a>.</div>
     </div>
     <div class="faq-item">
       <div class="faq-question">Do I need an Industry App? <span class="dg-ic dg-ic-chevron" aria-hidden="true"></span></div>
-      <div class="faq-answer">Industry Apps are optional add-ons for businesses in specific verticals. The core platform works standalone. Add Real Estate, Finance, Accommodation, Services, Automotive, or Commercial when you need specialised pipelines and workflows.</div>
+      <div class="faq-answer">No. Industry Apps are optional. The core platform works standalone. Add an Industry App (Property, Services, Hospitality &amp; Accommodation, …) when you need specialised workflows — and only when that Industry is ready for your stage (Available, Early Access or Coming Soon).</div>
     </div>
     <div class="faq-item">
-      <div class="faq-question">How does pricing compare to stacked SaaS tools? <span class="dg-ic dg-ic-chevron" aria-hidden="true"></span></div>
-      <div class="faq-answer">Most businesses stack CRM, automation, SEO, scheduling, and forms across multiple tools costing $300–1,000+/month. DigitalGate consolidates these categories into one platform from $99/month, with industry and growth Apps as optional add-ons.</div>
+      <div class="faq-question">How do Industry Apps and Templates price? <span class="dg-ic dg-ic-chevron" aria-hidden="true"></span></div>
+      <div class="faq-answer"><strong>Industry App = $99/mo</strong> — the major vertical capability. <strong>1 Industry Template is included</strong> (your primary business model). <strong>Additional Templates = +$29/mo each</strong>. Example: Property with Real Estate = $99; add Property Management = $128. Templates are not separate Industry products.</div>
+    </div>
+    <div class="faq-item">
+      <div class="faq-question">Does the Founding discount cover Templates? <span class="dg-ic dg-ic-chevron" aria-hidden="true"></span></div>
+      <div class="faq-answer">Yes — for Founding 10, the 30% acquisition discount applies to qualifying Platform + Industry Apps + any additional Industry Templates purchased as part of the Founding subscription at initial onboarding (24 months). Items added later are at published pricing. Full rules: <a href="/founding-customer-terms/">Founding Customer Terms</a>.</div>
     </div>
   </section>
 
@@ -1783,7 +1761,9 @@
       // Support Plans
       'support-priority':        'https://buy.stripe.com/6oU6oGeUL6KIfrKcJZb7y0u',
       'support-success-partner': 'https://buy.stripe.com/dRmeVceULfhe2EYaBRb7y0v',
-      // Industry Apps (+$99/mo)
+      // Industry Apps (+$99/mo) — Property / Hospitality are Industry SKUs; legacy RE/Accommodation links alias until Stripe products are remapped
+      'app-property':         'https://buy.stripe.com/5kQ7sKh2T8SQenGdO3b7y0i',
+      'app-hospitality-accommodation': 'https://buy.stripe.com/cNiaEWaEv2uscfycJZb7y0g',
       'app-real-estate':       'https://buy.stripe.com/5kQ7sKh2T8SQenGdO3b7y0i',
       'app-finance':           'https://buy.stripe.com/dRm00iaEvb0YdjC7pFb7y0h',
       'app-accommodation':     'https://buy.stripe.com/cNiaEWaEv2uscfycJZb7y0g',
@@ -1806,20 +1786,22 @@
       'website-launch':        'https://buy.stripe.com/8x24gy4g74CA0wQ39pb7y03',
       'website-growth':        'https://buy.stripe.com/8x2aEWbIz9WU5Ra8tJb7y04',
       'website-authority':     'https://buy.stripe.com/14AfZgfYPedabbu7pFb7y05',
-      hero_trial: 'https://digitalgate.com.au/onboarding/',
-      cta_trial: 'https://digitalgate.com.au/onboarding/',
+      hero_trial: 'https://digitalgate.com.au/founding-customers/',
+      cta_trial: 'https://digitalgate.com.au/founding-customers/',
     };
 
     document.querySelectorAll('[data-dg-plan]').forEach(function(card) {
       var key = card.getAttribute('data-dg-plan');
       var url = STRIPE_PAYMENT_LINKS[key];
       var btn = card.querySelector('.btn-primary');
-      if (btn && url && url !== 'REPLACE_ME') {
-        btn.href = url;
-        if (url.indexOf('buy.stripe.com') !== -1) {
-          btn.setAttribute('target', '_blank');
-          btn.setAttribute('rel', 'noopener');
-        }
+      if (!btn || !url || url === 'REPLACE_ME') return;
+      // Founding-phase CTAs stay on /founding-customers/ — do not overwrite with Stripe
+      var label = (btn.textContent || '').toLowerCase();
+      if (label.indexOf('founding') !== -1) return;
+      btn.href = url;
+      if (url.indexOf('buy.stripe.com') !== -1) {
+        btn.setAttribute('target', '_blank');
+        btn.setAttribute('rel', 'noopener');
       }
     });
 
@@ -1836,8 +1818,7 @@
 
     var heroCta = document.querySelector('.hero-cta');
     if (heroCta && STRIPE_PAYMENT_LINKS.hero_trial) heroCta.href = STRIPE_PAYMENT_LINKS.hero_trial;
-    var ctaBtn = document.querySelector('.cta-button');
-    if (ctaBtn && STRIPE_PAYMENT_LINKS.cta_trial) ctaBtn.href = STRIPE_PAYMENT_LINKS.cta_trial;
+    // Founding CTAs stay on /founding-customers/ — do not overwrite with trial link
   </script>
 
   <!-- ============================================================ -->

@@ -148,6 +148,7 @@ class DG_Plan_Registry {
 
     public static function premium_addons() {
         return apply_filters('dg_platform_premium_addons', [
+            'prospecting_pro' => ['label' => 'Prospecting & Opportunity Engine', 'price' => 99, 'feature' => 'prospecting_pro'],
             'ai_visibility_pro' => ['label' => 'AI Visibility Pro', 'price' => 99, 'feature' => 'ai_visibility_pro'],
             'seo_pro' => ['label' => 'SEO Pro', 'price' => 99, 'feature' => 'seo_pro'],
             'automation_pro' => ['label' => 'Automation Pro', 'price' => 49, 'feature' => 'automation_pro'],
