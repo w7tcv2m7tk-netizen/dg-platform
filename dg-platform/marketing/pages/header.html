@@ -19,43 +19,44 @@
     left: 0;
     width: 100%;
     z-index: 1000;
-    background: rgba(7, 11, 20, 0.95);
-    backdrop-filter: blur(10px);
+    background: rgba(7, 11, 20, 0.62);
+    backdrop-filter: blur(14px) saturate(140%);
+    -webkit-backdrop-filter: blur(14px) saturate(140%);
     padding: 12px 0;
-    border-bottom: 1px solid rgba(59, 130, 246, 0.15);
+    border-bottom: 1px solid rgba(59, 130, 246, 0.12);
+    box-shadow: 0 8px 32px rgba(2, 6, 23, 0.18);
   }
   .dg-header-container {
     max-width: 1280px;
     margin: 0 auto;
     padding: 0 2rem;
     display: flex;
+    position: relative;
     align-items: center;
     justify-content: space-between;
+    gap: 2.5rem;
     min-height: 56px;
   }
   .dg-logo-wrapper {
     display: flex;
     align-items: center;
-    gap: 10px;
     text-decoration: none;
     line-height: 1;
     flex-shrink: 0;
   }
-  .dg-gate-icon {
-    width: 32px;
-    height: 32px;
-    object-fit: contain;
-  }
   .dg-full-logo {
-    height: 28px;
+    height: 32px;
     width: auto;
+    max-width: 11.5rem;
+    object-fit: contain;
+    display: block;
   }
 
   /* ===== DESKTOP NAV ===== */
   .dg-nav-links {
     display: flex;
     list-style: none;
-    gap: 1.25rem;
+    gap: 0.8rem;
     align-items: center;
     margin: 0;
     padding: 0;
@@ -131,6 +132,49 @@
     background: rgba(59, 130, 246, 0.08);
   }
 
+  /* Apps mega menu — 4 columns on desktop */
+  .dg-dropdown-mega {
+    left: 0;
+    transform: none;
+    min-width: 720px;
+    max-width: min(880px, calc(100vw - 2rem));
+    padding: 1rem 0.75rem 0.85rem;
+    border-radius: 18px;
+  }
+  .dg-mega-cols {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 0.25rem 0.5rem;
+  }
+  .dg-mega-col {
+    min-width: 0;
+    padding: 0 0.15rem;
+  }
+  .dg-mega-col .dg-dropdown-label {
+    padding: 0.35rem 0.85rem 0.45rem;
+  }
+  .dg-mega-col a {
+    padding: 0.45rem 0.85rem;
+    border-radius: 8px;
+    white-space: normal;
+    line-height: 1.35;
+  }
+  .dg-mega-footer {
+    margin-top: 0.65rem;
+    padding: 0.65rem 0.85rem 0.15rem;
+    border-top: 1px solid rgba(59, 130, 246, 0.15);
+  }
+  .dg-mega-footer a {
+    padding: 0.45rem 0.85rem;
+    border-radius: 8px;
+    font-weight: 600;
+    color: #93C5FD;
+  }
+  .dg-mega-footer a:hover {
+    color: #BFDBFE;
+    background: rgba(59, 130, 246, 0.08);
+  }
+
   .dg-desktop-dropdown-trigger {
     position: relative;
   }
@@ -139,6 +183,10 @@
     display: block;
     animation: dgFadeDown 0.2s ease;
   }
+  .dg-desktop-dropdown-trigger:hover .dg-dropdown-mega,
+  .dg-desktop-dropdown-trigger .dg-dropdown-mega:hover {
+    animation: dgFadeDownMega 0.2s ease;
+  }
   .dg-dropdown:hover {
     display: block !important;
   }
@@ -146,6 +194,10 @@
   @keyframes dgFadeDown {
     0% { opacity: 0; transform: translateX(-50%) translateY(-8px); }
     100% { opacity: 1; transform: translateX(-50%) translateY(0); }
+  }
+  @keyframes dgFadeDownMega {
+    0% { opacity: 0; transform: translateY(-8px); }
+    100% { opacity: 1; transform: translateY(0); }
   }
 
   /* ===== CTA ===== */
@@ -171,46 +223,47 @@
     transform: translateY(-2px);
   }
 
-  /* ===== CLIENT PORTAL ===== */
+  /* ===== CLIENT PORTAL — recede; CTA is the only standout ===== */
   .dg-nav-client-portal {
-    background: rgba(59, 130, 246, 0.12);
-    border: 1px solid rgba(59, 130, 246, 0.25);
-    padding: 10px 18px !important;
-    border-radius: 40px !important;
-    color: #BFDBFE !important;
-    font-weight: 600 !important;
+    background: transparent !important;
+    border: none !important;
+    padding: 6px 0 !important;
+    border-radius: 0 !important;
+    color: #94A3B8 !important;
+    font-weight: 500 !important;
     font-size: 0.85rem !important;
-    transition: all 0.25s ease;
+    transition: color 0.2s;
     white-space: nowrap;
-    display: inline-block;
+    display: inline-flex;
+    align-items: center;
     text-align: center;
     min-height: auto !important;
     line-height: 1.4 !important;
     box-sizing: border-box !important;
   }
   .dg-nav-client-portal:hover {
-    background: rgba(59, 130, 246, 0.2);
-    border-color: #3B82F6;
-    color: #F9FAFB !important;
-    transform: translateY(-2px);
+    background: transparent !important;
+    border-color: transparent !important;
+    color: #E2E8F0 !important;
+    transform: none;
   }
   .dg-nav-client-portal i {
     margin-right: 6px;
+    font-size: 0.75rem;
+    opacity: 0.85;
+  }
+
+  .dg-nav-actions {
+    display: flex;
+    align-items: center;
+    gap: 1.15rem;
+    margin-left: 0.35rem;
+  }
+  .dg-nav-links > li.dg-nav-actions {
+    position: static;
   }
 
   /* ===== MOBILE MENU BUTTON ===== */
-  .dg-mobile-nav-toggle {
-    position: absolute;
-    opacity: 0;
-    width: 1px;
-    height: 1px;
-    margin: -1px;
-    padding: 0;
-    overflow: hidden;
-    clip: rect(0, 0, 0, 0);
-    border: 0;
-    pointer-events: none;
-  }
   .dg-mobile-menu-btn {
     display: none;
     background: rgba(59, 130, 246, 0.1);
@@ -227,7 +280,6 @@
     align-items: center;
     justify-content: center;
     transition: all 0.2s;
-    box-sizing: border-box;
   }
   .dg-mobile-menu-btn:hover {
     background: rgba(59, 130, 246, 0.2);
@@ -237,8 +289,16 @@
   }
 
   @media (max-width: 1024px) {
-    .dg-nav-links { gap: 1rem; }
+    .dg-header-container { gap: 1.75rem; }
+    .dg-nav-links { gap: 0.65rem; }
     .dg-nav-links > li > a { font-size: 0.8rem; }
+    .dg-dropdown-mega {
+      min-width: 560px;
+      max-width: min(640px, calc(100vw - 2rem));
+    }
+    .dg-mega-cols {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
   }
 
   @media (max-width: 880px) {
@@ -247,9 +307,7 @@
       min-height: auto;
       padding: 0 1rem;
     }
-    .dg-logo-wrapper { gap: 8px; }
-    .dg-gate-icon { width: 28px; height: 28px; }
-    .dg-full-logo { height: 24px; }
+    .dg-full-logo { height: 28px; }
     .dg-mobile-menu-btn { display: flex; }
     .dg-desktop-dropdown-trigger:hover .dg-dropdown { display: none; }
 
@@ -263,37 +321,18 @@
       flex-direction: column;
       padding: 0;
       gap: 0;
-      max-height: none;
-      height: auto;
-      display: none;
+      max-height: 0;
       overflow: hidden;
-      transition: none;
+      transition: max-height 0.35s cubic-bezier(0.4, 0, 0.2, 1);
       z-index: 999;
       box-shadow: 0 20px 30px rgba(0, 0, 0, 0.3);
       border-bottom: 1px solid rgba(59, 130, 246, 0.2);
     }
     .dg-nav-links.open {
-      display: flex;
       max-height: 85vh;
       padding: 20px 16px 24px;
       gap: 4px;
       overflow-y: auto;
-    }
-    /* No-JS / Gen2 script-stripped fallback: checkbox label toggle.
-       Higher specificity + !important beats Gen2 chrome max-height:0 rules. */
-    .wb-site-chrome:has(#dgMobileNavToggle:checked) .dg-nav-links,
-    .dg-header-container:has(#dgMobileNavToggle:checked) .dg-nav-links,
-    #dgMobileNavToggle:checked ~ .dg-nav-links {
-      display: flex !important;
-      max-height: 85vh !important;
-      transition: none !important;
-      overflow-y: auto !important;
-      padding: 20px 16px 24px !important;
-      pointer-events: auto !important;
-      gap: 4px !important;
-    }
-    #dgMobileNavToggle:checked + .dg-mobile-menu-btn .fa-bars::before {
-      content: "\f00d";
     }
     .dg-nav-links > li {
       width: 100%;
@@ -341,6 +380,39 @@
       max-height: 600px;
       padding: 6px 0 10px;
     }
+    .dg-dropdown-mega {
+      min-width: unset !important;
+      max-width: none !important;
+      padding: 0 !important;
+      border-radius: 0 !important;
+    }
+    .dg-dropdown-mega.open {
+      max-height: 1200px;
+      padding: 6px 0 10px !important;
+    }
+    .dg-mega-cols {
+      grid-template-columns: 1fr;
+      gap: 0.35rem;
+    }
+    .dg-mega-col {
+      padding: 0;
+    }
+    .dg-mega-col .dg-dropdown-label {
+      padding: 10px 20px 4px;
+    }
+    .dg-mega-col a {
+      padding: 12px 20px;
+      border-radius: 0;
+    }
+    .dg-mega-footer {
+      margin-top: 0.35rem;
+      padding: 8px 0 0;
+      border-top: 1px solid rgba(59, 130, 246, 0.12);
+    }
+    .dg-mega-footer a {
+      padding: 12px 20px;
+      border-radius: 0;
+    }
     .dg-dropdown a {
       padding: 12px 20px;
       font-size: 15px;
@@ -374,16 +446,28 @@
     }
     .dg-nav-links .dg-nav-client-portal {
       margin-top: 4px !important;
-      background: rgba(59, 130, 246, 0.08);
+      padding: 14px 20px !important;
+      min-height: auto !important;
+      border-radius: 0 !important;
+      background: transparent !important;
+      border: none !important;
+      color: #94A3B8 !important;
+      justify-content: center;
+    }
+    .dg-nav-actions {
+      flex-direction: column;
+      width: 100%;
+      gap: 0.35rem;
+      margin-left: 0;
+      margin-top: 0.5rem;
     }
   }
 
   @media (max-width: 480px) {
     .dg-header-container { padding: 0 0.75rem; }
-    .dg-gate-icon { width: 24px; height: 24px; }
-    .dg-full-logo { height: 20px; }
+    .dg-full-logo { height: 24px; }
     .dg-mobile-menu-btn { width: 40px; height: 40px; font-size: 16px; }
-    .dg-nav-links.open { display: flex; padding: 16px 12px 20px; max-height: 85vh; }
+    .dg-nav-links.open { padding: 16px 12px 20px; max-height: 85vh; }
     .dg-nav-links > li > a { font-size: 15px; padding: 12px 10px; }
     .dg-dropdown a { font-size: 14px; padding: 10px 16px; }
     .dg-nav-links .dg-nav-cta,
@@ -395,19 +479,17 @@
   }
 
   body.menu-open { overflow: hidden; }
-  body.dg-has-fixed-header { padding-top: 72px; }
+  /* Header offset handled in website-renderer-css (chrome spacer; hero pages full-bleed). */
 </style>
 
 <header class="dg-header">
   <div class="dg-header-container">
     <a href="https://digitalgate.com.au/" class="dg-logo-wrapper">
-      <img src="https://digitalgate.com.au/wp-content/uploads/2026/05/Gate-Icon-Light-Door-scaled.png" alt="DigitalGate" class="dg-gate-icon">
-      <img src="https://digitalgate.com.au/wp-content/uploads/2026/05/DigitalGate-Banner-Light.png" alt="DigitalGate Logo" class="dg-full-logo">
+      <img src="https://app.digitalgate.com.au/brand/logo-on-dark.png" alt="DigitalGate" class="dg-full-logo">
     </a>
-    <input type="checkbox" id="dgMobileNavToggle" class="dg-mobile-nav-toggle" tabindex="-1" aria-hidden="true">
-    <label class="dg-mobile-menu-btn" id="dgMobileBtn" for="dgMobileNavToggle" aria-label="Menu" aria-controls="dgNavLinks" aria-expanded="false" role="button">
-      <i class="fas fa-bars" aria-hidden="true"></i>
-    </label>
+    <button class="dg-mobile-menu-btn" id="dgMobileBtn" aria-label="Menu" aria-expanded="false">
+      <i class="fas fa-bars"></i>
+    </button>
     <ul class="dg-nav-links" id="dgNavLinks">
 
       <!-- Platform -->
@@ -416,27 +498,27 @@
           Platform <i class="fas fa-chevron-down"></i>
         </a>
         <ul class="dg-dropdown dg-dropdown-wide" id="dgPlatformDropdown">
-          <li><a href="https://digitalgate.com.au/#platform-overview">Platform Overview</a></li>
-          <li><a href="https://digitalgate.com.au/#platform-core">Platform Core</a></li>
+          <li><a href="https://digitalgate.com.au/#platform-overview">Overview</a></li>
+          <li><a href="https://digitalgate.com.au/#platform-core">Core</a></li>
           <li><a href="https://digitalgate.com.au/#digital-twin">Digital Twin™</a></li>
           <li><a href="https://digitalgate.com.au/#ai">AI Throughout</a></li>
-          <li><a href="https://digitalgate.com.au/pricing#platform">Plans &amp; Pricing</a></li>
+          <li><a href="https://digitalgate.com.au/pricing/#screenshots">Platform Screenshots</a></li>
         </ul>
       </li>
 
       <!-- Apps -->
       <li class="dg-desktop-dropdown-trigger">
-        <a href="#" class="dg-dropdown-toggle" data-dg-dropdown="dgAppsDropdown">
+        <a href="https://digitalgate.com.au/apps/" class="dg-dropdown-toggle" data-dg-dropdown="dgAppsDropdown">
           Apps <i class="fas fa-chevron-down"></i>
         </a>
         <ul class="dg-dropdown dg-dropdown-wide" id="dgAppsDropdown">
-          <li><span class="dg-dropdown-label">Industry</span></li>
-          <li><a href="https://digitalgate.com.au/pricing#apps">Real Estate · Accommodation · Services</a></li>
-          <li><span class="dg-dropdown-label">Growth &amp; Intelligence</span></li>
-          <li><a href="https://digitalgate.com.au/pricing#apps">SEO · AI Visibility · Automation</a></li>
-          <li><span class="dg-dropdown-label">Capabilities</span></li>
-          <li><a href="https://digitalgate.com.au/pricing#apps">Website · Commerce · Infrastructure</a></li>
-          <li><a href="https://digitalgate.com.au/pricing#apps"><strong>View all Apps →</strong></a></li>
+          <li><a href="https://digitalgate.com.au/apps/">All Apps</a></li>
+          <li><a href="https://digitalgate.com.au/apps/#core-apps">Core</a></li>
+          <li><a href="https://digitalgate.com.au/apps/#infrastructure-apps">Infrastructure</a></li>
+          <li><a href="https://digitalgate.com.au/apps/#industry-apps">Industry Apps</a></li>
+          <li><a href="https://digitalgate.com.au/growth/">Growth</a></li>
+          <li><a href="https://digitalgate.com.au/apps/#growth-apps">Growth Apps (catalog)</a></li>
+          <li><a href="https://digitalgate.com.au/pricing/#apps">Apps &amp; Pricing</a></li>
         </ul>
       </li>
 
@@ -446,34 +528,43 @@
           Industries <i class="fas fa-chevron-down"></i>
         </a>
         <ul class="dg-dropdown dg-dropdown-wide" id="dgIndustriesDropdown">
-          <li><a href="https://digitalgate.com.au/#industries">Real Estate</a></li>
-          <li><a href="https://digitalgate.com.au/#industries">Accommodation</a></li>
-          <li><a href="https://digitalgate.com.au/#industries">Finance</a></li>
-          <li><a href="https://digitalgate.com.au/#industries">Professional Services</a></li>
-          <li><a href="https://digitalgate.com.au/#industries">Commercial</a></li>
-          <li><a href="https://digitalgate.com.au/#industries">Creator</a></li>
-          <li><a href="https://digitalgate.com.au/#industries">Automotive</a></li>
-          <li><a href="https://digitalgate.com.au/#industries">Services &amp; Trades</a></li>
+          <li><a href="https://digitalgate.com.au/apps/industry/property/">Property</a></li>
+          <li><a href="https://digitalgate.com.au/apps/industry/hospitality-accommodation/">Hospitality &amp; Accommodation</a></li>
+          <li><a href="https://digitalgate.com.au/apps/industry/services/">Services</a></li>
+          <li><a href="https://digitalgate.com.au/apps/industry/finance/">Finance</a></li>
+          <li><a href="https://digitalgate.com.au/apps/industry/creator/">Creator &amp; Media</a></li>
+          <li><a href="https://digitalgate.com.au/apps/industry/automotive/">Automotive</a></li>
+          <li><a href="https://digitalgate.com.au/pricing/#industry-apps">All Industry Apps</a></li>
         </ul>
       </li>
 
       <!-- Pricing -->
-      <li><a href="https://digitalgate.com.au/pricing/">Pricing</a></li>
-
-      <!-- Resources -->
       <li class="dg-desktop-dropdown-trigger">
-        <a href="#" class="dg-dropdown-toggle" data-dg-dropdown="dgResourcesDropdown">
-          Resources <i class="fas fa-chevron-down"></i>
+        <a href="https://digitalgate.com.au/pricing/" class="dg-dropdown-toggle" data-dg-dropdown="dgPricingDropdown">
+          Pricing <i class="fas fa-chevron-down"></i>
         </a>
-        <ul class="dg-dropdown" id="dgResourcesDropdown">
+        <ul class="dg-dropdown" id="dgPricingDropdown">
+          <li><a href="https://digitalgate.com.au/pricing/#platform">Platform Pricing</a></li>
+          <li><a href="https://digitalgate.com.au/pricing/#apps">Apps &amp; Pricing</a></li>
+          <li><a href="https://digitalgate.com.au/pricing/#professional-services">Professional Services</a></li>
+          <li><a href="https://digitalgate.com.au/pricing/#customer-success">Support &amp; Success</a></li>
+        </ul>
+      </li>
+
+      <!-- Insights -->
+      <li class="dg-desktop-dropdown-trigger">
+        <a href="#" class="dg-dropdown-toggle" data-dg-dropdown="dgInsightsDropdown">
+          Insights <i class="fas fa-chevron-down"></i>
+        </a>
+        <ul class="dg-dropdown dg-dropdown-wide" id="dgInsightsDropdown">
           <li><a href="https://digitalgate.com.au/insights/">Insights</a></li>
-          <li><a href="https://digitalgate.com.au/discover/">AI Platform Discovery</a></li>
-          <li><a href="https://digitalgate.com.au/contact/">Free Platform Audit</a></li>
           <li><span class="dg-dropdown-label">Frameworks</span></li>
           <li><a href="https://digitalgate.com.au/ai-visibility-framework/">AI Visibility Framework™</a></li>
           <li><a href="https://digitalgate.com.au/appraisal-magnet-system/">Appraisal Magnet System™</a></li>
           <li><a href="https://digitalgate.com.au/listing-pipeline-framework/">Listing Pipeline Framework™</a></li>
           <li><a href="https://digitalgate.com.au/vendor-velocity-system/">Vendor Velocity System™</a></li>
+          <li><a href="https://audit.digitalgate.com.au">Free Business Audit</a></li>
+          <li><a href="https://digitalgate.com.au/discover/">AI Platform Discovery</a></li>
         </ul>
       </li>
 
@@ -485,21 +576,17 @@
         <ul class="dg-dropdown" id="dgCompanyDropdown">
           <li><a href="https://digitalgate.com.au/about/">About</a></li>
           <li><a href="https://digitalgate.com.au/contact/">Contact</a></li>
-          <li><a href="https://digitalgate.com.au/pricing#professional-services">Professional Services</a></li>
-          <li><a href="https://digitalgate.com.au/pricing#support-plans">Support Plans</a></li>
+          <li><a href="https://digitalgate.com.au/card/">Digital Business Card</a></li>
+          <li><a href="https://digitalgate.com.au/founding-customers/">Founding Customer Programme</a></li>
         </ul>
       </li>
 
-      <!-- Client Portal -->
-      <li>
+      <!-- Right-side actions -->
+      <li class="dg-nav-actions">
         <a href="https://app.digitalgate.com.au/login" class="dg-nav-client-portal">
           <i class="fas fa-user-lock"></i> Client Portal
         </a>
-      </li>
-
-      <!-- CTA -->
-      <li>
-        <a href="https://digitalgate.com.au/onboarding/" class="dg-nav-cta">Start Free Trial</a>
+        <a href="https://digitalgate.com.au/founding-customers/#application" class="dg-nav-cta">Apply for Founding 10 →</a>
       </li>
     </ul>
   </div>
@@ -508,7 +595,6 @@
 <script>
   (function() {
     var mobileBtn = document.getElementById('dgMobileBtn');
-    var navToggle = document.getElementById('dgMobileNavToggle');
     var navMenu = document.getElementById('dgNavLinks');
     var body = document.body;
     var toggles = document.querySelectorAll('.dg-dropdown-toggle');
@@ -524,35 +610,33 @@
       });
     }
 
-    function setMobileMenuOpen(isOpen) {
+    function closeMobileMenu() {
       if (!navMenu) return;
-      navMenu.classList.toggle('open', isOpen);
-      body.classList.toggle('menu-open', isOpen);
-      if (navToggle) navToggle.checked = !!isOpen;
+      navMenu.classList.remove('open');
+      body.classList.remove('menu-open');
       if (mobileBtn) {
+        mobileBtn.setAttribute('aria-expanded', 'false');
+        var icon = mobileBtn.querySelector('i');
+        if (icon) {
+          icon.classList.remove('fa-times');
+          icon.classList.add('fa-bars');
+        }
+      }
+      closeAllDropdowns();
+    }
+
+    if (mobileBtn && navMenu) {
+      mobileBtn.addEventListener('click', function(e) {
+        e.stopPropagation();
+        var isOpen = navMenu.classList.toggle('open');
+        body.classList.toggle('menu-open', isOpen);
         mobileBtn.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
         var icon = mobileBtn.querySelector('i');
         if (icon) {
           icon.classList.toggle('fa-bars', !isOpen);
-          icon.classList.toggle('fa-times', !!isOpen);
+          icon.classList.toggle('fa-times', isOpen);
         }
-      }
-      if (!isOpen) closeAllDropdowns();
-    }
-
-    function closeMobileMenu() {
-      setMobileMenuOpen(false);
-    }
-
-    if (navToggle && navMenu) {
-      navToggle.addEventListener('change', function() {
-        setMobileMenuOpen(navToggle.checked);
-      });
-    } else if (mobileBtn && navMenu) {
-      mobileBtn.addEventListener('click', function(e) {
-        e.preventDefault();
-        e.stopPropagation();
-        setMobileMenuOpen(!navMenu.classList.contains('open'));
+        if (!isOpen) closeAllDropdowns();
       });
     }
 
