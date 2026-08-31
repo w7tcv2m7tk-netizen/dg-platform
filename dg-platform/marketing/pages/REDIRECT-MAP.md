@@ -13,13 +13,13 @@
 | **Book Platform Consultation** | `/strategy-session/` (or `/contact/#platform-consultation`) | `strategy-session-page.html` / `contact-page.html` | Secondary CTA beside Founding · keep consultation paths live |
 | **AI Platform Discovery** (structured audit form) | `/discover/` | `discovery-form.html` | Header/footer Resources · posts to `/wp-json/digitalgate/v1/discovery` · **not** a duplicate of contact |
 | **Founding Customer Programme** | `/founding-customers/` | `founding-customers-page.html` | **Primary invite / explore URL** · no Terms checkbox · site-wide “Explore Founding 10 →” |
-| **Founding accept + setup** (post-offer) | `/founding/accept/{token}/` then `/founding/setup/` | plugin templates | Written offer → Terms accept → Gen 2-style onboarding → Stripe 14-day trial. **Not** `/signup`. |
-| **Client Onboarding alias** | `/onboarding/` | gated by `dg_founding_setup_ready` | **Not** acquisition. Leave alias OFF until `/founding/setup/` returns 200. |
+| **Founding accept + setup** (post-offer) | `app.digitalgate.com.au/founding/accept/[token]` then `/founding/setup` | **Gen 2 (`dg-platform-web`)** | Written offer → Terms → Gen 2 onboarding → Gen 2 Stripe 14-day trial. Not WP. Not `/signup`. |
+| **Legacy public `/onboarding/`** | 301 to Gen 2 `/founding/setup` **after** that route is the real wizard and returns 200 | Redirect only | Not a WordPress questionnaire. Not a second onboarding system. |
 | **Strategy session (legacy)** | `/strategy-session/` → see Redirects | `strategy-session-page.html` | Still used for Book Platform Consultation CTAs |
 
 ### Founding Customer funnel (canonical)
 
-`Explore Founding 10 →` → `/founding-customers/` (invite + research) → `/apps/` `/pricing/` `/discover/` (optional) → `/contact/#platform-consultation` (discovery) → written offer → `/founding/accept/{token}/` (Terms) → `/founding/setup/` (onboarding + plan/Apps) → Stripe Checkout Session (14-day trial, card now, $0 now) → implementation → go live
+`Explore Founding 10 →` → `/founding-customers/` (invite + research) → `/apps/` `/pricing/` `/discover/` (optional) → `/contact/#platform-consultation` (discovery) → written offer → `app.digitalgate.com.au/founding/accept/[token]` (Terms) → `app.digitalgate.com.au/founding/setup` (Gen 2 onboarding + plan/Apps) → Gen 2 Stripe Checkout (14-day trial, card now, $0 now) → Operator OS implementation → go live
 
 **Do not** send cold Founding CTAs to `/onboarding/`, `/signup`, `#application`, or Stripe Payment Links. **Do not** maintain a separate `/founding-application/` page.
 
@@ -43,7 +43,7 @@ Canonical URLs after BOS revamp. Paste from repo; no slug change.
 | `/insights/` | `insights-page.html` | Blog index chrome (keep WP posts) |
 | `/business-brain/` | `business-brain-page.html` | Connected Business / Business Brain™ narrative |
 | `/from-dumb-businesses-to-smart-businesses/` | `from-dumb-businesses-to-smart-businesses.html` | Featured Insight |
-| `/onboarding/` | alias only when `dg_founding_setup_ready` is ON | Accepted Founding customers → `/founding/setup/`; others → invite preview. Default **OFF**. |
+| `/onboarding/` | compatibility 301 (later) | → `https://app.digitalgate.com.au/founding/setup` only after Gen 2 setup is the real wizard and returns 200 |
 | `/card/` | `digital-business-card.html` | Ben Roe digital business card |
 | `/privacy-policy/` | `privacy-policy.html` | Privacy Policy (12 Aug 2026) |
 | `/legal-notice/` | `legal-notice.html` | Legal Notice & Platform Disclaimer |

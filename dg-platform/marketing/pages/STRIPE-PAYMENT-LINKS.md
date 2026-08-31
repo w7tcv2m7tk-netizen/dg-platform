@@ -2,7 +2,7 @@
 
 Align Stripe with the DigitalGate pricing framework (Platform · Growth Systems · Industry Apps · Add-ons).
 
-**Founding 10:** do **not** use Stripe Payment Links. Founding trials use Checkout Sessions with `trial_period_days=14`, card collected now, $0 during the trial.
+**Founding 10:** do **not** use Stripe Payment Links. Founding trials are created by **Gen 2** (`createPlatformCheckoutSession` in `dg-platform-web`) with a 14-day trial, card collected now, $0 during the trial. WordPress `DG_Stripe_Billing` is not in this path.
 
 **Currency:** AUD · **Billing:** Monthly recurring unless noted
 
