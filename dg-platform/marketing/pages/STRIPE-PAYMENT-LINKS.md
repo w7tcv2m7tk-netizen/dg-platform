@@ -2,6 +2,8 @@
 
 Align Stripe with the DigitalGate pricing framework (Platform · Growth Systems · Industry Apps · Add-ons).
 
+**Founding 10:** do **not** use Stripe Payment Links. Founding trials use Checkout Sessions with `trial_period_days=14`, card collected now, $0 during the trial.
+
 **Currency:** AUD · **Billing:** Monthly recurring unless noted
 
 ---

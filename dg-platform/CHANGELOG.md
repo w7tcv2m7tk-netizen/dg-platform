@@ -1,5 +1,14 @@
 # DG Platform Changelog
 
+## 10.71.0 — Founding 10 accept → setup → 14-day Stripe trial (August 2026)
+
+- **Founding 10 journey (testable, live funnel not switched):** invite preview `/founding-customers-preview/`, offer accept `/founding/accept/{token}/`, Gen 2-style setup `/founding/setup/`, Stripe Checkout Session with `trial_period_days=14` (no Payment Links)
+- **Admin:** DG Platform → Founding 10 issues accept links and runs monthly + yearly trial proofs
+- **Stripe webhooks:** `trialing` tags `Trialing` + `Founding 10` and does **not** apply `Payment Received`; `active` after trial adds payment and strips trialing
+- **`/onboarding/` alias** stays OFF (`dg_founding_setup_ready`) until setup returns 200 and the live funnel is ready to switch
+- **Marketing sources:** `founding-customers-page.html` is invite/explore (no Terms checkbox). Public CTAs stop pointing at `#application` and `/onboarding/`
+- Founding Customer Terms and commercial rules unchanged. `/signup` stays a separate generic picker
+
 ## 10.67.0 — Acc StayBooking dual-write push (August 2026)
 
 - **Acc:** `DG_Acc_Platform_Sync` listens to `dg_booking_created` / `dg_booking_confirmed` and POSTs the booking row to Gen 2 `/api/webhooks/dg-stay-booking` (non-blocking)

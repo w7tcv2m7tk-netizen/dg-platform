@@ -12,15 +12,16 @@
 |--------|---------------|-------------|-------|
 | **Book Platform Consultation** | `/strategy-session/` (or `/contact/#platform-consultation`) | `strategy-session-page.html` / `contact-page.html` | Secondary CTA beside Founding · keep consultation paths live |
 | **AI Platform Discovery** (structured audit form) | `/discover/` | `discovery-form.html` | Header/footer Resources · posts to `/wp-json/digitalgate/v1/discovery` · **not** a duplicate of contact |
-| **Founding Customer Programme** | `/founding-customers/` | `founding-customers-page.html` | **Primary sales URL** · on-page application at `#application` · site-wide “Become a Founding Customer →” |
-| **Client Onboarding** (post-acceptance) | `/onboarding/` | `onboarding-form.html` | **Not** acquisition — accepted founding / customers ready to implement |
+| **Founding Customer Programme** | `/founding-customers/` | `founding-customers-page.html` | **Primary invite / explore URL** · no Terms checkbox · site-wide “Explore Founding 10 →” |
+| **Founding accept + setup** (post-offer) | `/founding/accept/{token}/` then `/founding/setup/` | plugin templates | Written offer → Terms accept → Gen 2-style onboarding → Stripe 14-day trial. **Not** `/signup`. |
+| **Client Onboarding alias** | `/onboarding/` | gated by `dg_founding_setup_ready` | **Not** acquisition. Leave alias OFF until `/founding/setup/` returns 200. |
 | **Strategy session (legacy)** | `/strategy-session/` → see Redirects | `strategy-session-page.html` | Still used for Book Platform Consultation CTAs |
 
 ### Founding Customer funnel (canonical)
 
-`Become a Founding Customer →` → `/founding-customers/` → Apply (`#application` on-page form) → consultation as needed → acceptance → `/onboarding/` (Client Onboarding) → Platform
+`Explore Founding 10 →` → `/founding-customers/` (invite + research) → `/apps/` `/pricing/` `/discover/` (optional) → `/contact/#platform-consultation` (discovery) → written offer → `/founding/accept/{token}/` (Terms) → `/founding/setup/` (onboarding + plan/Apps) → Stripe Checkout Session (14-day trial, card now, $0 now) → implementation → go live
 
-**Do not** send cold Founding CTAs to `/onboarding/`. **Do not** maintain a separate `/founding-application/` page — application is a section on `/founding-customers/`.
+**Do not** send cold Founding CTAs to `/onboarding/`, `/signup`, `#application`, or Stripe Payment Links. **Do not** maintain a separate `/founding-application/` page.
 
 **`/beta/` soft-deprecate:** 301 `/beta/` → `/founding-customers/`. `beta-program-page.html` is a short redirect/canonical pointer only. Also 301 `/founding/` → `/founding-customers/` if that slug exists.
 
@@ -36,13 +37,13 @@ Canonical URLs after BOS revamp. Paste from repo; no slug change.
 | `/pricing/` | `pricing-page.html` | Platform · Apps · Professional Services · Customer Success · Founding |
 | `/about/` | `about-page.html` | Company / platform story |
 | `/contact/` | `contact-page.html` | Contact + `#platform-consultation` booking section |
-| `/founding-customers/` | `founding-customers-page.html` | **Founding Customer Programme™** + on-page application (`#application`) |
+| `/founding-customers/` | `founding-customers-page.html` | **Founding Customer Programme™** invite + explore (no application / Terms checkbox) |
 | `/founding-customer-terms/` | `founding-customer-terms.html` | **Founding Customer Terms & Conditions** · programme rules (alongside general Terms) |
 | `/discover/` | `discovery-form.html` | AI Platform Discovery form |
 | `/insights/` | `insights-page.html` | Blog index chrome (keep WP posts) |
 | `/business-brain/` | `business-brain-page.html` | Connected Business / Business Brain™ narrative |
 | `/from-dumb-businesses-to-smart-businesses/` | `from-dumb-businesses-to-smart-businesses.html` | Featured Insight |
-| `/onboarding/` | `onboarding-form.html` | **DigitalGate Client Onboarding** (post-acceptance / post-sale) |
+| `/onboarding/` | alias only when `dg_founding_setup_ready` is ON | Accepted Founding customers → `/founding/setup/`; others → invite preview. Default **OFF**. |
 | `/card/` | `digital-business-card.html` | Ben Roe digital business card |
 | `/privacy-policy/` | `privacy-policy.html` | Privacy Policy (12 Aug 2026) |
 | `/legal-notice/` | `legal-notice.html` | Legal Notice & Platform Disclaimer |
@@ -72,7 +73,7 @@ Canonical URLs after BOS revamp. Paste from repo; no slug change.
 | `/strategy-session/` | `/contact/#platform-consultation` | 301 | Public/campaign traffic · **Exception:** keep page live if client portal booking must stay at this slug (see below) |
 | `/beta/` | `/founding-customers/` | 301 | Soft-deprecate old programme slug · `beta-program-page.html` is interim redirect HTML |
 | `/founding/` | `/founding-customers/` | 301 | Only if `/founding/` exists on WP — do not publish both |
-| `/founding-application/` | `/founding-customers/#application` | 301 | Do not maintain a separate application page |
+| `/founding-application/` | `/founding-customers/` | 301 | Do not maintain a separate application page · no `#application` |
 | `/platform/` | `/#platform-overview` | 301 | Optional · nav uses homepage anchor, not standalone page |
 | `/growth-systems/` | `/pricing/#customer-success` | 301 | Legacy product category removed from nav |
 | `/growth-systems/*` | `/pricing/#customer-success` | 301 | Foundation / Authority / Partner retainers → support & success section |

@@ -1,6 +1,6 @@
 # Founding 10 journey — implementation plan
 
-**Status:** Plan only — **do not ship live funnel changes until this document is reviewed and approved.**  
+**Status:** Implementation in this plugin (WP routes as the working Gen 2 stand-in). **Do not ship live funnel changes** until accept, setup, and Stripe trial proofs pass. Live `/founding-customers/` is unchanged.  
 **Approved architecture date:** 31 August 2026  
 **Canonical invite URL:** `https://digitalgate.com.au/founding-customers/`  
 **Principle:** Invitation → Explore → Discovery → Decision → Formal Offer → Acceptance → Onboarding → Trial → Implementation → Go Live. Application ≠ Acceptance. Terms are agreed only after DigitalGate offers a place and the prospect chooses to proceed.
@@ -31,7 +31,7 @@ Personal invite email
 
 | URL | After change | Owner |
 |-----|--------------|--------|
-| `/founding-customers/` | Canonical invite + research page. Journey explained. CTAs: Explore / Book discovery. **No required Terms agreement.** | Marketing page (live Gen 2 / site renderer; source **not** in this checkout) |
+| `/founding-customers/` | Canonical invite + research page. Journey explained. CTAs: Explore / Book discovery. **No required Terms agreement.** | Source now in `marketing/pages/founding-customers-page.html`. Local preview: `/founding-customers-preview/`. Live paste is a later switch. |
 | `/founding-customers/#application` | Either removed, or demoted to a non-binding “register interest / request discovery” with **no** `agree_founding_terms`. Must not be the primary CTA. | Same page |
 | `/founding/`, `/founding-application/`, `/beta/` | Keep 301 → `/founding-customers/` (no `#application`) | Existing redirects |
 | `/founding-customer-terms/` | Unchanged legal document. Linked as **read-only** on invite page; required checkbox only on accept. | Legal (do not rewrite) |
@@ -72,7 +72,7 @@ Work spans **three places**. This checkout only contains the WordPress plugin + 
 
 ### 4.1 Source of truth problem
 
-`REDIRECT-MAP.md` names `founding-customers-page.html` and `founding-customer-terms.html`. **Neither file is in this checkout.** Live page is served as Gen 2 HTML (`dg-fc`, `#dgFoundingForm`, `#application`). Implementation must edit the **live page source in `dg-platform-web` / seed script**, then optionally commit a copy into `dg-platform/marketing/pages/` so this repo is no longer missing the canonical page.
+`founding-customers-page.html` is now in this checkout (invite + explore, no Terms checkbox). `founding-customer-terms.html` is still not rewritten — live Terms stay unchanged. Local preview is `/founding-customers-preview/`. Do not paste over live `/founding-customers/` until the test path in `FOUNDING-10-TEST-PATH.md` passes.
 
 ### 4.2 Page must communicate (not just hide the form)
 
