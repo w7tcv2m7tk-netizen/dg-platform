@@ -3,7 +3,7 @@
  * Plugin Name: DG Platform
  * Plugin URI: https://digitalgate.com.au
  * Description: DigitalGate Business Platform Core - Modular CRM with Industry Modules
- * Version: 10.70.0
+ * Version: 10.71.0
  * Author: DigitalGate
  * Author URI: https://digitalgate.com.au
  * Text Domain: dg-platform
@@ -20,7 +20,7 @@ if (defined('WP_CONTENT_DIR') && file_exists(WP_CONTENT_DIR . '/.dg-platform-off
     return;
 }
 
-define('DG_PLATFORM_VERSION', '10.70.0');
+define('DG_PLATFORM_VERSION', '10.71.0');
 define('DG_PLATFORM_PATH', plugin_dir_path(__FILE__));
 define('DG_PLATFORM_URL', plugin_dir_url(__FILE__));
 define('DG_MODULES_PATH', DG_PLATFORM_PATH . 'modules/');
@@ -77,6 +77,10 @@ require_once DG_INCLUDES_PATH . 'class-client-reports.php';
 require_once DG_INCLUDES_PATH . 'class-support-ai.php';
 require_once DG_INCLUDES_PATH . 'class-client-support.php';
 require_once DG_INCLUDES_PATH . 'class-stripe-billing.php';
+require_once DG_INCLUDES_PATH . 'founding/class-founding-offers.php';
+require_once DG_INCLUDES_PATH . 'founding/class-founding-checkout.php';
+require_once DG_INCLUDES_PATH . 'founding/class-founding-journey.php';
+require_once DG_INCLUDES_PATH . 'founding/class-founding-admin.php';
 require_once DG_INCLUDES_PATH . 'class-client-onboarding.php';
 require_once DG_INCLUDES_PATH . 'class-client-discovery.php';
 require_once DG_INCLUDES_PATH . 'class-marketing-audit-scoring.php';
@@ -122,6 +126,12 @@ add_action('plugins_loaded', function () {
     }
     if (class_exists('DG_AI_Admin')) {
         DG_AI_Admin::init();
+    }
+    if (class_exists('DG_Founding_Journey')) {
+        DG_Founding_Journey::init();
+    }
+    if (class_exists('DG_Founding_Admin')) {
+        DG_Founding_Admin::init();
     }
 }, 0);
 
