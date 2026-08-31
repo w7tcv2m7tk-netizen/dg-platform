@@ -2,6 +2,18 @@
 
 Use this as a **test customer** on the WordPress plugin routes. Do **not** change live `https://digitalgate.com.au/founding-customers/` until accept, setup, and Stripe trial proofs pass.
 
+**Already proven in this environment (no live funnel change):**
+
+- `/founding-customers-preview/` 200 — invite/explore, no Terms checkbox, no application form, commercial copy kept
+- `/founding/accept/{token}/` 200 — Terms required (422 without checkbox) then redirect to setup
+- `/founding/setup/` 200 — 8-step wizard, plan/Apps confirm, yearly line totals use 10× monthly
+- `/wp-json/digitalgate/v1/founding/health` — `setup_ready_flag: false`
+- `/onboarding/` alias left **OFF** (local `/onboarding/` is still a 404 stub)
+- Webhook state (simulated complete Checkout + subscription events, no Stripe key needed):
+  - `trialing` → tags `DigitalGate Client,Founding 10,Trialing` — **no** `Payment Received`
+  - later `active` → adds `Payment Received`, strips `Trialing`
+- Stripe Checkout / `Prove monthly + yearly trial` still need `sk_test_…` in API Settings — this environment has no Stripe secret key
+
 Local site: `http://localhost:8080` (or this environment’s WP host). WP admin: `admin` / `admin`.
 
 `/onboarding/` stays on the old/stub page until **DG Platform → Founding 10 → Point /onboarding/ at Founding setup** is turned ON. Leave it OFF for this run.
