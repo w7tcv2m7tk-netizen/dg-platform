@@ -56,7 +56,7 @@ A green UI while WP is still on the request path is **not** decoupled.
 
 | # | Item | Why this order | Current verdict |
 |---|------|----------------|-----------------|
-| **P1** | Gen 2 onboarding | Founding 10 and every new org need a complete, resumable Gen 2 journey. Remaining `fetchPortalMe` / WP POST is the last onboarding twin. | **NOT DECOUPLED** |
+| **P1** | Gen 2 onboarding | Founding 10 and every new org need a complete, resumable Gen 2 journey. Remaining `fetchPortalMe` / WP POST is the last onboarding twin. | **IMPLEMENTED IN GEN 2** — apply `patches/gen2-p1` to `dg-platform-web`. Public WP `/onboarding/` not redirected yet. |
 | **P2** | Plans + entitlements | Apps must follow Gen 2 subscription state, not WP plan/module flags or Growth Engine push. | **NOT DECOUPLED** |
 | **P3** | Stripe (DigitalGate SaaS) | Platform checkout, webhook, and trial state must live only in Gen 2 + Stripe. Required for Founding 10 14-day trial. | **NOT DECOUPLED** |
 | **P4** | Support | Org-scoped conversations already exist in Neon; WP inbox is a second SoT and the proven cross-business leak. | **NOT DECOUPLED** |
@@ -94,7 +94,11 @@ The old WP onboarding form is **reference only**.
 
 ### Current DECOUPLED verdict
 
-**NOT DECOUPLED.** Gen 2 still reads WP (`fetchPortalMe` → `GET /portal/me`) when Neon has no portal row, still `OPTIONS` WP `/onboarding` (`pingApi`), and can still merge WP portal state into the org (`syncOrganisationFromPortal` / `POST /api/webhooks/dg-onboarding-sync`). `/founding/setup` is a redirect, not the wizard itself.
+**IMPLEMENTED IN GEN 2** (31 August 2026) — WordPress hops removed from the onboarding request path; Team + Systems added to `GEN2_ONBOARDING_STEPS`. Code lives on `dg-platform-web` branch `cursor/p1-gen2-onboarding-decouple-03c2` and as apply-patches in `patches/gen2-p1/` (this environment cannot push `dg-platform-web`).
+
+**Not yet marked DECOUPLED in production** until: (1) patches are merged to `dg-platform-web` `main`, (2) Clerk + Neon WP-unavailable walkthrough is signed off, (3) we decide the public WP `/onboarding/` retirement (do not 301 yet).
+
+See `dg-platform-web` `docs/operations/P1-ONBOARDING-DECOUPLE.md`.
 
 ### 1. Current WP dependency
 
@@ -795,7 +799,7 @@ Work happens in **`dg-platform-web`**. This document is the order. Do not open a
 
 | Step | Item | DECOUPLED? |
 |------|------|------------|
-| 1 | P1 Onboarding — remove `fetchPortalMe` / WP POST; Team + Systems on existing wizard | NO |
+| 1 | P1 Onboarding — remove `fetchPortalMe` / WP POST; Team + Systems on existing wizard | IMPLEMENTED IN GEN 2 (`patches/gen2-p1`). Public WP URL not 301’d. Sign off on Clerk+Neon, then mark DECOUPLED. |
 | 2 | P2 Entitlements — stop WP / Growth Engine as Apps SoT | NO |
 | 3 | P3 Stripe SaaS — Gen 2 Checkout + webhook; Founding trial status | NO |
 | 4 | P4 Support — WP inbox off; org-scoped Neon only | NO |
