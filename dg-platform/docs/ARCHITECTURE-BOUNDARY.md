@@ -77,7 +77,8 @@ DigitalGate authentication · organisations · users/permissions · onboarding �
 
 WordPress must not contain another version of those systems as a living product.
 
-Capability-by-capability status: [GEN1-GEN2-DECOUPLING-AUDIT.md](./GEN1-GEN2-DECOUPLING-AUDIT.md).
+Capability-by-capability status: [GEN1-GEN2-DECOUPLING-AUDIT.md](./GEN1-GEN2-DECOUPLING-AUDIT.md).  
+Ordered retirement (P1–P5 + Founding 10): [WP-RETIREMENT-MIGRATION-PROGRAMME.md](./WP-RETIREMENT-MIGRATION-PROGRAMME.md).
 
 ---
 
@@ -122,4 +123,5 @@ The WordPress Connector is an **integration**. It is not the DigitalGate platfor
 
 - This repo: `AGENTS.md` (agent gate)
 - Gen 2 (copy into `dg-platform-web` if not yet merged): `docs/adr/0002-wordpress-as-connector.md` (too soft — see `patches/gen2-docs/ADR-0014-wordpress-legacy-connector-only.md`)
-- Gen 2 detach tickets: `dg-platform-web` `docs/WP-DETACH-BACKLOG.md` (execution list; this boundary is stricter than that backlog’s “temporary bridge” language)
+- Retirement order (this repo): [WP-RETIREMENT-MIGRATION-PROGRAMME.md](./WP-RETIREMENT-MIGRATION-PROGRAMME.md)
+- Gen 2 detach tickets: `dg-platform-web` `docs/WP-DETACH-BACKLOG.md` (ticket inventory; this boundary + the retirement programme are stricter than that backlog’s “temporary bridge” language)

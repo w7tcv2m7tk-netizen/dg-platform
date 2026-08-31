@@ -3,7 +3,8 @@
 **Date:** 31 August 2026  
 **Repos inspected:** `dg-platform` (this checkout, Gen 1 plugin) · `dg-platform-web` (GitHub HEAD, Gen 2)  
 **Rule:** [ARCHITECTURE-BOUNDARY.md](./ARCHITECTURE-BOUNDARY.md)  
-**Does not replace:** Gen 2 `docs/WP-DETACH-BACKLOG.md` (ticket list). This audit is the **SoT map** and the **stop-building-in-WP** checklist.
+**Does not replace:** Gen 2 `docs/WP-DETACH-BACKLOG.md` (ticket list). This audit is the **SoT map** and the **stop-building-in-WP** checklist.  
+**Execution order:** [WP-RETIREMENT-MIGRATION-PROGRAMME.md](./WP-RETIREMENT-MIGRATION-PROGRAMME.md) — P1 onboarding → P2 entitlements → P3 Stripe → P4 support → P5 booking → Founding 10. Do not execute in this plugin.
 
 WordPress is **legacy / connector only**. Gen 2 is the source of truth for DigitalGate. If a row says MIGRATE, the work is **in Gen 2**, not a new WP module.
 

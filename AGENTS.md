@@ -21,7 +21,8 @@ If you catch yourself thinking “the old WordPress version already does this, s
 This workspace often contains **only** `dg-platform`. Missing `dg-platform-web` is not permission to implement platform features in WordPress.
 
 Full rule + end-state diagram: `dg-platform/docs/ARCHITECTURE-BOUNDARY.md`.  
-Capability audit: `dg-platform/docs/GEN1-GEN2-DECOUPLING-AUDIT.md`.
+Capability audit: `dg-platform/docs/GEN1-GEN2-DECOUPLING-AUDIT.md`.  
+Retirement order (do not start a new WP product path): `dg-platform/docs/WP-RETIREMENT-MIGRATION-PROGRAMME.md`.
 
 ## Cursor Cloud specific instructions
 
