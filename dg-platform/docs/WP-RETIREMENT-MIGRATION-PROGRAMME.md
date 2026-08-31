@@ -710,9 +710,41 @@ Invite (token)
 
 `/signup` remains a **generic picker**, not this journey.
 
-### 4–7. State / API / migration / WP retire
+### 4. Database / state changes required
 
-Covered by P1–P3. Extra Founding-only work: invite claim, offer state, agreement signature, Command stage machine — **all already Gen 2 modules to finish**, not WP tables. Retire the live apply + Terms gate only after accept + setup + trial are proven. Commercial rules and Founding Customer Terms text stay unchanged.
+Covered by P1–P3. Extra Founding-only Neon state (already modelled in `packages/platform-core/src/founding/*`, do not add WP tables):
+
+- Invite token → claimed `organisationId`
+- Discovery / offer records on the Command pipeline
+- Agreement signature timestamp (`agreementSignedAt`)
+- Same `settings.gen2Onboarding` + `PlatformSubscription` as every other org
+- Implementation workspace / go-live flags
+
+No WordPress `dg_founding_*` schema. No contact-tag stand-in for trial vs paid.
+
+### 5. API changes required
+
+- Public invite accept: `app…/founding/accept/[token]` only
+- `/founding/agreement` + `/founding/setup` stay Gen 2 gates into the **same** `/onboarding` wizard
+- Checkout via `/api/v1/billing/checkout` with founding metadata
+- Command `/command/founding` stage actions only
+- No WP REST for accept, setup, or trial
+- `/signup` unchanged (generic picker)
+
+### 6. Migration required
+
+- Do not migrate the withdrawn WP Founding runtime (it is already gone).
+- Do not migrate the live apply form into a new WP handler.
+- In-flight “applied on the marketing page” leads: treat as Command prospects; issue a Gen 2 invite. Do not replay them through WP onboarding.
+- Switch the live founding URL only after P1 + P3 DECOUPLED tests pass.
+
+### 7. What WP code can be retired
+
+- Live apply + required Terms checkbox on `founding-customers/` **after** the Gen 2 path is 200
+- Any leftover `#application` / WP application inbox
+- Any attempt to resurrect `DG_Founding_*` or WP Stripe Checkout for this cohort
+
+**Keep as chrome / legal copy:** Founding Customer Terms HTML, invite-page marketing HTML (content source, not runtime).
 
 ### 8. Dependencies / blockers
 
