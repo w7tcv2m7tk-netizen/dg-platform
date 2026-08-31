@@ -1,9 +1,32 @@
 # AGENTS.md
 
+## Hard architectural rule — WordPress is legacy / connector only
+
+**DigitalGate Gen 2 (`dg-platform-web`) is the platform. This WordPress plugin is not.**
+
+WordPress must not be treated as a fallback when Gen 2 does not yet have a capability. If Gen 2 is missing something, **build it in Gen 2**. Do not recreate it here and migrate later. That doubles development, testing, and maintenance.
+
+### Before writing any code
+
+Ask: **“Is this DigitalGate platform functionality?”**
+
+| Answer | Where it belongs |
+|--------|------------------|
+| **Yes** — identity, orgs, users, permissions, CRM, onboarding, Founding 10, billing, Stripe state, Apps, Business Profile, Goals, implementation, Operator OS, support, communications, AI, intelligence, scoring, automation, platform admin, customer-facing DigitalGate product | **`dg-platform-web` only.** Stop. Do not implement it in this plugin. Use old WP code as a **specification**, then build it in Gen 2. |
+| **No** — talking to a **customer’s existing WordPress website** (forms → webhook, listing mirror, health probe, iCal feed) | Thin **WordPress Connector** change in this plugin is allowed. No new domain SoT. |
+| **Unsure** | Read `dg-platform/docs/ARCHITECTURE-BOUNDARY.md` and `dg-platform/docs/GEN1-GEN2-DECOUPLING-AUDIT.md`. Default to Gen 2. |
+
+If you catch yourself thinking “the old WordPress version already does this, so we can use that…” — **no.** Use the old implementation to understand the requirements, then build it properly in Gen 2.
+
+This workspace often contains **only** `dg-platform`. Missing `dg-platform-web` is not permission to implement platform features in WordPress.
+
+Full rule + end-state diagram: `dg-platform/docs/ARCHITECTURE-BOUNDARY.md`.  
+Capability audit: `dg-platform/docs/GEN1-GEN2-DECOUPLING-AUDIT.md`.
+
 ## Cursor Cloud specific instructions
 
 ### What this repo is
-`dg-platform/` is a single **WordPress plugin** (PHP), "DG Platform" — a modular CRM (Contacts, Tasks, Calendar, Documents, Reports, REST API `digitalgate/v1`) with several industry modules. `dg-platform/mcp-server/` is an **optional** Node.js MCP sidecar for Cursor. There is **no PHP dependency manager** (no Composer) and **no automated lint/test tooling** (no PHPUnit/PHPCS/ESLint, no CI).
+`dg-platform/` is the **legacy Gen 1 WordPress plugin**, shrinking toward a **WordPress Connector** (forms, public mirrors, health probes, Dev API). It still contains historical CRM/modules and `digitalgate/v1` — those are **not** the place to add new DigitalGate product. The platform is **`dg-platform-web`** (Gen 2). `dg-platform/mcp-server/` is an **optional** Node.js MCP sidecar for Cursor. There is **no PHP dependency manager** (no Composer) and **no automated lint/test tooling** (no PHPUnit/PHPCS/ESLint, no CI).
 
 ### Environment config (source of truth)
 Repository-managed via `.cursor/environment.json` (Dockerfile base):

@@ -1,5 +1,11 @@
 # DG Platform Changelog
 
+## Unreleased — Gen 1 / Gen 2 architectural boundary
+
+- Binding rule: WordPress is **legacy / connector only**. DigitalGate platform features belong in `dg-platform-web`, not this plugin
+- Docs: `docs/ARCHITECTURE-BOUNDARY.md`, `docs/GEN1-GEN2-DECOUPLING-AUDIT.md`
+- Agent gate added to workspace `AGENTS.md`. Copy pack for Gen 2: `patches/gen2-docs/`
+
 ## 10.67.0 — Acc StayBooking dual-write push (August 2026)
 
 - **Acc:** `DG_Acc_Platform_Sync` listens to `dg_booking_created` / `dg_booking_confirmed` and POSTs the booking row to Gen 2 `/api/webhooks/dg-stay-booking` (non-blocking)

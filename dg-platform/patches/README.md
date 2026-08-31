@@ -1,4 +1,12 @@
-# Gen2 mobile menu fix (dg-platform-web)
+# Patches for `dg-platform-web`
+
+This plugin repo cannot push Gen 2. Copy files into `dg-platform-web` as listed below.
+
+## Architecture boundary (required)
+
+See `gen2-docs/README.md` — ADR 0014 + `AGENTS.md` snippet. WordPress is legacy / connector only.
+
+## Gen2 mobile menu fix (dg-platform-web)
 
 The live DigitalGate site (`digitalgate.com.au`) renders marketing chrome through **Gen2** (`dg-platform-web`). Header `<script>` tags are stripped on seed/render, so the hamburger in `header.html` does nothing unless Gen2 re-binds it.
 
