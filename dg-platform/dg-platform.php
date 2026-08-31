@@ -77,10 +77,6 @@ require_once DG_INCLUDES_PATH . 'class-client-reports.php';
 require_once DG_INCLUDES_PATH . 'class-support-ai.php';
 require_once DG_INCLUDES_PATH . 'class-client-support.php';
 require_once DG_INCLUDES_PATH . 'class-stripe-billing.php';
-require_once DG_INCLUDES_PATH . 'founding/class-founding-offers.php';
-require_once DG_INCLUDES_PATH . 'founding/class-founding-checkout.php';
-require_once DG_INCLUDES_PATH . 'founding/class-founding-journey.php';
-require_once DG_INCLUDES_PATH . 'founding/class-founding-admin.php';
 require_once DG_INCLUDES_PATH . 'class-client-onboarding.php';
 require_once DG_INCLUDES_PATH . 'class-client-discovery.php';
 require_once DG_INCLUDES_PATH . 'class-marketing-audit-scoring.php';
@@ -126,12 +122,6 @@ add_action('plugins_loaded', function () {
     }
     if (class_exists('DG_AI_Admin')) {
         DG_AI_Admin::init();
-    }
-    if (class_exists('DG_Founding_Journey')) {
-        DG_Founding_Journey::init();
-    }
-    if (class_exists('DG_Founding_Admin')) {
-        DG_Founding_Admin::init();
     }
 }, 0);
 

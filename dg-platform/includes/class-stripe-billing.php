@@ -14,8 +14,6 @@ class DG_Stripe_Billing {
     const OPTION_WEBHOOK_SECRET = 'dg_stripe_billing_webhook_secret';
     const TAG_PAYMENT = 'Payment Received';
     const TAG_AWAITING = 'Awaiting Onboarding';
-    const TAG_TRIALING = 'Trialing';
-    const TAG_FOUNDING = 'Founding 10';
 
     public static function init() {
         if (!self::enabled()) {
@@ -64,12 +62,6 @@ class DG_Stripe_Billing {
             'endpoint' => self::webhook_url(),
             'methods' => ['POST'],
             'event' => 'checkout.session.completed',
-            'events' => [
-                'checkout.session.completed',
-                'checkout.session.async_payment_succeeded',
-                'customer.subscription.created',
-                'customer.subscription.updated',
-            ],
             'signing_secret_configured' => $secret !== '',
         ], 200);
     }
@@ -113,17 +105,6 @@ class DG_Stripe_Billing {
                     'status' => $resolved['status'] ?? '',
                     'payment_status' => $resolved['payment_status'] ?? '',
                     'email' => $resolved['customer_details']['email'] ?? $resolved['customer_email'] ?? '',
-                ]);
-            }
-        } elseif (in_array($type, ['customer.subscription.created', 'customer.subscription.updated'], true)) {
-            $object = $event['data']['object'] ?? [];
-            $result = self::handle_subscription_event($object);
-            if ($result) {
-                self::log_event($type, 'Subscription ' . ($object['status'] ?? '') . ' for contact #' . ($result['contact_id'] ?? '?'), $result);
-            } else {
-                self::log_event($type, 'Subscription event recorded', [
-                    'subscription_id' => $object['id'] ?? '',
-                    'status' => $object['status'] ?? '',
                 ]);
             }
         } else {
@@ -174,56 +155,18 @@ class DG_Stripe_Billing {
         $metadata = is_array($session['metadata'] ?? null) ? $session['metadata'] : [];
         $business = sanitize_text_field((string) ($metadata['business_name'] ?? $name));
 
-        $subscription_id = '';
-        if (is_string($session['subscription'] ?? null)) {
-            $subscription_id = (string) $session['subscription'];
-        } elseif (is_array($session['subscription'] ?? null)) {
-            $subscription_id = (string) ($session['subscription']['id'] ?? '');
-        }
-
-        $subscription = [];
-        if ($subscription_id !== '') {
-            $fetched = self::request('subscriptions/' . rawurlencode($subscription_id), [], 'GET');
-            if (!is_wp_error($fetched) && is_array($fetched)) {
-                $subscription = $fetched;
-            }
-        }
-
-        $is_founding = (($metadata['dg_founding'] ?? '') === 'true')
-            || (($metadata['dg_category'] ?? '') === 'founding');
-        $sub_status = (string) ($subscription['status'] ?? '');
-        $is_trialing = $sub_status === 'trialing'
-            || ((int) ($session['amount_total'] ?? 0) === 0 && $subscription_id !== '' && $is_founding);
-
-        if ($is_founding && $is_trialing && class_exists('DG_Founding_Offers')) {
-            $token = sanitize_text_field((string) ($metadata['dg_offer_token'] ?? ''));
-            if ($token !== '') {
-                DG_Founding_Offers::mark_trialing($token, (string) ($session['id'] ?? ''), $subscription_id);
-            }
-        }
-
         $purchase = [
             'stripe_session_id' => sanitize_text_field((string) ($session['id'] ?? '')),
             'stripe_customer_id' => self::session_customer_id($session),
-            'stripe_subscription_id' => sanitize_text_field($subscription_id),
-            'stripe_subscription_status' => sanitize_key($sub_status !== '' ? $sub_status : ($is_trialing ? 'trialing' : '')),
             'amount_total' => (int) ($session['amount_total'] ?? 0),
             'currency' => sanitize_text_field((string) ($session['currency'] ?? 'aud')),
             'dg_category' => sanitize_key((string) ($metadata['dg_category'] ?? '')),
             'dg_plan' => sanitize_key((string) ($metadata['dg_plan'] ?? '')),
             'dg_platform_tier' => sanitize_key((string) ($metadata['dg_platform_tier'] ?? '')),
-            'dg_founding' => $is_founding,
-            'is_trialing' => $is_trialing,
             'purchase_label' => self::build_purchase_label($metadata),
         ];
 
-        $tags = $is_trialing
-            ? ($is_founding
-                ? 'DigitalGate Client,' . self::TAG_FOUNDING . ',' . self::TAG_TRIALING
-                : 'DigitalGate Client,' . self::TAG_TRIALING)
-            : 'DigitalGate Client,' . self::TAG_PAYMENT . ',' . self::TAG_AWAITING;
-
-        return self::provision_new_client($email, $name, $business, $purchase, $tags);
+        return self::provision_new_client($email, $name, $business, $purchase);
     }
 
     /** @param array<string,mixed> $session */
@@ -233,8 +176,7 @@ class DG_Stripe_Billing {
         }
 
         $payment_status = (string) ($session['payment_status'] ?? '');
-        $has_subscription = !empty($session['subscription']);
-        if ($payment_status === 'unpaid' && !$has_subscription) {
+        if ($payment_status === 'unpaid' && empty($session['subscription'])) {
             return 'Payment status is unpaid';
         }
 
@@ -300,59 +242,11 @@ class DG_Stripe_Billing {
         return sanitize_text_field((string) $customer);
     }
 
-    /** @param array<string,mixed> $object */
-    public static function handle_subscription_event(array $object) {
-        $status = (string) ($object['status'] ?? '');
-        $metadata = is_array($object['metadata'] ?? null) ? $object['metadata'] : [];
-        $email = sanitize_email((string) ($metadata['contact_email'] ?? ''));
-        if ($email === '' && class_exists('DG_Founding_Offers')) {
-            $token = sanitize_text_field((string) ($metadata['dg_offer_token'] ?? ''));
-            $offer = $token !== '' ? DG_Founding_Offers::get($token) : null;
-            if ($offer) {
-                $email = sanitize_email((string) ($offer['email'] ?? ''));
-            }
-        }
-        if ($email === '' || !class_exists('DG_Contacts')) {
-            return null;
-        }
-
-        $contact = DG_Contacts::get_by_email($email);
-        if (!$contact) {
-            return null;
-        }
-
-        $tags = (string) ($contact->tags ?? '');
-        if ($status === 'trialing') {
-            $tags = self::merge_tags($tags, self::TAG_TRIALING);
-            $tags = self::strip_tag($tags, self::TAG_PAYMENT);
-            if (($metadata['dg_founding'] ?? '') === 'true') {
-                $tags = self::merge_tags($tags, self::TAG_FOUNDING);
-            }
-        } elseif ($status === 'active') {
-            $tags = self::merge_tags($tags, self::TAG_PAYMENT);
-            $tags = self::strip_tag($tags, self::TAG_TRIALING);
-        }
-        DG_Contacts::update((int) $contact->id, ['tags' => $tags]);
-
-        if (class_exists('DG_Founding_Offers') && $status === 'trialing') {
-            $token = sanitize_text_field((string) ($metadata['dg_offer_token'] ?? ''));
-            if ($token !== '') {
-                DG_Founding_Offers::update($token, [
-                    'stripe_subscription_id' => sanitize_text_field((string) ($object['id'] ?? '')),
-                    'stripe_status' => 'trialing',
-                    'status' => 'trialing',
-                ]);
-            }
-        }
-
-        return [
-            'contact_id' => (int) $contact->id,
-            'subscription_status' => $status,
-            'tags' => $tags,
-        ];
-    }
-
-    public static function provision_new_client($email, $name, $business_name, array $purchase, $tags = '') {
+    /**
+     * @param array<string,mixed> $purchase
+     * @return array<string,mixed>|null
+     */
+    public static function provision_new_client($email, $name, $business_name, array $purchase) {
         if (!class_exists('DG_Contacts')) {
             return null;
         }
@@ -384,19 +278,13 @@ class DG_Stripe_Billing {
             'is_primary' => 1,
             'status' => 'active',
             'source' => 'stripe',
-            'tags' => $tags !== '' ? $tags : ('DigitalGate Client,' . self::TAG_PAYMENT . ',' . self::TAG_AWAITING),
-            'notes' => !empty($purchase['is_trialing'])
-                ? 'Founding 10 trial started (no payment yet): ' . ($purchase['purchase_label'] ?? '')
-                : 'Purchase: ' . ($purchase['purchase_label'] ?? ''),
+            'tags' => 'DigitalGate Client,' . self::TAG_PAYMENT . ',' . self::TAG_AWAITING,
+            'notes' => 'Purchase: ' . ($purchase['purchase_label'] ?? ''),
         ];
 
         $existing = DG_Contacts::get_by_email($email);
         if ($existing) {
-            $merged = self::merge_tags($existing->tags ?? '', $contact_payload['tags']);
-            if (!empty($purchase['is_trialing'])) {
-                $merged = self::strip_tag($merged, self::TAG_PAYMENT);
-            }
-            $contact_payload['tags'] = $merged;
+            $contact_payload['tags'] = self::merge_tags($existing->tags ?? '', $contact_payload['tags']);
             DG_Contacts::update($existing->id, $contact_payload);
             $contact_id = (int) $existing->id;
         } else {
@@ -431,10 +319,8 @@ class DG_Stripe_Billing {
             DG_Activities::log([
                 'entity_type' => 'contact',
                 'entity_id' => $contact_id,
-                'activity_type' => !empty($purchase['is_trialing']) ? 'system' : 'payment',
-                'subject' => !empty($purchase['is_trialing'])
-                    ? 'Founding 10 Stripe trial started (no payment)'
-                    : 'Stripe purchase completed',
+                'activity_type' => 'payment',
+                'subject' => 'Stripe purchase completed',
                 'content' => $purchase['purchase_label'] ?? '',
             ]);
         }
@@ -464,13 +350,11 @@ class DG_Stripe_Billing {
 
     /** @param array<string,mixed> $purchase */
     private static function send_purchase_emails($email, $name, $business_name, array $purchase, array $user_result, $contact_id) {
-        $onboarding_url = !empty($purchase['dg_founding']) && class_exists('DG_Founding_Offers')
-            ? DG_Founding_Offers::setup_url()
-            : (class_exists('DG_Client_Portal')
-                ? DG_Client_Portal::onboarding_url()
-                : home_url('/onboarding/'));
+        $onboarding_url = class_exists('DG_Client_Portal')
+            ? DG_Client_Portal::onboarding_url()
+            : home_url('/onboarding/');
 
-        if (!empty($purchase['stripe_session_id']) && empty($purchase['dg_founding'])) {
+        if (!empty($purchase['stripe_session_id'])) {
             $onboarding_url = add_query_arg([
                 'session_id' => $purchase['stripe_session_id'],
                 'plan' => $purchase['dg_plan'] ?? '',
@@ -486,20 +370,14 @@ class DG_Stripe_Billing {
             $password_link = DG_Client_Portal::password_set_link((int) $user_result['user_id'], $email);
         }
 
-        $is_trial = !empty($purchase['is_trialing']);
-        $subject = $is_trial
-            ? 'Welcome to DigitalGate — your 14-day trial has started'
-            : 'Welcome to DigitalGate — complete your onboarding';
+        $subject = 'Welcome to DigitalGate — complete your onboarding';
         $first_name = DG_Email_Names::first_name($name);
         if (class_exists('DG_Marketing_Emails')) {
-            $intro = $is_trial
-                ? 'Your DigitalGate subscription is in a 14-day free trial. Your card is on file and you will not be charged until the trial ends.'
-                : ('Thank you for your purchase'
-                    . (!empty($purchase['purchase_label']) ? ' (' . esc_html($purchase['purchase_label']) . ')' : '')
-                    . '! Complete your onboarding form so we can configure your platform.');
             $inner = '<h2 style="color:#FFFFFF;font-size:22px;margin:0 0 16px;">Hi ' . esc_html($first_name) . ',</h2>'
-                . '<p style="color:#E2E8F0;line-height:1.65;">' . esc_html($intro) . '</p>'
-                . DG_Marketing_Emails::cta($onboarding_url, $is_trial ? 'Open your setup' : 'Complete onboarding')
+                . '<p style="color:#E2E8F0;line-height:1.65;">Thank you for your purchase'
+                . (!empty($purchase['purchase_label']) ? ' (' . esc_html($purchase['purchase_label']) . ')' : '')
+                . '! Complete your onboarding form so we can configure your platform.</p>'
+                . DG_Marketing_Emails::cta($onboarding_url, 'Complete onboarding')
                 . '<p style="color:#E2E8F0;line-height:1.65;">Your client portal:</p>'
                 . DG_Marketing_Emails::cta($portal_url, 'Open client portal');
 
@@ -520,11 +398,8 @@ class DG_Stripe_Billing {
         self::log_event('client_email', $client_sent ? 'Sent to ' . $email : 'Failed to send to ' . $email);
 
         $admin_to = apply_filters('dg_client_onboarding_admin_email', 'onboarding@digitalgate.com.au');
-        $admin_subject = (!empty($purchase['is_trialing']) ? 'New Founding 10 trial — ' : 'New purchase — ')
-            . ($business_name !== '' ? $business_name : $name);
-        $admin_body = !empty($purchase['is_trialing'])
-            ? "Founding 10 Stripe trial started. No payment has been taken.\n\n"
-            : "New Stripe checkout completed.\n\n";
+        $admin_subject = 'New purchase — ' . ($business_name !== '' ? $business_name : $name);
+        $admin_body = "New Stripe checkout completed.\n\n";
         $admin_body .= "Customer: {$name} <{$email}>\n";
         $admin_body .= "Business: {$business_name}\n";
         $admin_body .= "Product: " . ($purchase['purchase_label'] ?? '') . "\n";
@@ -652,19 +527,6 @@ class DG_Stripe_Billing {
             return new WP_Error('missing_customer', 'Customer ID is required.');
         }
         return self::stripe_api('customers/' . rawurlencode($customer_id), [], 'GET');
-    }
-
-    /** @return array<string,mixed>|WP_Error */
-    public static function request($endpoint, $body = [], $method = 'POST') {
-        return self::stripe_api($endpoint, $body, $method);
-    }
-
-    private static function strip_tag($tags, $remove) {
-        $parts = array_filter(array_map('trim', explode(',', (string) $tags)));
-        $parts = array_values(array_filter($parts, static function ($tag) use ($remove) {
-            return strcasecmp($tag, $remove) !== 0;
-        }));
-        return implode(',', $parts);
     }
 
     /** @return array<string,mixed>|WP_Error */

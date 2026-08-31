@@ -1,13 +1,12 @@
 # DG Platform Changelog
 
-## 10.71.0 — Founding 10 accept → setup → 14-day Stripe trial (August 2026)
+## 10.71.0 — Founding 10 marketing CTA cleanup; WP runtime withdrawn (August 2026)
 
-- **Founding 10 journey (testable, live funnel not switched):** invite preview `/founding-customers-preview/`, offer accept `/founding/accept/{token}/`, Gen 2-style setup `/founding/setup/`, Stripe Checkout Session with `trial_period_days=14` (no Payment Links)
-- **Admin:** DG Platform → Founding 10 issues accept links and runs monthly + yearly trial proofs
-- **Stripe webhooks:** `trialing` tags `Trialing` + `Founding 10` and does **not** apply `Payment Received`; `active` after trial adds payment and strips trialing
-- **`/onboarding/` alias** stays OFF (`dg_founding_setup_ready`) until setup returns 200 and the live funnel is ready to switch
-- **Marketing sources:** `founding-customers-page.html` is invite/explore (no Terms checkbox). Public CTAs stop pointing at `#application` and `/onboarding/`
+- **Architecture:** Founding 10 customer journey is **Gen 2 (`dg-platform-web`)**, not this plugin. A WordPress stand-in is not an implementation.
+- **Withdrawn:** WP `/founding/accept`, `/founding/setup`, offer admin, and WP Stripe Checkout for Founding 10
+- **Marketing sources only:** `founding-customers-page.html` invite/explore (no Terms checkbox). Public CTAs stop pointing at `#application` and WP `/onboarding/`
 - Founding Customer Terms and commercial rules unchanged. `/signup` stays a separate generic picker
+- See `marketing/pages/FOUNDING-10-IMPLEMENTATION-PLAN.md`
 
 ## 10.67.0 — Acc StayBooking dual-write push (August 2026)
 

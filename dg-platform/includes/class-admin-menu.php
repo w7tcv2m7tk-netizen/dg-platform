@@ -74,7 +74,6 @@ class DG_Admin_Menu {
             'dg-platform-roles' => 'platform',
             'dg-platform-audit-log' => 'platform',
             'dg-platform-api' => 'platform',
-            'dg-platform-founding' => 'platform',
             // Real Estate industry
             'dg-re-dashboard' => 'industry',
             'edit.php?post_type=property' => 'industry',
