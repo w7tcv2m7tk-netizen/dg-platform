@@ -1,0 +1,634 @@
+From 227a27076912a89d3de0c1da4fd8c30d980e1f02 Mon Sep 17 00:00:00 2001
+From: Cursor Agent <cursoragent@cursor.com>
+Date: Mon, 31 Aug 2026 01:55:17 +0000
+Subject: [PATCH 1/2] Retire WordPress from the Gen 2 onboarding request path.
+
+fetchPortalMe reads Neon only. pingApi no longer OPTIONS WP /onboarding. Portal sync is a no-op, the onboarding-sync webhook does not apply WP portal data, and shell/dashboard pages no longer pull WordPress as a fallback.
+---
+ .../src/org/onboarding-profile.ts             |  1 +
+ .../platform-core/src/org/portal-profile.ts   | 31 ++++++-
+ src/app/(shell)/dashboard/advisor/page.tsx    |  2 -
+ src/app/(shell)/dashboard/benchmarks/page.tsx |  2 -
+ src/app/(shell)/dashboard/brain/page.tsx      |  2 -
+ src/app/(shell)/dashboard/business/page.tsx   |  2 -
+ src/app/(shell)/dashboard/goals/page.tsx      |  2 -
+ src/app/(shell)/dashboard/health/page.tsx     |  2 -
+ src/app/(shell)/dashboard/insights/page.tsx   |  2 -
+ .../dashboard/network/refer-earn/page.tsx     |  2 -
+ .../dashboard/settings/billing/page.tsx       |  2 -
+ src/app/(shell)/dashboard/settings/page.tsx   |  2 -
+ src/app/(shell)/dashboard/twin/page.tsx       |  2 -
+ src/app/api/v1/org/profile/route.ts           | 31 ++-----
+ .../api/webhooks/dg-onboarding-sync/route.ts  | 72 +++------------
+ src/components/PlatformShellLoader.tsx        |  7 --
+ .../platform/BusinessProfileCard.tsx          |  4 +-
+ src/components/support/SupportChatPanel.tsx   |  4 +-
+ src/lib/dg-api.ts                             | 87 ++++---------------
+ src/lib/org-onboarding-sync.ts                | 23 ++---
+ 20 files changed, 76 insertions(+), 206 deletions(-)
+
+diff --git a/packages/platform-core/src/org/onboarding-profile.ts b/packages/platform-core/src/org/onboarding-profile.ts
+index de4bf81..341ac11 100644
+--- a/packages/platform-core/src/org/onboarding-profile.ts
++++ b/packages/platform-core/src/org/onboarding-profile.ts
+@@ -226,6 +226,7 @@ function mergeOnboardingWithPurchase(
+   return base;
+ }
+ 
++/** Retired from the live request path (P1). Kept for one-shot historical import only. */
+ export async function syncOrganisationFromPortal(input: {
+   organisationId: string;
+   organisationName: string;
+diff --git a/packages/platform-core/src/org/portal-profile.ts b/packages/platform-core/src/org/portal-profile.ts
+index 5fd51bc..5f5809d 100644
+--- a/packages/platform-core/src/org/portal-profile.ts
++++ b/packages/platform-core/src/org/portal-profile.ts
+@@ -134,8 +134,37 @@ function computeSetup(input: {
+ 
+ /**
+  * Gen 2 portal identity — replaces live WP `/portal/me` for platform runtime.
+- * Returns null when DATABASE_URL is unset (caller may use legacy bridge).
++ * Returns null when DATABASE_URL is unset. Callers must not fall back to WordPress.
+  */
++export function unlinkedPortalProfile(
++  email: string,
++  clerkUserId?: string,
++): NeonPortalProfile {
++  return {
++    linked: false,
++    email,
++    clerk_user_id: clerkUserId,
++    setup: {
++      account_created: true,
++      payment_done: false,
++      onboarding_done: false,
++      platform_live: false,
++    },
++  };
++}
++
++/**
++ * App-shell portal identity. Neon when DATABASE_URL is set; unlinked otherwise.
++ * Never reads WordPress `/portal/me`.
++ */
++export async function resolvePortalMeForApp(input: {
++  email: string;
++  clerkUserId?: string;
++}): Promise<NeonPortalProfile> {
++  const neon = await resolvePortalProfileFromNeon(input);
++  return neon ?? unlinkedPortalProfile(input.email, input.clerkUserId);
++}
++
+ export async function resolvePortalProfileFromNeon(input: {
+   email: string;
+   clerkUserId?: string;
+diff --git a/src/app/(shell)/dashboard/advisor/page.tsx b/src/app/(shell)/dashboard/advisor/page.tsx
+index d90a0c6..6b5313f 100644
+--- a/src/app/(shell)/dashboard/advisor/page.tsx
++++ b/src/app/(shell)/dashboard/advisor/page.tsx
+@@ -2,10 +2,8 @@ import Link from "next/link";
+ 
+ import { AiAdvisorDashboard } from "@/components/intelligence/AiAdvisorDashboard";
+ import { loadAdvisorPageData } from "@/lib/advisor-page-data";
+-import { ensureOrganisationOnboardingSync } from "@/lib/org-onboarding-sync";
+ 
+ export default async function AiAdvisorPage() {
+-  await ensureOrganisationOnboardingSync();
+   const data = await loadAdvisorPageData();
+ 
+   if (!data) {
+diff --git a/src/app/(shell)/dashboard/benchmarks/page.tsx b/src/app/(shell)/dashboard/benchmarks/page.tsx
+index 4d83071..36779e2 100644
+--- a/src/app/(shell)/dashboard/benchmarks/page.tsx
++++ b/src/app/(shell)/dashboard/benchmarks/page.tsx
+@@ -3,14 +3,12 @@ import { Suspense } from "react";
+ 
+ import { BusinessBenchmarksDashboard } from "@/components/intelligence/BusinessBenchmarksDashboard";
+ import { loadBusinessBenchmarksPageData } from "@/lib/benchmarks-page-data";
+-import { ensureOrganisationOnboardingSync } from "@/lib/org-onboarding-sync";
+ 
+ export default async function BenchmarksPage({
+   searchParams,
+ }: {
+   searchParams: Promise<{ group?: string }>;
+ }) {
+-  await ensureOrganisationOnboardingSync();
+   const { group } = await searchParams;
+   const data = await loadBusinessBenchmarksPageData(group);
+ 
+diff --git a/src/app/(shell)/dashboard/brain/page.tsx b/src/app/(shell)/dashboard/brain/page.tsx
+index 16ef61a..243c170 100644
+--- a/src/app/(shell)/dashboard/brain/page.tsx
++++ b/src/app/(shell)/dashboard/brain/page.tsx
+@@ -2,10 +2,8 @@ import Link from "next/link";
+ 
+ import { BusinessBrainDashboard } from "@/components/intelligence/BusinessBrainDashboard";
+ import { loadBusinessBrainPageData } from "@/lib/brain-page-data";
+-import { ensureOrganisationOnboardingSync } from "@/lib/org-onboarding-sync";
+ 
+ export default async function BusinessBrainPage() {
+-  await ensureOrganisationOnboardingSync();
+   const data = await loadBusinessBrainPageData();
+ 
+   if (!data) {
+diff --git a/src/app/(shell)/dashboard/business/page.tsx b/src/app/(shell)/dashboard/business/page.tsx
+index 692a29b..de40dfe 100644
+--- a/src/app/(shell)/dashboard/business/page.tsx
++++ b/src/app/(shell)/dashboard/business/page.tsx
+@@ -11,7 +11,6 @@ import {
+ import { BusinessProfileEditor } from "@/components/platform/BusinessProfileEditor";
+ import { fetchPortalMe } from "@/lib/dg-api";
+ import { getOrgEnabledAppIdsCached } from "@/lib/org-apps";
+-import { ensureOrganisationOnboardingSync } from "@/lib/org-onboarding-sync";
+ import { fetchOverviewConnectorProbes } from "@/lib/overview-connectors";
+ 
+ export default async function BusinessProfilePage({
+@@ -32,7 +31,6 @@ export default async function BusinessProfilePage({
+     email;
+ 
+   const portal = email ? await fetchPortalMe(email, user?.id) : null;
+-  await ensureOrganisationOnboardingSync();
+ 
+   const session = user?.id
+     ? await resolveActivePlatformSession({
+diff --git a/src/app/(shell)/dashboard/goals/page.tsx b/src/app/(shell)/dashboard/goals/page.tsx
+index bedfd8c..10f8175 100644
+--- a/src/app/(shell)/dashboard/goals/page.tsx
++++ b/src/app/(shell)/dashboard/goals/page.tsx
+@@ -11,12 +11,10 @@ import {
+ 
+ import { GoalsBoard } from "@/components/platform/GoalsBoard";
+ import { getOrgEnabledAppIdsCached, getPlatformPageContext } from "@/lib/org-apps";
+-import { ensureOrganisationOnboardingSync } from "@/lib/org-onboarding-sync";
+ import { fetchOverviewConnectorProbes } from "@/lib/overview-connectors";
+ 
+ export default async function GoalsPage() {
+   const { session } = await getPlatformPageContext();
+-  await ensureOrganisationOnboardingSync();
+ 
+   const enabledAppIds = await getOrgEnabledAppIdsCached();
+   const profile = session
+diff --git a/src/app/(shell)/dashboard/health/page.tsx b/src/app/(shell)/dashboard/health/page.tsx
+index 50cea94..3562348 100644
+--- a/src/app/(shell)/dashboard/health/page.tsx
++++ b/src/app/(shell)/dashboard/health/page.tsx
+@@ -2,10 +2,8 @@ import Link from "next/link";
+ 
+ import { BusinessHealthDashboard } from "@/components/intelligence/BusinessHealthDashboard";
+ import { loadBusinessHealthPageData } from "@/lib/business-health-page-data";
+-import { ensureOrganisationOnboardingSync } from "@/lib/org-onboarding-sync";
+ 
+ export default async function BusinessHealthPage() {
+-  await ensureOrganisationOnboardingSync();
+   const data = await loadBusinessHealthPageData();
+ 
+   if (!data) {
+diff --git a/src/app/(shell)/dashboard/insights/page.tsx b/src/app/(shell)/dashboard/insights/page.tsx
+index 045f621..33a6b1c 100644
+--- a/src/app/(shell)/dashboard/insights/page.tsx
++++ b/src/app/(shell)/dashboard/insights/page.tsx
+@@ -2,10 +2,8 @@ import Link from "next/link";
+ 
+ import { InsightsDashboard } from "@/components/intelligence/InsightsDashboard";
+ import { loadInsightsPageData } from "@/lib/insights-page-data";
+-import { ensureOrganisationOnboardingSync } from "@/lib/org-onboarding-sync";
+ 
+ export default async function InsightsPage() {
+-  await ensureOrganisationOnboardingSync();
+   const data = await loadInsightsPageData();
+ 
+   if (!data) {
+diff --git a/src/app/(shell)/dashboard/network/refer-earn/page.tsx b/src/app/(shell)/dashboard/network/refer-earn/page.tsx
+index 4ce56c9..76f136c 100644
+--- a/src/app/(shell)/dashboard/network/refer-earn/page.tsx
++++ b/src/app/(shell)/dashboard/network/refer-earn/page.tsx
+@@ -10,7 +10,6 @@ import {
+ import { ReferAndEarnPanel } from "@/components/settings/ReferAndEarnPanel";
+ import { resolveActivePlatformSession } from "@/lib/active-platform-session";
+ import { fetchPortalMe } from "@/lib/dg-api";
+-import { ensureOrganisationOnboardingSync } from "@/lib/org-onboarding-sync";
+ 
+ export default async function NetworkReferAndEarnPage() {
+   const user = await currentUser();
+@@ -21,7 +20,6 @@ export default async function NetworkReferAndEarnPage() {
+     email;
+ 
+   const portal = email ? await fetchPortalMe(email, user?.id) : null;
+-  await ensureOrganisationOnboardingSync();
+   const session = user?.id
+     ? await resolveActivePlatformSession({
+         clerkUserId: user.id,
+diff --git a/src/app/(shell)/dashboard/settings/billing/page.tsx b/src/app/(shell)/dashboard/settings/billing/page.tsx
+index 5c80653..54d71be 100644
+--- a/src/app/(shell)/dashboard/settings/billing/page.tsx
++++ b/src/app/(shell)/dashboard/settings/billing/page.tsx
+@@ -11,7 +11,6 @@ import { BillingStatusPanel } from "@/components/settings/BillingStatusPanel";
+ import { BillingCheckoutBanner } from "@/components/settings/BillingCheckoutBanner";
+ import { fetchPortalMe } from "@/lib/dg-api";
+ import { getOrgEnabledAppIds } from "@/lib/org-apps";
+-import { ensureOrganisationOnboardingSync } from "@/lib/org-onboarding-sync";
+ import { PRICING_PAGE_URL } from "@/lib/pricing-catalog";
+ 
+ export default async function BillingSettingsPage({
+@@ -28,7 +27,6 @@ export default async function BillingSettingsPage({
+     email;
+ 
+   const portal = email ? await fetchPortalMe(email, user?.id) : null;
+-  await ensureOrganisationOnboardingSync();
+   const session = user?.id
+     ? await resolveActivePlatformSession({
+         clerkUserId: user.id,
+diff --git a/src/app/(shell)/dashboard/settings/page.tsx b/src/app/(shell)/dashboard/settings/page.tsx
+index 3ec89a2..d55444d 100644
+--- a/src/app/(shell)/dashboard/settings/page.tsx
++++ b/src/app/(shell)/dashboard/settings/page.tsx
+@@ -8,7 +8,6 @@ import { AppearanceSettings } from "@/components/settings/AppearanceSettings";
+ import { BusinessProfileCard } from "@/components/platform/BusinessProfileCard";
+ import { fetchPortalMe } from "@/lib/dg-api";
+ import { getOrgEnabledAppIds } from "@/lib/org-apps";
+-import { ensureOrganisationOnboardingSync } from "@/lib/org-onboarding-sync";
+ export default async function PlatformSettingsPage() {
+   const user = await currentUser();
+   const email = user?.primaryEmailAddress?.emailAddress ?? "";
+@@ -18,7 +17,6 @@ export default async function PlatformSettingsPage() {
+     email;
+ 
+   const portal = email ? await fetchPortalMe(email, user?.id) : null;
+-  await ensureOrganisationOnboardingSync();
+   const session = user?.id    ? await resolveActivePlatformSession({
+         clerkUserId: user.id,
+         email,
+diff --git a/src/app/(shell)/dashboard/twin/page.tsx b/src/app/(shell)/dashboard/twin/page.tsx
+index 8a4278c..b147a9a 100644
+--- a/src/app/(shell)/dashboard/twin/page.tsx
++++ b/src/app/(shell)/dashboard/twin/page.tsx
+@@ -2,10 +2,8 @@ import Link from "next/link";
+ 
+ import { DigitalTwinDashboard } from "@/components/intelligence/DigitalTwinDashboard";
+ import { loadDigitalTwinPageData } from "@/lib/twin-page-data";
+-import { ensureOrganisationOnboardingSync } from "@/lib/org-onboarding-sync";
+ 
+ export default async function DigitalTwinPage() {
+-  await ensureOrganisationOnboardingSync();
+   const data = await loadDigitalTwinPageData();
+ 
+   if (!data) {
+diff --git a/src/app/api/v1/org/profile/route.ts b/src/app/api/v1/org/profile/route.ts
+index 437cb49..0f104c2 100644
+--- a/src/app/api/v1/org/profile/route.ts
++++ b/src/app/api/v1/org/profile/route.ts
+@@ -1,12 +1,10 @@
+ import { NextResponse } from "next/server";
+ import {
+   getOrganisationBusinessProfile,
+-  syncOrganisationFromPortal,
+   updateOrganisationBusinessProfile,
+   type BusinessProfilePatch,
+ } from "@dg/platform-core";
+ 
+-import { fetchPortalMe } from "@/lib/dg-api";
+ import { isNextResponse, rejectDemoLiveAction, requirePlatformAuth } from "@/lib/platform-api";
+ 
+ export async function GET(req: Request) {
+@@ -52,31 +50,14 @@ export async function POST(req: Request) {
+   const session = await requirePlatformAuth(req);
+   if (isNextResponse(session)) return session;
+ 
+-  const portal = await fetchPortalMe(session.email, session.clerkUserId);
+-  const result = await syncOrganisationFromPortal({
+-    organisationId: session.organisationId,
+-    organisationName: session.organisationName,
+-    portal,
+-    force: true,
+-  });
+-
+-  if (!portal.linked) {
+-    return NextResponse.json(
+-      {
+-        error: {
+-          code: "not_linked",
+-          message:
+-            "No onboarding record found for this email. Complete onboarding on digitalgate.com.au first.",
+-        },
+-      },
+-      { status: 422 },
+-    );
+-  }
+-
++  const profile = await getOrganisationBusinessProfile(session.organisationId);
+   return NextResponse.json({
+     data: {
+-      synced: result.synced,
+-      profile: result.profile ?? (await getOrganisationBusinessProfile(session.organisationId)),
++      synced: false,
++      retired: true,
++      profile,
++      message:
++        "WordPress portal sync is retired. Business Profile is stored on this organisation in Gen 2.",
+     },
+   });
+ }
+diff --git a/src/app/api/webhooks/dg-onboarding-sync/route.ts b/src/app/api/webhooks/dg-onboarding-sync/route.ts
+index fddedc2..9f91a18 100644
+--- a/src/app/api/webhooks/dg-onboarding-sync/route.ts
++++ b/src/app/api/webhooks/dg-onboarding-sync/route.ts
+@@ -1,8 +1,5 @@
+ import { NextResponse } from "next/server";
+ 
+-import { fetchPortalMe } from "@/lib/dg-api";
+-import { syncOrganisationFromPortal } from "@dg/platform-core";
+-
+ function verifyWebhookSecret(req: Request): boolean {
+   const secret = process.env.DG_DISCOVERY_WEBHOOK_SECRET?.trim()
+     ?? process.env.DG_API_KEY?.trim()
+@@ -17,7 +14,11 @@ function verifyWebhookSecret(req: Request): boolean {
+   return provided === secret;
+ }
+ 
+-/** Force onboarding/purchase sync after WP form submit. */
++/**
++ * P1 — WordPress onboarding/purchase sync is retired as a source of truth.
++ * WP may still POST here; Gen 2 does not read `/portal/me` or apply portal entitlements.
++ * Historical import is a one-shot script, not this live webhook.
++ */
+ export async function POST(req: Request) {
+   if (!verifyWebhookSecret(req)) {
+     return NextResponse.json(
+@@ -26,62 +27,11 @@ export async function POST(req: Request) {
+     );
+   }
+ 
+-  const body = await req.json().catch(() => null);
+-  const email = typeof body?.email === "string" ? body.email.trim().toLowerCase() : "";
+-  if (!email) {
+-    return NextResponse.json(
+-      { error: { code: "validation_error", message: "email is required" } },
+-      { status: 422 },
+-    );
+-  }
+-
+-  if (!process.env.DATABASE_URL) {
+-    return NextResponse.json(
+-      { error: { code: "database_not_configured", message: "DATABASE_URL not set" } },
+-      { status: 503 },
+-    );
+-  }
+-
+-  const { prisma } = await import("@dg/database");
+-  const membership = await prisma.membership.findFirst({
+-    where: { email },
+-    include: { organisation: true },
+-    orderBy: { createdAt: "desc" },
++  return NextResponse.json({
++    data: {
++      retired: true,
++      synced: false,
++      reason: "Onboarding source of truth is Gen 2 Neon. WordPress portal sync is retired.",
++    },
+   });
+-
+-  if (!membership) {
+-    return NextResponse.json(
+-      { error: { code: "not_found", message: "No platform account for this email yet — sign up at app.digitalgate.com.au first" } },
+-      { status: 404 },
+-    );
+-  }
+-
+-  /** Prefer explicit body org, then membership org (tenant), else operator env. */
+-  const organisationId =
+-    (typeof body?.organisationId === "string" && body.organisationId.trim()) ||
+-    membership.organisationId ||
+-    process.env.DG_OPERATOR_ORG_ID?.trim() ||
+-    null;
+-
+-  if (!organisationId) {
+-    return NextResponse.json(
+-      {
+-        error: {
+-          code: "validation_error",
+-          message: "organisationId or DG_OPERATOR_ORG_ID is required",
+-        },
+-      },
+-      { status: 422 },
+-    );
+-  }
+-
+-  const portal = await fetchPortalMe(email, membership.clerkUserId);
+-  const result = await syncOrganisationFromPortal({
+-    organisationId,
+-    organisationName: membership.organisation.name,
+-    portal,
+-    force: true,
+-  });
+-
+-  return NextResponse.json({ data: result });
+ }
+diff --git a/src/components/PlatformShellLoader.tsx b/src/components/PlatformShellLoader.tsx
+index fd9b019..3d11d15 100644
+--- a/src/components/PlatformShellLoader.tsx
++++ b/src/components/PlatformShellLoader.tsx
+@@ -1,4 +1,3 @@
+-import { after } from "next/server";
+ import {
+   canAccessCommandCentre,
+   canAccessPartnerPortal,
+@@ -12,7 +11,6 @@ import {
+ import { PlatformShell } from "@/components/PlatformShell";
+ import { getOrgEnabledAppIdsCached, getOrgIndustrySelectionIdsCached } from "@/lib/org-apps";
+ import { getOrgBrandThemeCached } from "@/lib/org-brand-theme";
+-import { ensureOrganisationOnboardingSync } from "@/lib/org-onboarding-sync";
+ import { getPlatformPageContext } from "@/lib/platform-page-context";
+ 
+ /** Server wrapper — dedupes session + enabled apps once per request. */
+@@ -23,11 +21,6 @@ export async function PlatformShellLoader({
+   children: React.ReactNode;
+   showFloatingChat?: boolean;
+ }) {
+-  // Don't block first paint on WordPress→Postgres onboarding sync.
+-  after(() => {
+-    void ensureOrganisationOnboardingSync().catch(() => null);
+-  });
+-
+   const [{ user, session, clerkUserId, email }, enabledIds, industrySelectionIds, brandTheme] =
+     await Promise.all([
+     getPlatformPageContext(),
+diff --git a/src/components/platform/BusinessProfileCard.tsx b/src/components/platform/BusinessProfileCard.tsx
+index 16b61af..814d0b2 100644
+--- a/src/components/platform/BusinessProfileCard.tsx
++++ b/src/components/platform/BusinessProfileCard.tsx
+@@ -53,8 +53,8 @@ export function BusinessProfileCard({
+       <div className="dg-card border-dashed border-slate-700">
+         <h2 className="font-semibold text-white">Business profile</h2>
+         <p className="mt-2 text-sm text-slate-400">
+-          Complete onboarding on digitalgate.com.au with the same email you use to sign in here.
+-          Your business name, logo, and plan selection will preconfigure this platform automatically.
++          Finish Gen 2 onboarding in this app. Business Profile, goals, team and systems
++          are stored on your DigitalGate organisation — WordPress is not required.
+         </p>
+       </div>
+     );
+diff --git a/src/components/support/SupportChatPanel.tsx b/src/components/support/SupportChatPanel.tsx
+index 2b90e6e..1a13479 100644
+--- a/src/components/support/SupportChatPanel.tsx
++++ b/src/components/support/SupportChatPanel.tsx
+@@ -169,10 +169,8 @@ export function SupportChatPanel({
+           <div className="m-auto max-w-xs text-center text-sm text-slate-400">
+             <p>{error}</p>
+             <Link
+-              href="https://digitalgate.com.au/onboarding/"
++              href="/onboarding"
+               className="mt-3 inline-block text-[color-mix(in_srgb,var(--org-primary,#3b82f6)_82%,white)] hover:underline"
+-              target="_blank"
+-              rel="noopener noreferrer"
+             >
+               Complete onboarding →
+             </Link>
+diff --git a/src/lib/dg-api.ts b/src/lib/dg-api.ts
+index 1141478..2f9e140 100644
+--- a/src/lib/dg-api.ts
++++ b/src/lib/dg-api.ts
+@@ -57,11 +57,9 @@ export function getApiBase(): string | null {
+   return base;
+ }
+ 
++/** Gen 2 onboarding path. Do not point this at the public WP /onboarding/ URL. */
+ export function getOnboardingUrl(): string {
+-  return (
+-    process.env.DG_ONBOARDING_URL ??
+-    "https://digitalgate.com.au/onboarding/"
+-  );
++  return "/onboarding";
+ }
+ 
+ export type PortalSetup = {
+@@ -130,61 +128,16 @@ const DEFAULT_UNLINKED_PROFILE = (email: string): PortalProfile => ({
+   },
+ });
+ 
+-function apiHeaders(clerkUserId?: string, email?: string): HeadersInit | null {
+-  const apiKey = process.env.DG_API_KEY;
+-  if (!apiKey) {
+-    return null;
+-  }
+-
+-  const headers: HeadersInit = {
+-    Accept: "application/json",
+-    "X-API-Key": apiKey,
+-  };
+-  if (email) {
+-    headers["X-Portal-Email"] = email;
+-  }
+-  if (clerkUserId) {
+-    headers["X-Clerk-User-Id"] = clerkUserId;
+-  }
+-  return headers;
+-}
+-
++/**
++ * Organisation / portal identity for the app shell.
++ * Neon only — WordPress `/portal/me` is retired as a DigitalGate fallback.
++ */
+ export async function fetchPortalMe(
+   email: string,
+   clerkUserId?: string,
+ ): Promise<PortalProfile> {
+-  const fallback = DEFAULT_UNLINKED_PROFILE(email);
+-
+-  if (process.env.DATABASE_URL) {
+-    const { resolvePortalProfileFromNeon } = await import("@dg/platform-core");
+-    const neon = await resolvePortalProfileFromNeon({ email, clerkUserId });
+-    if (neon) {
+-      return neon as PortalProfile;
+-    }
+-  }
+-
+-  const headers = apiHeaders(clerkUserId, email);
+-  const base = getApiBase();
+-  if (!base || !headers) {
+-    return fallback;
+-  }
+-
+-  try {
+-    const url = `${base}/portal/me?email=${encodeURIComponent(email)}`;
+-    // Short SWR — shell remounts / soft navs should not block on a fresh WP round-trip every time.
+-    // Org switch and onboarding still force fresh reads via revalidateTag("portal-me").
+-    const res = await fetch(url, {
+-      headers,
+-      next: { revalidate: 45, tags: ["portal-me", clerkUserId ? `portal-me-${clerkUserId}` : "portal-me-anon"] },
+-    });
+-    const data = (await res.json().catch(() => null)) as PortalProfile | null;
+-    if (!res.ok || !data || typeof data.linked !== "boolean") {
+-      return fallback;
+-    }
+-    return data;
+-  } catch {
+-    return fallback;
+-  }
++  const { resolvePortalMeForApp } = await import("@dg/platform-core");
++  return (await resolvePortalMeForApp({ email, clerkUserId })) as PortalProfile;
+ }
+ 
+ export type OnboardingPayload = {
+@@ -226,20 +179,16 @@ export async function submitOnboarding(payload: OnboardingPayload) {
+   return { contactId: result.contactId, leadId: result.leadId };
+ }
+ 
+-export async function pingApi(): Promise<{ ok: boolean; base: string | null }> {
+-  const base = getApiBase();
+-  if (!base) {
+-    return { ok: true, base: null };
+-  }
+-  try {
+-    const res = await fetch(`${base}/onboarding`, {
+-      method: "OPTIONS",
+-      cache: "no-store",
+-    });
+-    return { ok: res.ok || res.status === 204 || res.status === 405, base };
+-  } catch {
+-    return { ok: false, base };
+-  }
++/**
++ * Platform health for `/api/health`.
++ * Never OPTIONS WordPress `/onboarding` — Gen 2 onboarding does not depend on WP.
++ */
++export async function pingApi(): Promise<{
++  ok: boolean;
++  base: string | null;
++  wordpress: "retired";
++}> {
++  return { ok: true, base: null, wordpress: "retired" };
+ }
+ 
+ export type WpConnectorOverride = {
+diff --git a/src/lib/org-onboarding-sync.ts b/src/lib/org-onboarding-sync.ts
+index 3c801d7..c345c89 100644
+--- a/src/lib/org-onboarding-sync.ts
++++ b/src/lib/org-onboarding-sync.ts
+@@ -1,17 +1,8 @@
+-import { syncOrganisationFromPortal } from "@dg/platform-core";
+-
+-import { getPlatformPageContext } from "@/lib/platform-page-context";
+-
+-/** Pull onboarding submission from WordPress into Postgres org settings (throttled). */
+-export async function ensureOrganisationOnboardingSync(force = false) {
+-  const { session, portal } = await getPlatformPageContext();
+-
+-  if (!session || !portal?.linked) return null;
+-
+-  return syncOrganisationFromPortal({
+-    organisationId: session.organisationId,
+-    organisationName: session.organisationName,
+-    portal,
+-    force,
+-  });
++/**
++ * P1 — WordPress portal → org sync is retired from the request path.
++ * Onboarding SoT is Gen 2 Neon (`settings.gen2Onboarding` + profile + membership + systems).
++ * Do not call WP `/portal/me` or re-apply portal purchases here.
++ */
++export async function ensureOrganisationOnboardingSync(_force = false) {
++  return null;
+ }
+-- 
+2.43.0
+

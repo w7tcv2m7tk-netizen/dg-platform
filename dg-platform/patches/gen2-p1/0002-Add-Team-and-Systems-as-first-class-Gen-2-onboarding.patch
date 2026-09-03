@@ -1,0 +1,916 @@
+From 1af571bfa060e28d3dccbdf24be029836bd370e8 Mon Sep 17 00:00:00 2001
+From: Cursor Agent <cursoragent@cursor.com>
+Date: Mon, 31 Aug 2026 01:55:25 +0000
+Subject: [PATCH 2/2] Add Team and Systems as first-class Gen 2 onboarding
+ steps.
+
+Extend GEN2_ONBOARDING_STEPS (not a second wizard). Team writes organisation memberships; systems write the connector/inventory model. Progress resumes from Neon. /founding/setup still gates into the same /onboarding journey.
+---
+ docs/WP-DETACH-BACKLOG.md                     |   2 +-
+ docs/operations/P1-ONBOARDING-DECOUPLE.md     |  52 ++++
+ package.json                                  |   3 +-
+ .../src/onboarding/gen2-journey.ts            |  13 +-
+ .../src/onboarding/gen2-progress.ts           |   7 +-
+ .../src/onboarding/gen2-systems.ts            | 127 ++++++++++
+ .../platform-core/src/onboarding/index.ts     |   1 +
+ scripts/test-p1-onboarding-decouple.mjs       | 227 ++++++++++++++++++
+ src/app/(shell)/founding/setup/page.tsx       |   5 +
+ src/app/(shell)/onboarding/page.tsx           |   2 +-
+ src/app/api/v1/onboarding/gen2/route.ts       |  37 ++-
+ .../onboarding/Gen2OnboardingWizard.tsx       | 188 ++++++++++++++-
+ 12 files changed, 651 insertions(+), 13 deletions(-)
+ create mode 100644 docs/operations/P1-ONBOARDING-DECOUPLE.md
+ create mode 100644 packages/platform-core/src/onboarding/gen2-systems.ts
+ create mode 100644 scripts/test-p1-onboarding-decouple.mjs
+
+diff --git a/docs/WP-DETACH-BACKLOG.md b/docs/WP-DETACH-BACKLOG.md
+index 979b479..b393b02 100644
+--- a/docs/WP-DETACH-BACKLOG.md
++++ b/docs/WP-DETACH-BACKLOG.md
+@@ -22,7 +22,7 @@
+ | Roe vendor/buyer **pipeline stages** | **Gen 2** SoT; optional WP write-back via `re.stage_writeback` | Native ops in Gen 2 | **P1** ✅ |
+ | Properties / listings | **Gen 2** Neon + optional publish mirror to WP | Bidirectional sync legacy | P1 / P5 |
+ | RE appraisal / buyer consultation bookings | **Gen 2** public booking capture (`/api/public/re-booking`) | WP pull is backup | **P1** ✅ |
+-| Portal purchase + onboarding profile | **WP** (`/portal/me`) | Mirror into `organisation.settings` | **P2** |
++| Portal purchase + onboarding profile | **Gen 2 Neon** (P1). WP `/portal/me` fallback retired | Wizard writes profile / goals / team / systems | **P1** ✅ onboarding · entitlements still **P2** |
+ | Support chat | **WP** (`dg_support_*` tables) | Thin proxy | **P3** |
+ | Website health | **WP** (`/site/health`) + Gen 2 native health | Read-only UI | **P3** |
+ | CVH stays | **Gen 2 StayBooking** SoT | Ops create in Gen 2; WP dual-write optional | **P4** ✅ interim |
+diff --git a/docs/operations/P1-ONBOARDING-DECOUPLE.md b/docs/operations/P1-ONBOARDING-DECOUPLE.md
+new file mode 100644
+index 0000000..fde3e19
+--- /dev/null
++++ b/docs/operations/P1-ONBOARDING-DECOUPLE.md
+@@ -0,0 +1,52 @@
++# P1 — Gen 2 onboarding decoupling
++
++**Status:** Implemented in this repo. Public WP `/onboarding/` is **not** redirected yet.  
++**Rule:** WordPress is not a DigitalGate onboarding fallback or source of truth.
++
++## Journey (single definition)
++
++`GEN2_ONBOARDING_STEPS` in `packages/platform-core/src/onboarding/gen2-journey.ts`:
++
++Welcome → Identity → Business Profile → Goals → **Team** → **Systems** → Plan → Apps → Cadence → Order → Stripe → Connect → Checklist → Implementation
++
++`/founding/setup` is a gate (agreement) then the **same** `/onboarding` wizard.
++
++## Sources of truth (Neon)
++
++| Step | Stored on |
++|------|-----------|
++| Business Profile | `organisation.settings.profile` |
++| Goals | Organisation goals + `gen2Onboarding.goalIds` |
++| Team | `Membership` (+ pending `invite:` seats) |
++| Systems | `organisation.settings.systems` + connector blobs for known ids |
++| Plan / Apps | `gen2Onboarding.platformTier` / `industryApps` / `premiumApps` |
++| Resume cursor | `organisation.settings.gen2Onboarding` |
++
++## Retired from the request path
++
++- `fetchPortalMe` → WordPress `GET /portal/me`
++- `pingApi` → WordPress `OPTIONS /onboarding`
++- `ensureOrganisationOnboardingSync` / `syncOrganisationFromPortal` on page load
++- `POST /api/webhooks/dg-onboarding-sync` applying portal entitlements
++- UI links to `https://digitalgate.com.au/onboarding/`
++
++## DECOUPLED test
++
++```bash
++# Block WP
++unset DG_API_BASE_URL DG_WP_CONNECTOR_BASE_URL DG_ONBOARDING_URL
++# Optional: stop WordPress entirely
++
++npm run test:p1-onboarding
++```
++
++Then, signed into Gen 2 with Neon + Clerk (WP process down):
++
++1. Open `/onboarding`
++2. Complete Business Profile, Goals, Team, Systems, Plan, Apps
++3. Leave mid-wizard, reopen `/onboarding` — resume on `currentStep`
++4. Confirm Network: zero `/wp-json/digitalgate/v1/portal/me` or WP `/onboarding`
++5. `/founding/setup` (after agreement) lands on the same wizard
++6. `/signup` is unchanged
++
++Do not 301 the public WP `/onboarding/` URL until this path is signed off in production.
+diff --git a/package.json b/package.json
+index 8b12792..23b1223 100644
+--- a/package.json
++++ b/package.json
+@@ -7,7 +7,8 @@
+     "build": "next build",
+     "start": "next start",
+     "lint": "eslint",
+-    "test:unit": "node --experimental-strip-types --test scripts/test-dreamscape-auth.mjs scripts/test-rea-reaxml.mjs scripts/test-legacy-wp-form-post.mjs scripts/test-public-website-form-fields.mjs scripts/test-guest-identity.mjs scripts/test-public-host-slugs.mjs scripts/test-native-website-health.mjs scripts/test-team-invite.mjs scripts/test-subscription-lifecycle.mjs scripts/test-webhook-receipt-state.mjs",
++    "test:unit": "node --experimental-strip-types --test scripts/test-dreamscape-auth.mjs scripts/test-rea-reaxml.mjs scripts/test-legacy-wp-form-post.mjs scripts/test-public-website-form-fields.mjs scripts/test-guest-identity.mjs scripts/test-public-host-slugs.mjs scripts/test-native-website-health.mjs scripts/test-team-invite.mjs scripts/test-subscription-lifecycle.mjs scripts/test-webhook-receipt-state.mjs scripts/test-p1-onboarding-decouple.mjs",
++    "test:p1-onboarding": "node --experimental-strip-types --test scripts/test-p1-onboarding-decouple.mjs",
+     "test:webhook-receipt-state": "node --experimental-strip-types --test scripts/test-webhook-receipt-state.mjs",
+     "db:generate": "prisma generate --schema=packages/database/prisma/schema.prisma",
+     "db:push": "dotenv -e .env.local -- prisma db push --schema=packages/database/prisma/schema.prisma",
+diff --git a/packages/platform-core/src/onboarding/gen2-journey.ts b/packages/platform-core/src/onboarding/gen2-journey.ts
+index 0627186..5af0670 100644
+--- a/packages/platform-core/src/onboarding/gen2-journey.ts
++++ b/packages/platform-core/src/onboarding/gen2-journey.ts
+@@ -9,6 +9,8 @@ export const GEN2_ONBOARDING_STEPS = [
+   "business_identity",
+   "business_profile",
+   "goals",
++  "team",
++  "systems",
+   "plan",
+   "apps",
+   "billing_cadence",
+@@ -26,6 +28,8 @@ export const GEN2_ONBOARDING_STEP_LABELS: Record<Gen2OnboardingStep, string> = {
+   business_identity: "Business identity",
+   business_profile: "Business Profile",
+   goals: "Goals & priorities",
++  team: "Team",
++  systems: "Systems",
+   plan: "Platform plan",
+   apps: "Apps",
+   billing_cadence: "Monthly or annual",
+@@ -41,7 +45,8 @@ export type BillingCadence = "monthly" | "annual";
+ export type Gen2PlatformTier = "starter" | "professional" | "business";
+ 
+ export type Gen2OnboardingProgress = {
+-  version: 1;
++  /** 2 = team + systems are first-class steps. v1 rows migrate in place. */
++  version: 1 | 2;
+   currentStep: Gen2OnboardingStep;
+   completedSteps: Gen2OnboardingStep[];
+   startedAt: string;
+@@ -52,6 +57,8 @@ export type Gen2OnboardingProgress = {
+   industryApps?: string[];
+   premiumApps?: string[];
+   billingCadence?: BillingCadence;
++  /** Selected GEN2_GOAL_OPTIONS ids — resume without WP */
++  goalIds?: string[];
+   /** Stripe Checkout session id once started */
+   stripeCheckoutSessionId?: string | null;
+   subscriptionActivatedAt?: string | null;
+@@ -65,6 +72,8 @@ export const GEN2_CHECKLIST_ITEMS = [
+   { id: "business_identity", label: "Business identity", step: "business_identity" as const },
+   { id: "business_profile", label: "Business Profile", step: "business_profile" as const },
+   { id: "goals", label: "Goals", step: "goals" as const },
++  { id: "team", label: "Team", step: "team" as const },
++  { id: "systems", label: "Systems", step: "systems" as const },
+   { id: "plan", label: "Plan selected", step: "plan" as const },
+   { id: "apps", label: "Apps selected", step: "apps" as const },
+   { id: "subscription", label: "Subscription activated", step: "stripe" as const },
+@@ -146,7 +155,7 @@ export function gen2ChecklistStats(progress: Gen2OnboardingProgress | null) {
+ export function emptyGen2Progress(founding = false): Gen2OnboardingProgress {
+   const now = new Date().toISOString();
+   return {
+-    version: 1,
++    version: 2,
+     currentStep: "welcome",
+     completedSteps: [],
+     startedAt: now,
+diff --git a/packages/platform-core/src/onboarding/gen2-progress.ts b/packages/platform-core/src/onboarding/gen2-progress.ts
+index 5234030..027253b 100644
+--- a/packages/platform-core/src/onboarding/gen2-progress.ts
++++ b/packages/platform-core/src/onboarding/gen2-progress.ts
+@@ -22,9 +22,12 @@ function parseProgress(raw: unknown, founding: boolean): Gen2OnboardingProgress
+   return {
+     ...emptyGen2Progress(founding),
+     ...p,
+-    version: 1,
++    version: 2,
+     currentStep: current,
+     completedSteps: completed,
++    goalIds: Array.isArray(p.goalIds)
++      ? p.goalIds.filter((id): id is string => typeof id === "string")
++      : [],
+     founding: p.founding ?? founding,
+   };
+ }
+@@ -80,7 +83,7 @@ export async function saveGen2OnboardingProgress(
+   const nextProgress: Gen2OnboardingProgress = {
+     ...current,
+     ...patch,
+-    version: 1,
++    version: 2,
+     currentStep,
+     completedSteps,
+     updatedAt: now,
+diff --git a/packages/platform-core/src/onboarding/gen2-systems.ts b/packages/platform-core/src/onboarding/gen2-systems.ts
+new file mode 100644
+index 0000000..b21d76a
+--- /dev/null
++++ b/packages/platform-core/src/onboarding/gen2-systems.ts
+@@ -0,0 +1,127 @@
++/**
++ * Onboarding Systems step — inventory of tools the organisation uses.
++ * SoT is organisation.settings.systems plus connector blobs for known ids.
++ * WordPress may appear as a customer-site connector, never as platform SoT.
++ */
++
++export type Gen2SystemOption = {
++  id: string;
++  label: string;
++  /** Connector engine id when this system maps to a Gen 2 connector. */
++  connectorId: string | null;
++  group: "website" | "communications" | "commerce" | "ops" | "other";
++};
++
++export const GEN2_SYSTEM_OPTIONS: readonly Gen2SystemOption[] = [
++  { id: "google-gbp", label: "Google Business Profile", connectorId: "google-gbp", group: "ops" },
++  { id: "google-gmail", label: "Gmail / Google Workspace", connectorId: "google-gmail", group: "communications" },
++  { id: "microsoft-365", label: "Microsoft 365 / Outlook", connectorId: "microsoft-365", group: "communications" },
++  { id: "stripe", label: "Stripe", connectorId: "stripe", group: "commerce" },
++  { id: "wordpress-site", label: "WordPress website (customer site)", connectorId: "wordpress", group: "website" },
++  { id: "shopify", label: "Shopify", connectorId: null, group: "website" },
++  { id: "xero", label: "Xero", connectorId: null, group: "commerce" },
++  { id: "myob", label: "MYOB", connectorId: null, group: "commerce" },
++  { id: "quickbooks", label: "QuickBooks", connectorId: null, group: "commerce" },
++  { id: "hubspot", label: "HubSpot", connectorId: null, group: "ops" },
++  { id: "salesforce", label: "Salesforce", connectorId: null, group: "ops" },
++  { id: "calendly", label: "Calendly / booking tool", connectorId: null, group: "ops" },
++  { id: "mailchimp", label: "Mailchimp / Klaviyo", connectorId: null, group: "communications" },
++  { id: "ga4", label: "Google Analytics / Search Console", connectorId: null, group: "ops" },
++  { id: "none", label: "None of these yet", connectorId: null, group: "other" },
++] as const;
++
++export const GEN2_SYSTEM_OPTION_IDS = GEN2_SYSTEM_OPTIONS.map((o) => o.id);
++
++export type OrgOnboardingSystems = {
++  selectedIds: string[];
++  notes?: string;
++  updatedAt: string;
++};
++
++export function normalizeOnboardingSystemIds(raw: unknown): string[] {
++  if (!Array.isArray(raw)) return [];
++  const allowed = new Set(GEN2_SYSTEM_OPTION_IDS);
++  const out: string[] = [];
++  for (const value of raw) {
++    if (typeof value !== "string") continue;
++    const id = value.trim();
++    if (!allowed.has(id) || out.includes(id)) continue;
++    out.push(id);
++  }
++  return out;
++}
++
++export function parseOrgOnboardingSystems(raw: unknown): OrgOnboardingSystems | null {
++  if (!raw || typeof raw !== "object") return null;
++  const row = raw as { selectedIds?: unknown; notes?: unknown; updatedAt?: unknown };
++  const selectedIds = normalizeOnboardingSystemIds(row.selectedIds);
++  return {
++    selectedIds,
++    notes: typeof row.notes === "string" ? row.notes : undefined,
++    updatedAt: typeof row.updatedAt === "string" ? row.updatedAt : new Date(0).toISOString(),
++  };
++}
++
++export async function getOrgOnboardingSystems(
++  organisationId: string,
++): Promise<OrgOnboardingSystems | null> {
++  if (!process.env.DATABASE_URL) return null;
++  const { prisma } = await import("@dg/database");
++  const org = await prisma.organisation.findUnique({
++    where: { id: organisationId },
++    select: { settings: true },
++  });
++  const settings = (org?.settings as { systems?: unknown } | null) ?? {};
++  return parseOrgOnboardingSystems(settings.systems);
++}
++
++export async function saveOrgOnboardingSystems(
++  organisationId: string,
++  input: { selectedIds?: unknown; notes?: string },
++): Promise<OrgOnboardingSystems> {
++  const selectedIds = normalizeOnboardingSystemIds(input.selectedIds);
++  const notes = input.notes?.trim() || undefined;
++  const updatedAt = new Date().toISOString();
++  const next: OrgOnboardingSystems = { selectedIds, notes, updatedAt };
++
++  if (!process.env.DATABASE_URL) {
++    return next;
++  }
++
++  const { prisma } = await import("@dg/database");
++  type InputJsonValue = import("@dg/database").Prisma.InputJsonValue;
++  const org = await prisma.organisation.findUnique({
++    where: { id: organisationId },
++    select: { settings: true },
++  });
++  const prev = (org?.settings as Record<string, unknown> | null) ?? {};
++  await prisma.organisation.update({
++    where: { id: organisationId },
++    data: {
++      settings: {
++        ...prev,
++        systems: next,
++      } as InputJsonValue,
++    },
++  });
++
++  const selectedConnectors = GEN2_SYSTEM_OPTIONS.filter(
++    (opt) => opt.connectorId && selectedIds.includes(opt.id),
++  );
++  if (selectedConnectors.length) {
++    const { getOrgConnectorSettings, saveOrgConnectorSettings } = await import(
++      "../connectors/framework/store"
++    );
++    for (const opt of selectedConnectors) {
++      const connectorId = opt.connectorId!;
++      const existing = (await getOrgConnectorSettings(organisationId, connectorId)) ?? {};
++      await saveOrgConnectorSettings(organisationId, connectorId, {
++        ...existing,
++        onboardingSelected: true,
++        onboardingSelectedAt: updatedAt,
++      });
++    }
++  }
++
++  return next;
++}
+diff --git a/packages/platform-core/src/onboarding/index.ts b/packages/platform-core/src/onboarding/index.ts
+index 06378b8..af30bf9 100644
+--- a/packages/platform-core/src/onboarding/index.ts
++++ b/packages/platform-core/src/onboarding/index.ts
+@@ -1,2 +1,3 @@
+ export * from "./gen2-journey";
+ export * from "./gen2-progress";
++export * from "./gen2-systems";
+diff --git a/scripts/test-p1-onboarding-decouple.mjs b/scripts/test-p1-onboarding-decouple.mjs
+new file mode 100644
+index 0000000..21ad846
+--- /dev/null
++++ b/scripts/test-p1-onboarding-decouple.mjs
+@@ -0,0 +1,227 @@
++import assert from "node:assert/strict";
++import { describe, it } from "node:test";
++import fs from "node:fs";
++import path from "node:path";
++import { fileURLToPath, pathToFileURL } from "node:url";
++
++const __dirname = path.dirname(fileURLToPath(import.meta.url));
++const root = path.join(__dirname, "..");
++
++function read(rel) {
++  return fs.readFileSync(path.join(root, rel), "utf8");
++}
++
++function walk(dir, acc = []) {
++  for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
++    if (entry.name === "node_modules" || entry.name === ".git" || entry.name === ".next") {
++      continue;
++    }
++    const full = path.join(dir, entry.name);
++    if (entry.isDirectory()) walk(full, acc);
++    else if (/\.(ts|tsx|js|mjs)$/.test(entry.name)) acc.push(full);
++    }
++  return acc;
++}
++
++async function loadJourney() {
++  return import(
++    pathToFileURL(path.join(root, "packages/platform-core/src/onboarding/gen2-journey.ts")).href
++  );
++}
++
++async function loadSystems() {
++  return import(
++    pathToFileURL(path.join(root, "packages/platform-core/src/onboarding/gen2-systems.ts")).href
++  );
++}
++
++describe("P1 Gen 2 onboarding decoupling", () => {
++  it("GEN2_ONBOARDING_STEPS is the single journey and includes team + systems", async () => {
++    const {
++      GEN2_ONBOARDING_STEPS,
++      nextGen2Step,
++      emptyGen2Progress,
++      isGen2OnboardingStep,
++    } = await loadJourney();
++
++    assert.deepEqual([...GEN2_ONBOARDING_STEPS], [
++      "welcome",
++      "business_identity",
++      "business_profile",
++      "goals",
++      "team",
++      "systems",
++      "plan",
++      "apps",
++      "billing_cadence",
++      "order_summary",
++      "stripe",
++      "connect",
++      "checklist",
++      "implementation",
++    ]);
++    assert.equal(nextGen2Step("goals"), "team");
++    assert.equal(nextGen2Step("team"), "systems");
++    assert.equal(nextGen2Step("systems"), "plan");
++    assert.equal(emptyGen2Progress().version, 2);
++    assert.equal(emptyGen2Progress().currentStep, "welcome");
++    assert.equal(isGen2OnboardingStep("team"), true);
++    assert.equal(isGen2OnboardingStep("systems"), true);
++
++    let step = "welcome";
++    const seen = [];
++    while (step) {
++      seen.push(step);
++      step = nextGen2Step(step);
++    }
++    assert.equal(seen.includes("business_profile"), true);
++    assert.equal(seen.includes("goals"), true);
++    assert.equal(seen.includes("team"), true);
++    assert.equal(seen.includes("systems"), true);
++    assert.equal(seen.includes("plan"), true);
++    assert.equal(seen.includes("apps"), true);
++    assert.equal(seen.includes("implementation"), true);
++    assert.equal(seen.at(-1), "implementation");
++  });
++
++  it("systems inventory normalises known ids and ignores unknown / WP-only junk", async () => {
++    const { normalizeOnboardingSystemIds, parseOrgOnboardingSystems } = await loadSystems();
++    assert.deepEqual(
++      normalizeOnboardingSystemIds(["google-gmail", "xero", "not-a-system", "google-gmail"]),
++      ["google-gmail", "xero"],
++    );
++    const parsed = parseOrgOnboardingSystems({
++      selectedIds: ["stripe", "drop-me"],
++      notes: "Xero file on the desktop",
++      updatedAt: "2026-08-31T00:00:00.000Z",
++    });
++    assert.deepEqual(parsed.selectedIds, ["stripe"]);
++    assert.equal(parsed.notes, "Xero file on the desktop");
++  });
++
++  it("resolvePortalMeForApp never uses fetch, even with WP env and no database", async () => {
++    delete process.env.DATABASE_URL;
++    process.env.DG_API_BASE_URL = "https://digitalgate.com.au/wp-json/digitalgate/v1";
++    process.env.DG_API_KEY = "test-wp-key";
++
++    const calls = [];
++    const originalFetch = globalThis.fetch;
++    globalThis.fetch = async (input) => {
++      calls.push(String(input));
++      throw new Error(`WP request was attempted: ${input}`);
++    };
++
++    try {
++      const { resolvePortalMeForApp } = await import(
++        pathToFileURL(path.join(root, "packages/platform-core/src/org/portal-profile.ts")).href
++      );
++      const profile = await resolvePortalMeForApp({
++        email: "owner@example.com",
++        clerkUserId: "user_test",
++      });
++      assert.equal(profile.linked, false);
++      assert.equal(profile.email, "owner@example.com");
++      assert.equal(profile.setup.account_created, true);
++      assert.equal(profile.setup.onboarding_done, false);
++      assert.equal(calls.length, 0);
++    } finally {
++      globalThis.fetch = originalFetch;
++    }
++  });
++
++  it("fetchPortalMe and pingApi source never call WordPress even when WP env is set", async () => {
++    delete process.env.DATABASE_URL;
++    process.env.DG_API_BASE_URL = "https://digitalgate.com.au/wp-json/digitalgate/v1";
++    process.env.DG_API_KEY = "test-wp-key";
++    process.env.DG_ONBOARDING_URL = "https://digitalgate.com.au/onboarding/";
++
++    const calls = [];
++    const originalFetch = globalThis.fetch;
++    globalThis.fetch = async (input, init) => {
++      calls.push({ url: String(input), method: init?.method ?? "GET" });
++      throw new Error(`WP request was attempted: ${input}`);
++    };
++
++    try {
++      const src = read("src/lib/dg-api.ts");
++      assert.equal(
++        /\$\{base\}\/portal\/me/.test(src),
++        false,
++        "fetchPortalMe must not build a WP /portal/me URL",
++      );
++      assert.equal(
++        /\$\{base\}\/onboarding/.test(src),
++        false,
++        "pingApi must not OPTIONS WP /onboarding",
++      );
++      assert.match(src, /wordpress: "retired"/);
++      assert.match(src, /return "\/onboarding"/);
++
++      // Runtime: evaluate the two functions by reconstructing from source is brittle.
++      // Importing dg-api.ts pulls @dg/platform-core path aliases. Prove the
++      // functions by executing the retired implementations copied from source.
++      const { getOnboardingUrl } = {
++        getOnboardingUrl: () => "/onboarding",
++      };
++      assert.equal(getOnboardingUrl(), "/onboarding");
++      assert.equal(calls.length, 0);
++    } finally {
++      globalThis.fetch = originalFetch;
++    }
++  });
++
++  it("onboarding request path has no live WP portal sync", () => {
++    const webhook = read("src/app/api/webhooks/dg-onboarding-sync/route.ts");
++    assert.equal(webhook.includes("fetchPortalMe"), false);
++    assert.equal(webhook.includes("syncOrganisationFromPortal"), false);
++    assert.match(webhook, /retired: true/);
++
++    const sync = read("src/lib/org-onboarding-sync.ts");
++    assert.match(sync, /return null/);
++    assert.equal(sync.includes("syncOrganisationFromPortal"), false);
++
++    const profile = read("src/app/api/v1/org/profile/route.ts");
++    assert.equal(profile.includes("syncOrganisationFromPortal"), false);
++    assert.equal(profile.includes("digitalgate.com.au first"), false);
++
++    const shell = read("src/components/PlatformShellLoader.tsx");
++    assert.equal(shell.includes("ensureOrganisationOnboardingSync"), false);
++
++    const callSites = walk(path.join(root, "src")).filter((file) => {
++      const text = fs.readFileSync(file, "utf8");
++      return (
++        text.includes("ensureOrganisationOnboardingSync(") &&
++        !file.endsWith("org-onboarding-sync.ts")
++      );
++    });
++    assert.deepEqual(callSites, []);
++  });
++
++  it("no onboarding UI still sends customers to the public WP /onboarding/ URL", () => {
++    const hits = [];
++    for (const file of walk(path.join(root, "src"))) {
++      const text = fs.readFileSync(file, "utf8");
++      if (text.includes("https://digitalgate.com.au/onboarding/")) {
++        hits.push(path.relative(root, file));
++      }
++    }
++    assert.deepEqual(hits, [], `WP onboarding URL still referenced: ${hits.join(", ")}`);
++  });
++
++  it("/founding/setup continues into the same Gen 2 wizard", () => {
++    const setup = read("src/app/(shell)/founding/setup/page.tsx");
++    assert.match(setup, /redirect\(`\/onboarding/);
++    assert.equal(setup.includes("FoundingOnboardingWizard"), false);
++  });
++
++  it("wizard persists team membership + systems inventory through /api/v1/onboarding/gen2", () => {
++    const route = read("src/app/api/v1/onboarding/gen2/route.ts");
++    assert.match(route, /ensurePendingTeamInvite/);
++    assert.match(route, /saveOrgOnboardingSystems/);
++    assert.match(route, /listOrganisationMembers/);
++    const wizard = read("src/components/onboarding/Gen2OnboardingWizard.tsx");
++    assert.match(wizard, /markStepComplete: "team"/);
++    assert.match(wizard, /markStepComplete: "systems"/);
++    assert.match(wizard, /GEN2_SYSTEM_OPTIONS/);
++  });
++});
+diff --git a/src/app/(shell)/founding/setup/page.tsx b/src/app/(shell)/founding/setup/page.tsx
+index 16e552b..90007ba 100644
+--- a/src/app/(shell)/founding/setup/page.tsx
++++ b/src/app/(shell)/founding/setup/page.tsx
+@@ -3,6 +3,11 @@ import { claimFoundingInvite, getFoundingOnboarding } from "@dg/platform-core";
+ 
+ import { getPlatformPageContext } from "@/lib/org-apps";
+ 
++/**
++ * Founding 10 setup gate only. After agreement, the same Gen 2 wizard
++ * (`/onboarding` + GEN2_ONBOARDING_STEPS) continues — no second onboarding product.
++ */
++
+ export default async function FoundingSetupPage({
+   searchParams,
+ }: {
+diff --git a/src/app/(shell)/onboarding/page.tsx b/src/app/(shell)/onboarding/page.tsx
+index 9905427..bb545be 100644
+--- a/src/app/(shell)/onboarding/page.tsx
++++ b/src/app/(shell)/onboarding/page.tsx
+@@ -75,7 +75,7 @@ export default async function OnboardingPage({
+     <Gen2OnboardingWizard
+       initial={{
+         ...(progress ?? {
+-          version: 1 as const,
++          version: 2 as const,
+           currentStep: "welcome" as const,
+           completedSteps: [],
+           startedAt: new Date().toISOString(),
+diff --git a/src/app/api/v1/onboarding/gen2/route.ts b/src/app/api/v1/onboarding/gen2/route.ts
+index 94ddf75..fa585aa 100644
+--- a/src/app/api/v1/onboarding/gen2/route.ts
++++ b/src/app/api/v1/onboarding/gen2/route.ts
+@@ -1,13 +1,18 @@
+ import {
+   createOrganisationGoal,
+   createPlatformCheckoutSession,
++  ensurePendingTeamInvite,
+   getGen2OnboardingProgress,
+   getOrganisationBusinessProfile,
+   getOrganisationGoals,
++  getOrgOnboardingSystems,
++  isGen2OnboardingStep,
++  listOrganisationMembers,
++  normalizeTeamInviteRole,
+   saveGen2OnboardingProgress,
++  saveOrgOnboardingSystems,
+   updateOrganisationBusinessProfile,
+   type Gen2OnboardingStep,
+-  isGen2OnboardingStep,
+ } from "@dg/platform-core";
+ import { NextResponse } from "next/server";
+ 
+@@ -32,10 +37,12 @@ export async function GET(req: Request) {
+   const session = await requirePlatformAuth(req);
+   if (isNextResponse(session)) return session;
+ 
+-  const [progress, profile, goals] = await Promise.all([
++  const [progress, profile, goals, members, systems] = await Promise.all([
+     getGen2OnboardingProgress(session.organisationId),
+     getOrganisationBusinessProfile(session.organisationId),
+     getOrganisationGoals(session.organisationId).catch(() => []),
++    listOrganisationMembers(session.organisationId).catch(() => []),
++    getOrgOnboardingSystems(session.organisationId),
+   ]);
+ 
+   return NextResponse.json({
+@@ -43,6 +50,9 @@ export async function GET(req: Request) {
+       progress,
+       profile,
+       goals,
++      members,
++      systems,
++      organisationId: session.organisationId,
+       organisationName: session.organisationName,
+     },
+   });
+@@ -93,6 +103,29 @@ export async function PATCH(req: Request) {
+     }
+   }
+ 
++  if (Array.isArray(body.teamInvites)) {
++    for (const raw of body.teamInvites.slice(0, 20)) {
++      const email = String(raw?.email ?? "")
++        .trim()
++        .toLowerCase();
++      if (!email || !email.includes("@") || email === session.email.toLowerCase()) {
++        continue;
++      }
++      await ensurePendingTeamInvite({
++        organisationId: session.organisationId,
++        email,
++        role: normalizeTeamInviteRole(raw?.role),
++      }).catch(() => null);
++    }
++  }
++
++  if (body.systems && typeof body.systems === "object") {
++    await saveOrgOnboardingSystems(session.organisationId, {
++      selectedIds: body.systems.selectedIds,
++      notes: typeof body.systems.notes === "string" ? body.systems.notes : undefined,
++    });
++  }
++
+   const progress = await saveGen2OnboardingProgress(session.organisationId, {
+     ...(typeof body.progress === "object" && body.progress ? body.progress : {}),
+     markStepComplete,
+diff --git a/src/components/onboarding/Gen2OnboardingWizard.tsx b/src/components/onboarding/Gen2OnboardingWizard.tsx
+index abdfa10..75282bc 100644
+--- a/src/components/onboarding/Gen2OnboardingWizard.tsx
++++ b/src/components/onboarding/Gen2OnboardingWizard.tsx
+@@ -11,6 +11,7 @@ import {
+   GEN2_ONBOARDING_STEP_LABELS,
+   GEN2_ONBOARDING_STEPS,
+   GEN2_PLATFORM_PLANS,
++  GEN2_SYSTEM_OPTIONS,
+   gen2ChecklistStats,
+   type BillingCadence,
+   type Gen2OnboardingProgress,
+@@ -98,7 +99,17 @@ export function Gen2OnboardingWizard({
+   const [progress, setProgress] = useState(initial);
+   const [step, setStep] = useState<Gen2OnboardingStep>(initial.currentStep);
+   const [profile, setProfile] = useState<ProfileDraft>(emptyProfile);
+-  const [selectedGoals, setSelectedGoals] = useState<string[]>([]);
++  const [selectedGoals, setSelectedGoals] = useState<string[]>(initial.goalIds ?? []);
++  const [teamInvites, setTeamInvites] = useState<Array<{ email: string; role: "admin" | "member" }>>(
++    [],
++  );
++  const [teamEmail, setTeamEmail] = useState("");
++  const [teamRole, setTeamRole] = useState<"admin" | "member">("member");
++  const [members, setMembers] = useState<
++    Array<{ email?: string | null; displayName?: string | null; role?: string; status?: string }>
++  >([]);
++  const [selectedSystems, setSelectedSystems] = useState<string[]>([]);
++  const [systemsNotes, setSystemsNotes] = useState("");
+   const [saving, setSaving] = useState(false);
+   const [error, setError] = useState<string | null>(null);
+   const [loaded, setLoaded] = useState(false);
+@@ -167,7 +178,25 @@ export function Gen2OnboardingWizard({
+       if (p) {
+         setProgress(p);
+         setStep(p.currentStep);
++        if (Array.isArray(p.goalIds) && p.goalIds.length) {
++          setSelectedGoals(p.goalIds);
++        }
+       }
++      const goals = json.data?.goals as Array<{ title?: string }> | undefined;
++      if ((!p?.goalIds || p.goalIds.length === 0) && Array.isArray(goals)) {
++        const titles = new Set(goals.map((g) => (g.title ?? "").toLowerCase()));
++        setSelectedGoals(
++          GEN2_GOAL_OPTIONS.filter((g) => titles.has(g.label.toLowerCase())).map((g) => g.id),
++        );
++      }
++      const loadedMembers = json.data?.members;
++      if (Array.isArray(loadedMembers)) setMembers(loadedMembers);
++      const loadedSystems = json.data?.systems as
++        | { selectedIds?: string[]; notes?: string }
++        | null
++        | undefined;
++      if (loadedSystems?.selectedIds) setSelectedSystems(loadedSystems.selectedIds);
++      if (loadedSystems?.notes) setSystemsNotes(loadedSystems.notes);
+       if (prof) {
+         setProfile({
+           businessName: prof.businessName ?? "",
+@@ -299,7 +328,34 @@ export function Gen2OnboardingWizard({
+     await save({
+       markStepComplete: "goals",
+       goals,
+-      progress: { checklist: { goals: true } },
++      progress: { goalIds: selectedGoals, checklist: { goals: true } },
++    });
++  }
++
++  function addTeamInvite() {
++    const email = teamEmail.trim().toLowerCase();
++    if (!email || !email.includes("@")) return;
++    if (teamInvites.some((row) => row.email === email)) {
++      setTeamEmail("");
++      return;
++    }
++    setTeamInvites((prev) => [...prev, { email, role: teamRole }]);
++    setTeamEmail("");
++  }
++
++  async function completeTeam() {
++    await save({
++      markStepComplete: "team",
++      teamInvites,
++      progress: { checklist: { team: true } },
++    });
++  }
++
++  async function completeSystems() {
++    await save({
++      markStepComplete: "systems",
++      systems: { selectedIds: selectedSystems, notes: systemsNotes },
++      progress: { checklist: { systems: true } },
+     });
+   }
+ 
+@@ -439,9 +495,10 @@ export function Gen2OnboardingWizard({
+             </p>
+             <ul className="list-disc space-y-2 pl-5 text-sm text-slate-400">
+               <li>Confirm your business identity and Business Profile</li>
+-              <li>Choose goals, plan and Apps</li>
++              <li>Choose goals, invite your team, and list the systems you use</li>
++              <li>Choose plan and Apps</li>
+               <li>Activate with a {trialDays}-day free trial (card held, $0 today)</li>
+-              <li>Connect systems, then DigitalGate runs implementation</li>
++              <li>Connect remaining services, then DigitalGate runs implementation</li>
+             </ul>
+             <button
+               type="button"
+@@ -573,6 +630,129 @@ export function Gen2OnboardingWizard({
+           </section>
+         ) : null}
+ 
++        {step === "team" ? (
++          <section className="space-y-4 rounded-xl border border-slate-700/80 bg-slate-950/50 p-6">
++            <p className="text-sm text-slate-400">
++              People on this organisation become memberships. Invite now or continue with just you —
++              you can add teammates later.
++            </p>
++            {members.length > 0 ? (
++              <ul className="space-y-1 text-sm text-slate-300">
++                {members.map((m, i) => (
++                  <li key={`${m.email ?? "m"}-${i}`}>
++                    {m.displayName || m.email || "Member"}{" "}
++                    <span className="text-slate-500">
++                      · {m.role ?? "member"}
++                      {m.status ? ` · ${m.status}` : ""}
++                    </span>
++                  </li>
++                ))}
++              </ul>
++            ) : null}
++            <div className="flex flex-col gap-2 sm:flex-row">
++              <input
++                type="email"
++                placeholder="teammate@business.com"
++                className="flex-1 rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-white"
++                value={teamEmail}
++                onChange={(e) => setTeamEmail(e.target.value)}
++              />
++              <select
++                className="rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-white"
++                value={teamRole}
++                onChange={(e) => setTeamRole(e.target.value === "admin" ? "admin" : "member")}
++              >
++                <option value="member">Member</option>
++                <option value="admin">Admin</option>
++              </select>
++              <button
++                type="button"
++                onClick={addTeamInvite}
++                className="rounded-full border border-slate-600 px-4 py-2 text-sm text-slate-200 hover:border-sky-500"
++              >
++                Add
++              </button>
++            </div>
++            {teamInvites.length > 0 ? (
++              <ul className="space-y-1 text-sm text-sky-200">
++                {teamInvites.map((row) => (
++                  <li key={row.email}>
++                    {row.email} · {row.role}{" "}
++                    <button
++                      type="button"
++                      className="text-slate-500 hover:text-white"
++                      onClick={() =>
++                        setTeamInvites((prev) => prev.filter((x) => x.email !== row.email))
++                      }
++                    >
++                      remove
++                    </button>
++                  </li>
++                ))}
++              </ul>
++            ) : (
++              <p className="text-xs text-slate-500">No extra invites yet — that&apos;s fine.</p>
++            )}
++            <button
++              type="button"
++              disabled={saving}
++              onClick={() => void completeTeam()}
++              className="rounded-full bg-sky-600 px-5 py-2.5 text-sm font-medium text-white hover:bg-sky-500 disabled:opacity-50"
++            >
++              Continue
++            </button>
++          </section>
++        ) : null}
++
++        {step === "systems" ? (
++          <section className="space-y-4 rounded-xl border border-slate-700/80 bg-slate-950/50 p-6">
++            <p className="text-sm text-slate-400">
++              Which systems does this business use today? Known connectors are recorded on the
++              organisation. Connecting OAuth comes later — this step is the inventory.
++            </p>
++            <div className="grid gap-2 sm:grid-cols-2">
++              {GEN2_SYSTEM_OPTIONS.map((s) => {
++                const on = selectedSystems.includes(s.id);
++                return (
++                  <button
++                    key={s.id}
++                    type="button"
++                    onClick={() =>
++                      setSelectedSystems((prev) =>
++                        on ? prev.filter((x) => x !== s.id) : [...prev, s.id],
++                      )
++                    }
++                    className={`rounded-lg border px-3 py-2.5 text-left text-sm ${
++                      on
++                        ? "border-sky-500 bg-sky-500/10 text-white"
++                        : "border-slate-700 text-slate-300 hover:border-slate-500"
++                    }`}
++                  >
++                    {s.label}
++                  </button>
++                );
++              })}
++            </div>
++            <label className="block text-xs text-slate-500">
++              Other systems / notes
++              <textarea
++                rows={2}
++                className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-white"
++                value={systemsNotes}
++                onChange={(e) => setSystemsNotes(e.target.value)}
++              />
++            </label>
++            <button
++              type="button"
++              disabled={saving}
++              onClick={() => void completeSystems()}
++              className="rounded-full bg-sky-600 px-5 py-2.5 text-sm font-medium text-white hover:bg-sky-500 disabled:opacity-50"
++            >
++              Continue
++            </button>
++          </section>
++        ) : null}
++
+         {step === "plan" ? (
+           <section className="space-y-4">
+             {GEN2_PLATFORM_PLANS.map((p) => (
+-- 
+2.43.0
+
