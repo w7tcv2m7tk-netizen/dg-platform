@@ -85,8 +85,8 @@ class DG_Acc_Platform_Sync {
             return $result;
         }
 
-        // rest_pre_dispatch may run before the route callback. Never let this
-        // privileged Gen 2 webhook hop bypass the route's own manage permission.
+        // Authority invariant: the pre-dispatch hook may never become a secret
+        // bypass. It must enforce the same management permission as the route.
         if (!class_exists('DG_Acc_Dev_API') || !DG_Acc_Dev_API::can_manage($request)) {
             return $result;
         }
