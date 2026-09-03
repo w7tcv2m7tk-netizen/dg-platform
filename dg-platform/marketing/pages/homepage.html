@@ -14,16 +14,18 @@
 
   /* Headings — explicit contrast for Oxygen */
   h1, h2, h3, h4, .section-header h2, .pillar h3, .app-name, .twin-card h3,
-  .why-item h4, .story-logo strong, .arch-step, .gate-title, .connect-panel h3 {
+  .why-item h4, .story-logo strong, .gate-title, .connect-panel h3,
+  .dg-layer h3, .dg-journey-panel h3, .dg-ind-card h3, .dg-core-band h3 {
     color: #F9FAFB !important;
   }
 
-  /* Hero — full-bleed atmospheric composition */
+  /* Hero — full-bleed atmospheric composition (extends under fixed site header) */
   .hero-home {
     --hx: 0; --hy: 0;
-    position: relative; min-height: 100svh; min-height: 100dvh; height: 100svh; height: 100dvh; display: flex; align-items: center;
+    position: relative; min-height: 100svh; min-height: 100dvh; display: flex; align-items: center;
     justify-content: center; overflow: hidden; background: #03050A; text-align: center;
-    padding: 7rem 0 5rem; isolation: isolate;
+    padding: clamp(5.5rem, 10vw, 7rem) 0 clamp(3rem, 6vw, 4rem); isolation: isolate;
+    box-sizing: border-box;
   }
   .hero-atmosphere {
     position: absolute; inset: 0; z-index: 0; pointer-events: none; overflow: hidden;
@@ -255,12 +257,57 @@
     text-align: center; font-size: 1.1rem; font-weight: 700; color: #93C5FD; margin-top: 1rem;
   }
 
-  /* Architecture funnel */
-  .arch-funnel { display: flex; flex-direction: column; align-items: center; gap: 0; max-width: 480px; margin: 0 auto; }
-  .arch-logic {
-    text-align: center; font-size: 0.78rem; color: #64748B; margin: 0.35rem 0 0.15rem;
-    letter-spacing: 0.04em;
+  /* ===== DigitalGate motion language ===== */
+  /* Visible by default so content never stays hidden if JS is absent. */
+  .dg-reveal {
+    opacity: 1;
+    transform: none;
   }
+  @keyframes dg-reveal-in {
+    from { opacity: 0; transform: translate3d(0, 24px, 0) scale(0.98); }
+    to { opacity: 1; transform: translate3d(0, 0, 0) scale(1); }
+  }
+  /* CSS-first reveal (works without React island). JS .is-in is optional. */
+  @supports (animation-timeline: view()) {
+    @media (prefers-reduced-motion: no-preference) {
+      .dg-reveal:not(.is-in) {
+        animation: dg-reveal-in 0.65s cubic-bezier(0.22, 1, 0.36, 1) both;
+        animation-timeline: view();
+        animation-range: entry 5% cover 38%;
+      }
+      .dg-reveal:nth-child(2):not(.is-in) { animation-range: entry 8% cover 40%; }
+      .dg-reveal:nth-child(3):not(.is-in) { animation-range: entry 12% cover 42%; }
+      .dg-reveal:nth-child(4):not(.is-in) { animation-range: entry 16% cover 44%; }
+      .dg-reveal:nth-child(5):not(.is-in) { animation-range: entry 20% cover 46%; }
+    }
+  }
+  /* JS-enhanced path when DgMarketingMotion marks .is-in */
+  @media (prefers-reduced-motion: no-preference) {
+    .dg-reveal.js-motion {
+      opacity: 0;
+      transform: translate3d(0, 24px, 0) scale(0.98);
+      transition:
+        opacity 0.55s cubic-bezier(0.22, 1, 0.36, 1),
+        transform 0.55s cubic-bezier(0.22, 1, 0.36, 1);
+      animation: none;
+    }
+    .dg-reveal.js-motion.is-in {
+      opacity: 1;
+      transform: translate3d(0, 0, 0) scale(1);
+    }
+    .dg-reveal.js-motion:nth-child(1) { transition-delay: 0ms; }
+    .dg-reveal.js-motion:nth-child(2) { transition-delay: 70ms; }
+    .dg-reveal.js-motion:nth-child(3) { transition-delay: 140ms; }
+    .dg-reveal.js-motion:nth-child(4) { transition-delay: 210ms; }
+    .dg-reveal.js-motion:nth-child(5) { transition-delay: 280ms; }
+    .dg-reveal.js-motion:nth-child(6) { transition-delay: 350ms; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .dg-reveal, .dg-reveal.js-motion {
+      opacity: 1 !important; transform: none !important; animation: none !important; transition: none !important;
+    }
+  }
+
   .arch-across {
     margin-top: 1.75rem; text-align: center; max-width: 560px; margin-left: auto; margin-right: auto;
   }
@@ -269,14 +316,268 @@
   .apps-block .logic {
     text-align: center; font-size: 0.78rem; color: #64748B; margin: -0.35rem 0 1rem; font-style: italic;
   }
-  .arch-step {
-    width: 100%; padding: 0.8rem 1.25rem; background: #111827; border: 1px solid #334155;
-    border-radius: 12px; text-align: center; font-weight: 600; font-size: 0.9rem;
+
+  /* SYSTEM B — Sticky layered operating system */
+  #one-platform.dg-layers-section {
+    background: #0A0E17;
+    border-top: 1px solid #1E293B;
+    padding-bottom: 3rem;
   }
-  .arch-arrow { color: #3B82F6; padding: 0.35rem 0; font-size: 1rem; }
-  .arch-step.highlight {
-    background: linear-gradient(105deg, rgba(59,130,246,0.18), rgba(45,212,191,0.1));
-    border-color: rgba(59,130,246,0.45); color: #BFDBFE; font-weight: 700;
+  .dg-layers {
+    max-width: 820px;
+    margin: 0.5rem auto 0;
+    padding: 0 1.25rem 2rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.35rem;
+  }
+  .dg-layer {
+    position: sticky;
+    top: 5.75rem;
+    border-radius: 1.15rem;
+    border: 1px solid rgba(71, 85, 105, 0.55);
+    background: linear-gradient(165deg, rgba(17,24,39,0.98), rgba(15,23,42,0.96));
+    box-shadow:
+      0 1px 0 rgba(255,255,255,0.04) inset,
+      0 18px 40px rgba(2,6,23,0.4);
+    padding: 1.35rem 1.4rem 1.5rem;
+    text-align: center;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+  }
+  .dg-layer:nth-child(1) { z-index: 1; top: 5.5rem; }
+  .dg-layer:nth-child(2) { z-index: 2; top: 6.35rem; }
+  .dg-layer:nth-child(3) { z-index: 3; top: 7.2rem; }
+  .dg-layer:nth-child(4) { z-index: 4; top: 8.05rem; }
+  .dg-layer:hover {
+    border-color: rgba(96,165,250,0.45);
+    box-shadow:
+      0 1px 0 rgba(255,255,255,0.05) inset,
+      0 22px 48px rgba(2,6,23,0.5);
+  }
+  .dg-layer-kicker {
+    display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem;
+    font-size: 0.68rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase;
+    color: #93C5FD; margin-bottom: 0.55rem;
+  }
+  .dg-layer-kicker i {
+    width: 1.4rem; height: 1.4rem; border-radius: 999px;
+    display: grid; place-items: center; font-style: normal; font-size: 0.65rem;
+    background: rgba(59,130,246,0.18); border: 1px solid rgba(59,130,246,0.35); color: #BFDBFE;
+  }
+  .dg-layer h3 {
+    font-size: clamp(1.25rem, 2.4vw, 1.55rem); font-weight: 800; letter-spacing: -0.025em;
+    margin: 0 0 0.45rem; color: #F8FAFC !important;
+  }
+  .dg-layer > p {
+    margin: 0 auto 1rem; font-size: 0.92rem; line-height: 1.55; color: #94A3B8; max-width: 52ch;
+  }
+  .dg-layer-chips {
+    display: flex; flex-wrap: wrap; gap: 0.45rem; justify-content: center;
+  }
+  .dg-layer-chips span {
+    font-size: 0.75rem; font-weight: 600; color: #E2E8F0;
+    padding: 0.38rem 0.75rem; border-radius: 8px;
+    background: rgba(15,23,42,0.75); border: 1px solid rgba(51,65,85,0.85);
+  }
+  @media (max-width: 720px) {
+    .dg-layer, .dg-layer:nth-child(n) {
+      position: relative; top: auto !important;
+    }
+  }
+
+  /* SYSTEM C — Product journey (static grid, no horizontal scroll) */
+  #platform-overview.dg-journey-section {
+    padding: 0 0 2.5rem;
+    border-top: 1px solid #1E293B;
+    background:
+      radial-gradient(50% 60% at 0% 40%, rgba(37,99,235,0.18), transparent 65%),
+      #0A0E17;
+  }
+  .dg-journey-section > .container { padding-top: 5rem; }
+  .dg-journey-track {
+    position: relative;
+    height: auto;
+    padding: 0;
+  }
+  .dg-journey-sticky {
+    position: relative;
+    top: auto;
+    height: auto;
+    display: block;
+    overflow: visible;
+    padding: 0;
+  }
+  .dg-journey-progress {
+    display: none;
+  }
+  .dg-journey-viewport {
+    max-width: 1200px; margin: 0 auto;
+    padding: 0 1.25rem 0.35rem;
+    overflow: visible;
+  }
+  .dg-journey-rail {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    align-items: stretch;
+    gap: 1rem;
+    width: 100%;
+    padding: 0.15rem 0 0.85rem;
+  }
+  .dg-journey-hint {
+    display: none;
+  }
+  .dg-journey-panel {
+    width: auto;
+    min-width: 0;
+    border-radius: 1.1rem;
+    border: 1px solid rgba(71,85,105,0.55);
+    background: linear-gradient(160deg, #111827 0%, #0B1220 100%);
+    box-shadow: 0 16px 40px rgba(2,6,23,0.35);
+    padding: 1.2rem 1.2rem 1.3rem;
+    opacity: 1;
+    transform: none;
+    transition: border-color 0.25s ease, box-shadow 0.25s ease;
+  }
+  .dg-journey-panel.is-active {
+    border-color: rgba(96,165,250,0.45);
+    box-shadow: 0 20px 48px rgba(15,23,42,0.55);
+  }
+  .dg-journey-step {
+    display: inline-flex; align-items: center; gap: 0.45rem;
+    font-size: 0.65rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase;
+    color: #93C5FD; margin-bottom: 0.55rem;
+  }
+  .dg-journey-step b {
+    width: 1.45rem; height: 1.45rem; border-radius: 999px; display: grid; place-items: center;
+    font-size: 0.68rem; font-weight: 700; color: #fff;
+    background: linear-gradient(135deg, #3B82F6, #0EA5E9);
+  }
+  .dg-journey-panel h3 {
+    font-size: 1.2rem; font-weight: 800; letter-spacing: -0.02em;
+    margin: 0 0 0.4rem; color: #F8FAFC !important;
+  }
+  .dg-journey-panel > p {
+    margin: 0 0 1rem; font-size: 0.86rem; line-height: 1.5; color: #94A3B8;
+  }
+  .dg-ui {
+    border-radius: 0.85rem;
+    border: 1px solid rgba(51,65,85,0.8);
+    background: rgba(2,6,23,0.55);
+    padding: 0.85rem 0.9rem;
+  }
+  .dg-ui-row {
+    display: flex; justify-content: space-between; align-items: baseline;
+    gap: 0.75rem; padding: 0.35rem 0;
+    border-bottom: 1px solid rgba(51,65,85,0.45);
+    font-size: 0.78rem;
+  }
+  .dg-ui-row:last-child { border-bottom: 0; }
+  .dg-ui-row span { color: #94A3B8; }
+  .dg-ui-row strong { color: #E2E8F0; font-weight: 700; }
+  .dg-ui-metric {
+    display: flex; align-items: flex-end; justify-content: space-between; gap: 0.75rem;
+    margin-bottom: 0.55rem;
+  }
+  .dg-ui-metric strong {
+    font-size: 1.55rem; font-weight: 800; letter-spacing: -0.03em; color: #F8FAFC;
+  }
+  .dg-ui-metric span { font-size: 0.72rem; color: #64748B; text-transform: uppercase; letter-spacing: 0.08em; }
+  .dg-ui-bar {
+    height: 6px; border-radius: 999px; background: rgba(51,65,85,0.7); overflow: hidden; margin: 0.35rem 0 0.65rem;
+  }
+  .dg-ui-bar i {
+    display: block; height: 100%; width: 78%; border-radius: inherit;
+    background: linear-gradient(90deg, #3B82F6, #2DD4BF);
+  }
+  .dg-ui-advice {
+    font-size: 0.88rem; line-height: 1.45; color: #E2E8F0; font-weight: 600;
+  }
+  .dg-ui-cta {
+    display: inline-flex; align-items: center; gap: 0.35rem; margin-top: 0.75rem;
+    font-size: 0.78rem; font-weight: 700; color: #93C5FD;
+  }
+  .dg-ui-cta em {
+    font-style: normal; transition: transform 0.2s ease; display: inline-block;
+  }
+  .dg-journey-panel.is-active .dg-ui-cta em { transform: translateX(4px); }
+  .dg-journey-link {
+    position: absolute; pointer-events: none; /* reserved for future connectors */
+  }
+  .dg-journey-end {
+    max-width: 720px; margin: 0 auto; padding: 1.25rem 1.5rem 0; text-align: center;
+  }
+  .dg-journey-end p {
+    font-size: 1.05rem; font-weight: 700; color: #CBD5E1; line-height: 1.5;
+  }
+  @media (max-width: 1100px) {
+    .dg-journey-rail {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+  @media (max-width: 640px) {
+    .dg-journey-rail {
+      grid-template-columns: 1fr;
+      gap: 0.9rem;
+      padding-bottom: 0;
+    }
+  }
+
+  /* Industry workflow cards */
+  .dg-ind-grid {
+    display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem;
+    max-width: 1000px; margin: 0 auto 1.75rem;
+  }
+  .dg-ind-card {
+    border-radius: 1.05rem; border: 1px solid rgba(51,65,85,0.85);
+    background: #111827; padding: 1.25rem 1.25rem 1.35rem;
+    transition: border-color 0.2s ease, transform 0.2s ease, background 0.2s ease;
+  }
+  .dg-ind-card:hover {
+    border-color: rgba(96,165,250,0.4);
+    background: #0f172a;
+  }
+  .dg-ind-card .eyebrow {
+    font-size: 0.65rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase;
+    color: #93C5FD; margin-bottom: 0.4rem;
+  }
+  .dg-ind-card h3 {
+    font-size: 1.15rem; font-weight: 800; margin: 0 0 0.35rem; color: #F8FAFC !important;
+  }
+  .dg-ind-card > p { margin: 0 0 0.9rem; font-size: 0.86rem; color: #94A3B8; line-height: 1.5; }
+  .dg-flow {
+    display: flex; flex-wrap: wrap; align-items: center; gap: 0.35rem;
+  }
+  .dg-flow span {
+    font-size: 0.72rem; font-weight: 600; color: #CBD5E1;
+    padding: 0.28rem 0.55rem; border-radius: 6px;
+    background: rgba(15,23,42,0.8); border: 1px solid rgba(51,65,85,0.75);
+  }
+  .dg-flow i {
+    font-style: normal; color: #64748B; font-size: 0.7rem;
+  }
+  .dg-ind-subs {
+    margin-top: 0.85rem; font-size: 0.75rem; color: #64748B; line-height: 1.45;
+  }
+  @media (max-width: 720px) {
+    .dg-ind-grid { grid-template-columns: 1fr; }
+  }
+
+  /* Core architecture bands */
+  .dg-core-arch {
+    max-width: 920px; margin: 0 auto; display: flex; flex-direction: column; gap: 0.85rem;
+  }
+  .dg-core-band {
+    border-radius: 1rem; border: 1px solid rgba(51,65,85,0.8);
+    background: #111827; padding: 1.15rem 1.25rem;
+    text-align: center;
+  }
+  .dg-core-band h3 {
+    font-size: 0.72rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase;
+    color: #93C5FD; margin: 0 0 0.75rem; text-align: center;
+  }
+  .dg-core-band .apps-row { justify-content: center; }
+  .dg-core-arrow {
+    text-align: center; color: #3B82F6; font-weight: 700; font-size: 0.95rem;
   }
 
   /* Core / apps grids */
@@ -312,58 +613,58 @@
   }
 
   /* Connected Business → Business Brain */
-  .connected-split {
-    display: grid; gap: 2rem; max-width: 980px; margin: 0 auto;
+  .connected-block {
+    max-width: 820px; margin: 0 auto; text-align: center;
   }
-  .connected-copy h3 {
-    font-size: clamp(1.25rem, 2.5vw, 1.55rem); font-weight: 800; margin: 1.75rem 0 0.65rem;
+  .connected-block .connected-copy {
+    margin: 0 auto 1.75rem; max-width: 640px;
   }
-  .connected-copy p { color: #94A3B8; line-height: 1.7; margin-bottom: 0.85rem; max-width: 42rem; }
-  .connected-copy p strong { color: #E2E8F0; font-weight: 700; }
+  .connected-block .connected-copy h3 {
+    font-size: clamp(1.25rem, 2.5vw, 1.55rem); font-weight: 800;
+    margin: 1.5rem 0 0.65rem; color: #F9FAFB !important;
+  }
+  .connected-block .connected-copy p {
+    color: #94A3B8; line-height: 1.7; margin: 0 auto 0.85rem;
+  }
+  .connected-block .connected-copy p strong { color: #E2E8F0; font-weight: 700; }
+  .brain-panel {
+    margin: 0 auto 1.5rem; padding: 1.75rem 1.35rem 1.65rem; border-radius: 20px;
+    background: linear-gradient(135deg, rgba(59,130,246,0.14), rgba(14,165,233,0.06));
+    border: 1px solid rgba(59,130,246,0.28);
+  }
+  .brain-panel-core {
+    display: inline-flex; align-items: center; justify-content: center;
+    margin: 0 auto 1.15rem; padding: 0.85rem 1.4rem; border-radius: 999px;
+    background: linear-gradient(145deg, rgba(59,130,246,0.5), rgba(14,165,233,0.22));
+    border: 1px solid rgba(147,197,253,0.45);
+    box-shadow: 0 0 36px rgba(59,130,246,0.22);
+    font-size: 0.92rem; font-weight: 800; letter-spacing: -0.01em; color: #F8FAFC;
+  }
+  .brain-chips {
+    display: flex !important; flex-wrap: wrap !important; gap: 0.5rem !important;
+    justify-content: center !important; align-items: center;
+  }
+  .brain-chips span {
+    display: inline-block !important;
+    font-size: 0.75rem !important; font-weight: 600 !important;
+    padding: 0.4rem 0.9rem !important; border-radius: 999px !important;
+    background: rgba(15,23,42,0.85) !important; border: 1px solid #334155 !important;
+    color: #CBD5E1 !important; white-space: nowrap !important;
+  }
   .flywheel {
-    display: flex; flex-wrap: wrap; gap: 0.4rem; justify-content: center; margin: 1.75rem 0 0.5rem;
+    display: flex !important; flex-wrap: wrap !important; gap: 0.45rem !important;
+    justify-content: center !important;
+    margin: 0 auto 0.25rem; max-width: 720px;
   }
   .flywheel span {
-    font-size: 0.68rem; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase;
-    padding: 0.4rem 0.75rem; border-radius: 8px;
-    background: rgba(15,23,42,0.9); border: 1px solid #334155; color: #93C5FD;
+    display: inline-block !important;
+    font-size: 0.68rem !important; font-weight: 800 !important;
+    letter-spacing: 0.08em; text-transform: uppercase;
+    padding: 0.45rem 0.8rem !important; border-radius: 8px;
+    background: rgba(15,23,42,0.9) !important; border: 1px solid #334155 !important;
+    color: #93C5FD !important;
   }
-  .brain-orbit {
-    position: relative; max-width: 520px; margin: 0.5rem auto 0;
-    aspect-ratio: 1; border-radius: 50%;
-    background:
-      radial-gradient(circle at 50% 50%, rgba(59,130,246,0.18), transparent 55%),
-      radial-gradient(circle at 50% 50%, rgba(15,23,42,0.2), rgba(10,14,23,0.9) 70%);
-    border: 1px solid rgba(59,130,246,0.2);
-  }
-  .brain-core {
-    position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
-    width: 34%; aspect-ratio: 1; border-radius: 50%;
-    display: flex; align-items: center; justify-content: center; text-align: center;
-    background: linear-gradient(145deg, rgba(59,130,246,0.45), rgba(14,165,233,0.2));
-    border: 1px solid rgba(147,197,253,0.45);
-    box-shadow: 0 0 40px rgba(59,130,246,0.25);
-    padding: 0.75rem; font-size: 0.78rem; font-weight: 800; line-height: 1.25; color: #F8FAFC;
-  }
-  .brain-node {
-    position: absolute; font-size: 0.68rem; font-weight: 700; color: #CBD5E1;
-    padding: 0.35rem 0.65rem; border-radius: 999px;
-    background: rgba(15,23,42,0.92); border: 1px solid #334155;
-    white-space: nowrap;
-  }
-  .brain-node.n1 { left: 50%; top: 6%; transform: translateX(-50%); }
-  .brain-node.n2 { right: 8%; top: 18%; }
-  .brain-node.n3 { right: 4%; top: 42%; }
-  .brain-node.n4 { right: 10%; bottom: 20%; }
-  .brain-node.n5 { left: 50%; bottom: 6%; transform: translateX(-50%); }
-  .brain-node.n6 { left: 8%; bottom: 20%; }
-  .brain-node.n7 { left: 4%; top: 42%; }
-  .brain-node.n8 { left: 10%; top: 18%; }
-  .connected-cta { text-align: center; margin-top: 1.75rem; }
-  @media (max-width: 640px) {
-    .brain-orbit { max-width: 340px; }
-    .brain-node { font-size: 0.6rem; padding: 0.28rem 0.5rem; }
-  }
+  .connected-cta { text-align: center; margin-top: 1.5rem; }
 
   /* AI grid */
   .ai-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; }
@@ -456,7 +757,13 @@
   .cta-section p { color: #94A3B8; max-width: 560px; margin: 0 auto 1.5rem; }
 
   .screenshots-home { padding: 5rem 0; background: #111827; border-top: 1px solid #1E293B; }
-  .shot-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.25rem; max-width: 1100px; margin: 2rem auto 0; }
+  .shot-grid, .shot-masonry {
+    display: grid; grid-template-columns: repeat(12, 1fr); gap: 1.25rem;
+    max-width: 1100px; margin: 2rem auto 0;
+  }
+  .shot-masonry .shot-frame:nth-child(1) { grid-column: span 7; }
+  .shot-masonry .shot-frame:nth-child(2) { grid-column: span 5; }
+  .shot-masonry .shot-frame:nth-child(3) { grid-column: span 12; max-width: 820px; width: 100%; justify-self: center; }
   .shot-frame {
     position: relative; aspect-ratio: 16/10; border-radius: 14px; border: 1px solid #334155; overflow: hidden; background: #0F172A;
   }
@@ -468,9 +775,11 @@
   .shot-frame .shot-label { font-size: 0.7rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: #93C5FD; display: block; }
   .shot-frame .shot-title { font-size: 0.95rem; font-weight: 700; color: #F1F5F9; display: block; }
   .shot-frame .shot-sub { font-size: 0.72rem; color: #94A3B8; display: block; margin-top: 0.15rem; }
-
   @media (max-width: 900px) {
-    .shot-grid { grid-template-columns: 1fr; }
+    .shot-grid, .shot-masonry { grid-template-columns: 1fr; }
+    .shot-masonry .shot-frame:nth-child(1),
+    .shot-masonry .shot-frame:nth-child(2),
+    .shot-masonry .shot-frame:nth-child(3) { grid-column: span 1; max-width: none; }
   }
 
   @media (max-width: 1024px) {
@@ -589,7 +898,7 @@
     .hero-home { --hx: 0 !important; --hy: 0 !important; }
   }
   @media (max-width: 640px) {
-    .hero-home { padding: 5.5rem 0 4rem; min-height: 100svh; min-height: 100dvh; height: 100svh; height: 100dvh; }
+    .hero-home { padding: clamp(5rem, 14vw, 5.5rem) 0 3.5rem; min-height: 100svh; min-height: 100dvh; }
     .hero-home .hero-network { opacity: 0.4; }
     .hero-home .hero-orb-c { display: none; }
   }
@@ -657,6 +966,7 @@
 </section>
 
 <!-- ===== FIVE PILLARS ===== -->
+<div data-dg-motion-root>
 <section id="pillars">
   <div class="container">
     <div class="section-header">
@@ -665,27 +975,27 @@
       <p>Everything DigitalGate builds supports one or more of these five pillars — the foundation of your business operating system.</p>
     </div>
     <div class="pillars">
-      <div class="pillar">
+      <div class="pillar dg-reveal">
         <div class="pillar-icon" aria-hidden="true">01</div>
         <h3>Connect</h3>
         <p>Connect your website, CRM, marketing, payments, AI and business systems.</p>
       </div>
-      <div class="pillar">
+      <div class="pillar dg-reveal">
         <div class="pillar-icon" aria-hidden="true">02</div>
         <h3>Centralise</h3>
         <p>One login, one customer record and one timeline across your business.</p>
       </div>
-      <div class="pillar">
+      <div class="pillar dg-reveal">
         <div class="pillar-icon" aria-hidden="true">03</div>
         <h3>Understand</h3>
         <p>Your Digital Twin™ turns connected business data into context and insight.</p>
       </div>
-      <div class="pillar">
+      <div class="pillar dg-reveal">
         <div class="pillar-icon" aria-hidden="true">04</div>
         <h3>Automate</h3>
         <p>Trigger workflows, follow-ups and AI actions from real business events.</p>
       </div>
-      <div class="pillar">
+      <div class="pillar dg-reveal">
         <div class="pillar-icon" aria-hidden="true">05</div>
         <h3>Grow</h3>
         <p>Improve visibility, acquisition, conversion and performance without adding another disconnected stack.</p>
@@ -703,7 +1013,7 @@
       <p>Most businesses run on disconnected tools. DigitalGate brings them into one business context.</p>
     </div>
     <div class="connect-compare">
-      <div class="connect-panel before">
+      <div class="connect-panel before dg-reveal">
         <h3>Before</h3>
         <ul>
           <li>Separate CRM, website, email, SEO and automation tools</li>
@@ -713,7 +1023,7 @@
         </ul>
       </div>
       <div class="connect-arrow" aria-hidden="true">→</div>
-      <div class="connect-panel after">
+      <div class="connect-panel after dg-reveal">
         <h3>With DigitalGate</h3>
         <ul>
           <li>One platform for CRM, website, AI, automation and apps</li>
@@ -726,30 +1036,128 @@
   </div>
 </section>
 
-<!-- ===== PLATFORM OVERVIEW ===== -->
-<section class="alt" id="platform-overview">
+<!-- ===== ONE PLATFORM LAYERS (System B) ===== -->
+<section class="dg-layers-section" id="one-platform">
   <div class="container">
     <div class="section-header">
-      <span class="sub-label">ARCHITECTURE</span>
-      <h2>An operating platform with Apps</h2>
-      <p>DigitalGate is the business operating system — not an App marketplace. Start with Core, power with Infrastructure, specialise with Industry Apps, then grow.</p>
+      <span class="sub-label">OPERATING SYSTEM</span>
+      <h2>One platform. Every part of your business.</h2>
+      <p>Layers that build into a single business operating system — not a pile of disconnected products.</p>
     </div>
-    <div class="arch-funnel">
-      <div class="arch-step highlight">DigitalGate Platform</div><div class="arch-arrow">↓</div>
-      <div class="arch-step highlight">Core</div>
-      <p class="arch-logic">Run your business</p>
-      <div class="arch-arrow">↓</div>
-      <div class="arch-step">Infrastructure</div>
-      <p class="arch-logic">Operate your digital presence</p>
-      <div class="arch-arrow">↓</div>
-      <div class="arch-step">Industry Apps</div>
-      <p class="arch-logic">Specialise your workflows</p>
-      <div class="arch-arrow">↓</div>
-      <div class="arch-step">Growth Apps</div>
-      <p class="arch-logic">Grow visibility, acquisition and conversion</p>
+  </div>
+  <div class="dg-layers" aria-label="Platform layers">
+    <article class="dg-layer">
+      <div class="dg-layer-kicker"><i>01</i> Connect</div>
+      <h3>Bring the business into one context</h3>
+      <p>CRM, websites, commerce, communications and documents share the same customer and event stream.</p>
+      <div class="dg-layer-chips">
+        <span>CRM</span><span>Websites</span><span>Commerce</span><span>Communications</span><span>Documents</span>
+      </div>
+    </article>
+    <article class="dg-layer">
+      <div class="dg-layer-kicker"><i>02</i> Understand</div>
+      <h3>See what the business is actually doing</h3>
+      <p>Business Brain™, Digital Twin™ and Business Health turn connected activity into coverage, signals and clarity.</p>
+      <div class="dg-layer-chips">
+        <span>Business Brain</span><span>Digital Twin</span><span>Business Health</span><span>AI Advisor</span>
+      </div>
+    </article>
+    <article class="dg-layer">
+      <div class="dg-layer-kicker"><i>03</i> Automate</div>
+      <h3>Act on real events — with human oversight</h3>
+      <p>Workflows, outreach and communications run from live business context, not generic triggers.</p>
+      <div class="dg-layer-chips">
+        <span>Automation</span><span>Workflows</span><span>Outreach</span><span>Communications</span>
+      </div>
+    </article>
+    <article class="dg-layer">
+      <div class="dg-layer-kicker"><i>04</i> Grow</div>
+      <h3>Improve visibility, acquisition and conversion</h3>
+      <p>Growth sits on the same Core — so SEO, AI Visibility, prospecting and analytics compound each other.</p>
+      <div class="dg-layer-chips">
+        <span>SEO</span><span>AI Visibility</span><span>Prospecting</span><span>Reputation</span><span>Analytics</span>
+      </div>
+    </article>
+  </div>
+</section>
+
+<!-- ===== PLATFORM OVERVIEW / JOURNEY ===== -->
+<section class="dg-journey-section" id="platform-overview">
+  <div class="container">
+    <div class="section-header">
+      <span class="sub-label">HOW IT WORKS</span>
+      <h2>From signal → decision → action → outcome</h2>
+      <p>DigitalGate doesn’t just store data. It connects activity, surfaces what matters, helps you act — then learns from the result.</p>
     </div>
+  </div>
+  <div class="dg-journey" aria-label="Product journey">
+    <div class="dg-journey-track">
+      <div class="dg-journey-sticky">
+        <div class="dg-journey-progress" aria-hidden="true"><span></span></div>
+        <div class="dg-journey-viewport">
+          <div class="dg-journey-rail">
+            <article class="dg-journey-panel is-active">
+              <div class="dg-journey-step"><b>01</b> Connect</div>
+              <h3>Signals arrive</h3>
+              <p>CRM, website, commerce, communications and connectors feed one business context.</p>
+              <div class="dg-ui">
+                <div class="dg-ui-row"><span>New contacts</span><strong>12</strong></div>
+                <div class="dg-ui-row"><span>Opportunities</span><strong>4</strong></div>
+                <div class="dg-ui-row"><span>Need follow-up</span><strong>2</strong></div>
+              </div>
+            </article>
+            <article class="dg-journey-panel is-active">
+              <div class="dg-journey-step"><b>02</b> Understand</div>
+              <h3>Context forms</h3>
+              <p>Business Brain™ and Digital Twin™ interpret what’s happening across the business.</p>
+              <div class="dg-ui">
+                <div class="dg-ui-metric"><strong>78%</strong><span>Coverage</span></div>
+                <div class="dg-ui-bar" aria-hidden="true"><i></i></div>
+                <div class="dg-ui-row"><span>Health signals</span><strong>Stable</strong></div>
+                <div class="dg-ui-row"><span>Open loops</span><strong>3</strong></div>
+              </div>
+            </article>
+            <article class="dg-journey-panel is-active">
+              <div class="dg-journey-step"><b>03</b> Advise</div>
+              <h3>What matters next</h3>
+              <p>AI Advisor prioritises work from live context — not generic tips.</p>
+              <div class="dg-ui">
+                <p class="dg-ui-advice">3 opportunities need attention today.</p>
+                <div class="dg-ui-row"><span>Priority</span><strong>Follow up River Ave</strong></div>
+                <div class="dg-ui-row"><span>Why</span><strong>No contact in 5 days</strong></div>
+              </div>
+            </article>
+            <article class="dg-journey-panel is-active">
+              <div class="dg-journey-step"><b>04</b> Act</div>
+              <h3>Human-approved action</h3>
+              <p>Create a task, send a draft, update an opportunity or launch automation — with oversight.</p>
+              <div class="dg-ui">
+                <div class="dg-ui-row"><span>Action</span><strong>Follow up lead</strong></div>
+                <div class="dg-ui-row"><span>Channel</span><strong>Email draft</strong></div>
+                <span class="dg-ui-cta">Approve &amp; send <em>→</em></span>
+              </div>
+            </article>
+            <article class="dg-journey-panel is-active">
+              <div class="dg-journey-step"><b>05</b> Learn</div>
+              <h3>Outcome returns</h3>
+              <p>Results flow back into Twin, Brain and signals — so the next decision is sharper.</p>
+              <div class="dg-ui">
+                <div class="dg-ui-row"><span>Opportunity</span><strong>→ Contacted</strong></div>
+                <div class="dg-ui-row"><span>Signal</span><strong>Engagement +1</strong></div>
+                <div class="dg-ui-row"><span>Next</span><strong>Schedule appraisal</strong></div>
+              </div>
+            </article>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="dg-journey-end">
+      <p>Your business gets smarter with every interaction.</p>
+    </div>
+  </div>
+  <div class="container">
     <div class="arch-across">
-      <p>Shared intelligence and infrastructure operate <strong style="color:#CBD5E1;font-weight:600;">across</strong> Core and Apps:</p>
+      <p>Shared intelligence operates <strong style="color:#CBD5E1;font-weight:600;">across</strong> Core and Apps:</p>
       <div class="apps-row">
         <span class="app-chip">AI</span>
         <span class="app-chip">Event Bus</span>
@@ -766,18 +1174,43 @@
   <div class="container">
     <div class="section-header">
       <span class="sub-label">CORE</span>
-      <h2>Platform Core — run your business</h2>
-      <p>The shared operating layer every customer receives on day one. Infrastructure, Industry Apps and Growth build on this.</p>
+      <h2>One system — business, intelligence and growth</h2>
+      <p>These aren’t separate products. They form one connected operating layer every customer receives on day one.</p>
     </div>
-    <div class="core-grid">
-      <div class="core-item"><span class="ic">✓</span> CRM</div>
-      <div class="core-item"><span class="ic">✓</span> Contacts</div>
-      <div class="core-item"><span class="ic">✓</span> Opportunities</div>
-      <div class="core-item"><span class="ic">✓</span> Tasks &amp; Activities</div>
-      <div class="core-item"><span class="ic">✓</span> Calendar</div>
-      <div class="core-item"><span class="ic">✓</span> Documents</div>
-      <div class="core-item"><span class="ic">✓</span> Communications</div>
-      <div class="core-item"><span class="ic">✓</span> Commerce — Early Access</div>
+    <div class="dg-core-arch">
+      <div class="dg-core-band dg-reveal">
+        <h3>Business</h3>
+        <div class="apps-row">
+          <span class="app-chip">CRM</span>
+          <span class="app-chip">Commerce</span>
+          <span class="app-chip">Communications</span>
+          <span class="app-chip">Documents</span>
+          <span class="app-chip">Design Studio</span>
+          <span class="app-chip">Infrastructure</span>
+        </div>
+      </div>
+      <div class="dg-core-arrow" aria-hidden="true">↓</div>
+      <div class="dg-core-band dg-reveal">
+        <h3>Intelligence</h3>
+        <div class="apps-row">
+          <span class="app-chip">Business Brain</span>
+          <span class="app-chip">Digital Twin</span>
+          <span class="app-chip">Business Health</span>
+          <span class="app-chip">AI Advisor</span>
+        </div>
+      </div>
+      <div class="dg-core-arrow" aria-hidden="true">↓</div>
+      <div class="dg-core-band dg-reveal">
+        <h3>Growth</h3>
+        <div class="apps-row">
+          <a class="app-chip" href="/prospecting/">Prospecting</a>
+          <a class="app-chip" href="/seo/">SEO</a>
+          <a class="app-chip" href="/ai-visibility/">AI Visibility</a>
+          <a class="app-chip" href="/automation/">Automation</a>
+          <a class="app-chip" href="/analytics/">Analytics</a>
+          <a class="app-chip" href="/reputation/">Reputation</a>
+        </div>
+      </div>
     </div>
   </div>
 </section>
@@ -825,11 +1258,14 @@
       <h3>Growth</h3>
       <p class="logic">Grow visibility, acquisition and conversion</p>
       <div class="apps-row">
-        <a class="app-chip" href="/apps/growth/prospecting/">Prospecting &amp; Opportunity Engine</a>
-        <a class="app-chip" href="/apps/growth/ai-visibility/">AI Visibility</a>
-        <a class="app-chip" href="/apps/growth/seo/">SEO</a>
-        <a class="app-chip" href="/apps/growth/automation/">Automation</a>
+        <a class="app-chip" href="/prospecting/">Prospecting &amp; Opportunity Engine</a>
+        <a class="app-chip" href="/ai-visibility/">AI Visibility</a>
+        <a class="app-chip" href="/seo/">SEO</a>
+        <a class="app-chip" href="/automation/">Automation</a>
+        <a class="app-chip" href="/analytics/">Analytics</a>
+        <a class="app-chip" href="/social/">Social</a>
       </div>
+      <p style="margin-top:0.75rem;font-size:0.88rem;"><a href="/growth/" style="color:#93C5FD;font-weight:600;">Explore Growth capabilities →</a></p>
     </div>
 
     <p style="text-align:center;margin-top:2rem;"><a href="/apps/" class="btn-secondary">Explore the Apps hub →</a></p>
@@ -864,7 +1300,7 @@
       <h2>From disconnected tools to a connected business</h2>
       <p>Your business shouldn’t have to rely on you to connect everything together.</p>
     </div>
-    <div class="connected-split">
+    <div class="connected-block">
       <div class="connected-copy">
         <p>DigitalGate brings your CRM, website, marketing, communications, commerce, operations and growth systems into one connected platform.</p>
         <p><strong>One business context. One source of truth. One place to understand what is happening.</strong></p>
@@ -872,23 +1308,25 @@
         <p>Once your business is connected, AI can work with the context behind it.</p>
         <p>DigitalGate’s Business Brain™ uses your business information, Digital Twin, goals, knowledge and connected activity to help you understand what’s happening, decide what matters and take action.</p>
       </div>
-      <div class="brain-orbit" aria-hidden="true">
-        <div class="brain-core">Business<br>Brain™</div>
-        <span class="brain-node n1">Customers</span>
-        <span class="brain-node n2">CRM</span>
-        <span class="brain-node n3">Website</span>
-        <span class="brain-node n4">Marketing</span>
-        <span class="brain-node n5">Commerce</span>
-        <span class="brain-node n6">Operations</span>
-        <span class="brain-node n7">Analytics</span>
-        <span class="brain-node n8">Automation</span>
+      <div class="brain-panel" aria-hidden="true">
+        <div class="brain-panel-core">Business Brain™</div>
+        <div class="brain-chips">
+          <span>Customers</span>
+          <span>CRM</span>
+          <span>Website</span>
+          <span>Marketing</span>
+          <span>Commerce</span>
+          <span>Operations</span>
+          <span>Analytics</span>
+          <span>Automation</span>
+        </div>
       </div>
+      <div class="flywheel" aria-label="Connect Centralise Understand Think Act Learn Grow">
+        <span>Connect</span><span>Centralise</span><span>Understand</span><span>Think</span>
+        <span>Act</span><span>Learn</span><span>Grow</span>
+      </div>
+      <p class="connected-cta"><a href="/business-brain/" class="btn-secondary">Explore Business Brain™ →</a></p>
     </div>
-    <div class="flywheel">
-      <span>Connect</span><span>Centralise</span><span>Understand</span><span>Think</span>
-      <span>Act</span><span>Learn</span><span>Grow</span>
-    </div>
-    <p class="connected-cta"><a href="/business-brain/" class="btn-secondary">Explore Business Brain™ →</a></p>
   </div>
 </section>
 
@@ -937,18 +1375,18 @@
     </div>
     <p class="ai-split-label">Available / Early Access</p>
     <div class="ai-grid">
-      <div class="ai-card"><span class="ai-badge now">Early Access</span><div class="icon">🧠</div><h4>AI Business Advisor</h4><p>Daily briefing and strategic priorities</p></div>
-      <div class="ai-card"><span class="ai-badge now">Early Access</span><div class="icon">💡</div><h4>AI Recommendations</h4><p>Priorities grounded in connected business data</p></div>
-      <div class="ai-card"><span class="ai-badge now">Available</span><div class="icon">✍️</div><h4>AI Content</h4><p>Emails, pages and campaign copy</p></div>
-      <div class="ai-card"><span class="ai-badge now">Early Access</span><div class="icon">🎯</div><h4>AI Lead Qualification</h4><p>Score and route leads with human oversight</p></div>
-      <div class="ai-card"><span class="ai-badge now">Available</span><div class="icon">🔍</div><h4>AI Visibility Optimisation</h4><p>Readiness for Google and AI search</p></div>
-      <div class="ai-card"><span class="ai-badge now">Early Access</span><div class="icon">📊</div><h4>AI Reports</h4><p>Executive summaries from live data</p></div>
+      <div class="ai-card dg-reveal"><span class="ai-badge now">Early Access</span><div class="icon">🧠</div><h4>AI Business Advisor</h4><p>Daily briefing and strategic priorities</p></div>
+      <div class="ai-card dg-reveal"><span class="ai-badge now">Early Access</span><div class="icon">💡</div><h4>AI Recommendations</h4><p>Priorities grounded in connected business data</p></div>
+      <div class="ai-card dg-reveal"><span class="ai-badge now">Available</span><div class="icon">✍️</div><h4>AI Content</h4><p>Emails, pages and campaign copy</p></div>
+      <div class="ai-card dg-reveal"><span class="ai-badge now">Early Access</span><div class="icon">🎯</div><h4>AI Lead Qualification</h4><p>Score and route leads with human oversight</p></div>
+      <div class="ai-card dg-reveal"><span class="ai-badge now">Available</span><div class="icon">🔍</div><h4>AI Visibility Optimisation</h4><p>Readiness for Google and AI search</p></div>
+      <div class="ai-card dg-reveal"><span class="ai-badge now">Early Access</span><div class="icon">📊</div><h4>AI Reports</h4><p>Executive summaries from live data</p></div>
     </div>
     <p class="ai-split-label">Evolving</p>
     <div class="ai-grid">
-      <div class="ai-card evolving"><span class="ai-badge soon">In Development</span><div class="icon">🎙️</div><h4>AI Voice Agents</h4><p>Inbound calls and lead qualification</p></div>
-      <div class="ai-card evolving"><span class="ai-badge soon">In Development</span><div class="icon">⚡</div><h4>Advanced Workflow Builder</h4><p>Visual multi-step automation</p></div>
-      <div class="ai-card evolving"><span class="ai-badge soon">Coming Soon</span><div class="icon">📈</div><h4>Deeper Business Intelligence</h4><p>Richer patterns across your Digital Twin</p></div>
+      <div class="ai-card evolving dg-reveal"><span class="ai-badge soon">In Development</span><div class="icon">🎙️</div><h4>AI Voice Agents</h4><p>Inbound calls and lead qualification</p></div>
+      <div class="ai-card evolving dg-reveal"><span class="ai-badge soon">In Development</span><div class="icon">⚡</div><h4>Advanced Workflow Builder</h4><p>Visual multi-step automation</p></div>
+      <div class="ai-card evolving dg-reveal"><span class="ai-badge soon">Coming Soon</span><div class="icon">📈</div><h4>Deeper Business Intelligence</h4><p>Richer patterns across your Digital Twin</p></div>
     </div>
   </div>
 </section>
@@ -958,29 +1396,56 @@
   <div class="container">
     <div class="section-header">
       <span class="sub-label">INDUSTRY APPS</span>
-      <h2>Built for real businesses</h2>
-      <p>One horizontal platform. Vertical Apps on the same Core — not a collection of disconnected tools.</p>
+      <h2>Built for how real businesses operate</h2>
+      <p>Industry Apps specialise the Core. Templates underneath match your workflows — not disconnected vertical tools.</p>
     </div>
-    <div class="biz-workflows">
-      <div class="biz-workflow">
-        <h4>Property</h4>
-        <p>Industry App — Real Estate Template: Vendor → Appraisal → Listing → Buyer → Deal</p>
-      </div>
-      <div class="biz-workflow">
-        <h4>Hospitality &amp; Accommodation</h4>
-        <p>Industry App — Accommodation Template: Booking → Guest → Stay → Operations → Revenue</p>
-      </div>
+    <div class="dg-ind-grid">
+      <article class="dg-ind-card dg-reveal">
+        <div class="eyebrow">Available</div>
+        <h3>Property</h3>
+        <p>Real Estate · Property Management · Commercial · Development · Buyers Agency</p>
+        <div class="dg-flow" aria-label="Real Estate workflow">
+          <span>Vendors</span><i>→</i><span>Appraisals</span><i>→</i><span>Listings</span><i>→</i><span>Buyers</span><i>→</i><span>Offers</span><i>→</i><span>Settlement</span>
+        </div>
+        <p class="dg-ind-subs"><a href="/apps/industry/property/" style="color:#93C5FD;text-decoration:none;font-weight:700;">Explore Property →</a></p>
+      </article>
+      <article class="dg-ind-card dg-reveal">
+        <div class="eyebrow">Available</div>
+        <h3>Services</h3>
+        <p>Trades · Cleaning · Maintenance · Facilities · Field Services</p>
+        <div class="dg-flow">
+          <span>Enquiry</span><i>→</i><span>Quote</span><i>→</i><span>Job</span><i>→</i><span>Invoice</span><i>→</i><span>Review</span>
+        </div>
+        <p class="dg-ind-subs"><a href="/apps/industry/services/" style="color:#93C5FD;text-decoration:none;font-weight:700;">Explore Services →</a></p>
+      </article>
+      <article class="dg-ind-card dg-reveal">
+        <div class="eyebrow">Early Access</div>
+        <h3>Hospitality</h3>
+        <p>Accommodation · Hotels · Resorts · Venues</p>
+        <div class="dg-flow">
+          <span>Booking</span><i>→</i><span>Guest</span><i>→</i><span>Stay</span><i>→</i><span>Operations</span><i>→</i><span>Revenue</span>
+        </div>
+        <p class="dg-ind-subs"><a href="/apps/industry/hospitality-accommodation/" style="color:#93C5FD;text-decoration:none;font-weight:700;">Explore Hospitality →</a></p>
+      </article>
+      <article class="dg-ind-card dg-reveal">
+        <div class="eyebrow">Early Access</div>
+        <h3>Finance</h3>
+        <p>Accounting · Bookkeeping · Mortgage · Finance Broking · Insurance</p>
+        <div class="dg-flow">
+          <span>Lead</span><i>→</i><span>Qualify</span><i>→</i><span>Application</span><i>→</i><span>Compliance</span><i>→</i><span>Close</span>
+        </div>
+        <p class="dg-ind-subs"><a href="/apps/industry/finance/" style="color:#93C5FD;text-decoration:none;font-weight:700;">Explore Finance →</a></p>
+      </article>
     </div>
-    <p style="text-align:center;color:#94A3B8;font-size:0.92rem;margin-bottom:1.5rem;">Industry Apps specialise. Templates underneath match how you operate — not separate Industry products.</p>
     <div class="ind-tiers">
-      <div class="ind-tier">
+      <div class="ind-tier dg-reveal">
         <h4>Available</h4>
         <ul>
           <li><a href="/apps/industry/property/">Property</a> <span style="color:#64748B;">· Templates: Real Estate, PM, Commercial…</span></li>
           <li><a href="/apps/industry/services/">Services</a></li>
         </ul>
       </div>
-      <div class="ind-tier">
+      <div class="ind-tier dg-reveal">
         <h4>Early Access</h4>
         <ul>
           <li><a href="/apps/industry/hospitality-accommodation/">Hospitality &amp; Accommodation</a></li>
@@ -988,7 +1453,7 @@
           <li><a href="/apps/industry/creator/">Creator &amp; Media</a></li>
         </ul>
       </div>
-      <div class="ind-tier">
+      <div class="ind-tier dg-reveal">
         <h4>Coming Soon</h4>
         <ul>
           <li><a href="/apps/industry/automotive/">Automotive</a></li>
@@ -1010,12 +1475,12 @@
       <p>An intelligent layer that grows with you — not a pile of disconnected tools.</p>
     </div>
     <div class="why-grid">
-      <div class="why-item"><strong>One</strong> business context</div>
-      <div class="why-item"><strong>One</strong> platform</div>
-      <div class="why-item"><strong>One</strong> source of truth</div>
-      <div class="why-item"><strong>One</strong> intelligence layer</div>
-      <div class="why-item"><strong>Grows</strong> with you</div>
-      <div class="why-item"><strong>Honest</strong> about what&apos;s ready</div>
+      <div class="why-item dg-reveal"><strong>One</strong> business context</div>
+      <div class="why-item dg-reveal"><strong>One</strong> platform</div>
+      <div class="why-item dg-reveal"><strong>One</strong> source of truth</div>
+      <div class="why-item dg-reveal"><strong>One</strong> intelligence layer</div>
+      <div class="why-item dg-reveal"><strong>Grows</strong> with you</div>
+      <div class="why-item dg-reveal"><strong>Honest</strong> about what&apos;s ready</div>
     </div>
     <div class="not-a">
       <span>Not just a CRM</span>
@@ -1035,16 +1500,16 @@
       <h2>See DigitalGate in production</h2>
       <p>Built, deployed and refined through real businesses.</p>
     </div>
-    <div class="shot-grid">
-      <div class="shot-frame">
+    <div class="shot-masonry">
+      <div class="shot-frame dg-reveal">
         <img src="https://app.digitalgate.com.au/marketing/screenshots/dashboard-overview.png" alt="DigitalGate Business Overview dashboard" loading="lazy" width="640" height="400">
         <div class="shot-caption"><span class="shot-label">Dashboard</span><span class="shot-title">Business Overview</span><span class="shot-sub">Health score and AI briefing</span></div>
       </div>
-      <div class="shot-frame">
+      <div class="shot-frame dg-reveal">
         <img src="https://app.digitalgate.com.au/marketing/screenshots/crm-contacts.png" alt="DigitalGate CRM contacts" loading="lazy" width="640" height="400">
         <div class="shot-caption"><span class="shot-label">CRM</span><span class="shot-title">Contacts &amp; Timeline</span><span class="shot-sub">One customer record</span></div>
       </div>
-      <div class="shot-frame">
+      <div class="shot-frame dg-reveal">
         <img src="https://app.digitalgate.com.au/marketing/screenshots/vendor-pipeline.png" alt="DigitalGate vendor pipeline" loading="lazy" width="640" height="400">
         <div class="shot-caption"><span class="shot-label">Real Estate</span><span class="shot-title">Vendor Pipeline</span><span class="shot-sub">Live on Roe Realty</span></div>
       </div>
@@ -1059,6 +1524,7 @@
   </div>
 </section>
 
+</div><!-- /dg-motion-root -->
 <!-- ===== FOUNDING CUSTOMER PROGRAMME ===== -->
 <section class="alt" id="founding">
   <div class="container">
