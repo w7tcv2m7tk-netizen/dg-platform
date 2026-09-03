@@ -104,7 +104,7 @@
       '<p class="results-note">A confirmation email is on its way. Our team will review your discovery before your consultation.</p>' +
       (reportUrl ? '<a href="' + reportUrl + '" class="btn-secondary" target="_blank" rel="noopener">View Digital Maturity Report</a>' : '') +
       '<a href="https://digitalgate.com.au/contact/" class="btn-primary">Book Your Free Consultation →</a>' +
-      '<a href="https://digitalgate.com.au/onboarding/" class="btn-secondary">Start Free Trial</a>' +
+      '<a href="https://digitalgate.com.au/founding-customers/" class="btn-secondary">Explore Founding 10</a>' +
       '</div>';
     resultsEl.innerHTML = html;
     resultsEl.style.display = 'block';

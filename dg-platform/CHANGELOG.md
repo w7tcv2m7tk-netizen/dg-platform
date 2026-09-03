@@ -1,5 +1,13 @@
 # DG Platform Changelog
 
+## 10.71.0 — Founding 10 marketing CTA cleanup; WP runtime withdrawn (August 2026)
+
+- **Architecture:** Founding 10 customer journey is **Gen 2 (`dg-platform-web`)**, not this plugin. A WordPress stand-in is not an implementation.
+- **Withdrawn:** WP `/founding/accept`, `/founding/setup`, offer admin, and WP Stripe Checkout for Founding 10
+- **Marketing sources only:** `founding-customers-page.html` invite/explore (no Terms checkbox). Public CTAs stop pointing at `#application` and WP `/onboarding/`
+- Founding Customer Terms and commercial rules unchanged. `/signup` stays a separate generic picker
+- See `marketing/pages/FOUNDING-10-IMPLEMENTATION-PLAN.md`
+
 ## 10.67.0 — Acc StayBooking dual-write push (August 2026)
 
 - **Acc:** `DG_Acc_Platform_Sync` listens to `dg_booking_created` / `dg_booking_confirmed` and POSTs the booking row to Gen 2 `/api/webhooks/dg-stay-booking` (non-blocking)
