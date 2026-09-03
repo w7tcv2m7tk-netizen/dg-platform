@@ -85,6 +85,12 @@ class DG_Acc_Platform_Sync {
             return $result;
         }
 
+        // rest_pre_dispatch may run before the route callback. Never let this
+        // privileged Gen 2 webhook hop bypass the route's own manage permission.
+        if (!class_exists('DG_Acc_Dev_API') || !DG_Acc_Dev_API::can_manage($request)) {
+            return $result;
+        }
+
         $body = $request->get_json_params();
         if (!is_array($body)) {
             return new WP_Error('invalid_body', 'Expected JSON body.', ['status' => 400]);
